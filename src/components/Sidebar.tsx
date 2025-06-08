@@ -1,12 +1,13 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ChevronRight, ChevronDown, Home, Ruler, Layout, Grid3X3, Palette } from 'lucide-react';
+import { ChevronRight, ChevronDown, Home, Ruler, Layout, Grid3X3, Palette, Building } from 'lucide-react';
 import DimensionsPanel from './sidebar/DimensionsPanel';
 import RoofPanel from './sidebar/RoofPanel';
 import WallFeaturesPanel from './sidebar/WallFeaturesPanel';
+import WallLayoutPanel from './sidebar/WallLayoutPanel';
 import ColorsPanel from './sidebar/ColorsPanel';
 
-type PanelId = 'dimensions' | 'roof' | 'features' | 'colors';
+type PanelId = 'dimensions' | 'roof' | 'features' | 'layout' | 'colors';
 
 const Sidebar: React.FC = () => {
   const [expandedPanel, setExpandedPanel] = useState<PanelId | null>('dimensions');
@@ -21,6 +22,12 @@ const Sidebar: React.FC = () => {
       title: 'Building Dimensions', 
       icon: <Ruler className="w-5 h-5" />,
       component: <DimensionsPanel />
+    },
+    { 
+      id: 'layout' as PanelId, 
+      title: 'Wall Layout Design', 
+      icon: <Building className="w-5 h-5" />,
+      component: <WallLayoutPanel />
     },
     { 
       id: 'roof' as PanelId, 
