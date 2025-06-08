@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import { v4 as uuidv4 } from 'uuid';
 import { validateWallHeights } from '../utils/wallHeightValidation';
+import { isValidFeaturePosition } from '../utils/wallBoundsValidation';
 import type { BuildingStore, Project, ViewMode, BuildingDimensions, WallFeature, Skylight } from '../types';
 
 // Default initial building
@@ -32,7 +33,7 @@ export const useBuildingStore = create<BuildingStore>((set, get) => ({
   savedProjects: [],
   currentView: '3d' as ViewMode,
 
-  // Update building dimensions with validation
+  // Update building dimensions with comprehensive validation
   updateDimensions: (dimensions: Partial<BuildingDimensions>) => 
     set((state) => {
       const newDimensions = {
@@ -42,11 +43,21 @@ export const useBuildingStore = create<BuildingStore>((set, get) => ({
 
       // If height changed, validate all existing features
       if (dimensions.height !== undefined) {
-        const validation = validateWallHeights(newDimensions, state.currentProject.building.features);
+        const heightValidation = validateWallHeights(newDimensions, state.currentProject.building.features);
         
-        if (!validation.valid) {
-          console.warn('Wall height validation failed:', validation.errors);
-          // You could show a notification here or handle the validation failure
+        if (!heightValidation.valid) {
+          console.warn('Wall height validation failed:', heightValidation.errors);
+        }
+      }
+
+      // If width or length changed, validate wall bounds for all features
+      if (dimensions.width !== undefined || dimensions.length !== undefined) {
+        const invalidFeatures = state.currentProject.building.features.filter(feature => {
+          return !isValidFeaturePosition(feature, newDimensions);
+        });
+
+        if (invalidFeatures.length > 0) {
+          console.warn('Wall bounds validation failed for features:', invalidFeatures.map(f => f.id));
         }
       }
 
@@ -62,21 +73,28 @@ export const useBuildingStore = create<BuildingStore>((set, get) => ({
       };
     }),
 
-  // Add a new wall feature with validation
+  // Add a new wall feature with comprehensive validation
   addFeature: (feature: Omit<WallFeature, 'id'>) => 
     set((state) => {
       const newFeature = { ...feature, id: uuidv4() };
       const newFeatures = [...state.currentProject.building.features, newFeature];
       
-      // Validate the new feature configuration
-      const validation = validateWallHeights(
+      // Validate height constraints
+      const heightValidation = validateWallHeights(
         state.currentProject.building.dimensions,
         newFeatures
       );
 
-      if (!validation.valid) {
-        console.error('Feature validation failed:', validation.errors);
-        // Return state unchanged if validation fails
+      if (!heightValidation.valid) {
+        console.error('Feature height validation failed:', heightValidation.errors);
+        return state;
+      }
+
+      // Validate wall bounds
+      const boundsValid = isValidFeaturePosition(feature, state.currentProject.building.dimensions);
+
+      if (!boundsValid) {
+        console.error('Feature bounds validation failed: Feature extends beyond wall boundaries');
         return state;
       }
 
@@ -133,23 +151,33 @@ export const useBuildingStore = create<BuildingStore>((set, get) => ({
       },
     })),
 
-  // Update a wall feature with validation
+  // Update a wall feature with comprehensive validation
   updateFeature: (id: string, updates: Partial<Omit<WallFeature, 'id'>>) => 
     set((state) => {
       const updatedFeatures = state.currentProject.building.features.map((feature) =>
         feature.id === id ? { ...feature, ...updates } : feature
       );
 
-      // Validate the updated feature configuration
-      const validation = validateWallHeights(
+      // Validate height constraints
+      const heightValidation = validateWallHeights(
         state.currentProject.building.dimensions,
         updatedFeatures
       );
 
-      if (!validation.valid) {
-        console.error('Feature update validation failed:', validation.errors);
-        // Return state unchanged if validation fails
+      if (!heightValidation.valid) {
+        console.error('Feature update height validation failed:', heightValidation.errors);
         return state;
+      }
+
+      // Validate wall bounds for the updated feature
+      const updatedFeature = updatedFeatures.find(f => f.id === id);
+      if (updatedFeature) {
+        const boundsValid = isValidFeaturePosition(updatedFeature, state.currentProject.building.dimensions);
+
+        if (!boundsValid) {
+          console.error('Feature update bounds validation failed: Feature extends beyond wall boundaries');
+          return state;
+        }
       }
 
       return {

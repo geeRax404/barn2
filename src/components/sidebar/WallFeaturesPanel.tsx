@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { Plus, X, Move, Edit2, AlertTriangle, CheckCircle, Info } from 'lucide-react';
+import { Plus, X, Move, Edit2, AlertTriangle, CheckCircle, Info, MapPin, Ruler } from 'lucide-react';
 import { useBuildingStore } from '../../store/buildingStore';
 import { 
   validateNewFeature, 
@@ -8,6 +8,14 @@ import {
   getMaxAllowedHeight,
   suggestValidPosition 
 } from '../../utils/wallHeightValidation';
+import {
+  validateAllFeaturesWithinWallBounds,
+  validateFeatureWithinWallBounds,
+  suggestValidFeaturePosition,
+  getMaxAllowedFeatureDimensions,
+  getAvailableSpace,
+  isValidFeaturePosition
+} from '../../utils/wallBoundsValidation';
 import type { FeatureType, WallPosition } from '../../types';
 
 const WallFeaturesPanel: React.FC = () => {
@@ -22,6 +30,7 @@ const WallFeaturesPanel: React.FC = () => {
   const [editingFeature, setEditingFeature] = useState<string | null>(null);
   const [validationErrors, setValidationErrors] = useState<string[]>([]);
   const [validationWarnings, setValidationWarnings] = useState<string[]>([]);
+  const [boundsValidation, setBoundsValidation] = useState<any>(null);
   const [newFeature, setNewFeature] = useState({
     type: 'door' as FeatureType,
     width: 3,
@@ -34,20 +43,35 @@ const WallFeaturesPanel: React.FC = () => {
 
   // Validate all existing features whenever dimensions or features change
   useEffect(() => {
-    const validation = validateWallHeights(dimensions, features);
-    setValidationErrors(validation.errors);
-    setValidationWarnings(validation.warnings);
+    const heightValidation = validateWallHeights(dimensions, features);
+    const boundsValidationResult = validateAllFeaturesWithinWallBounds(features, dimensions);
+    
+    setValidationErrors([...heightValidation.errors, ...boundsValidationResult.errors]);
+    setValidationWarnings([...heightValidation.warnings, ...boundsValidationResult.warnings]);
+    setBoundsValidation(boundsValidationResult);
   }, [dimensions, features]);
 
-  // Get maximum allowed height for current position
-  const maxAllowedHeight = getMaxAllowedHeight(
-    { yOffset: newFeature.yOffset },
-    dimensions.height
+  // Get maximum allowed dimensions for current position
+  const maxAllowedDimensions = getMaxAllowedFeatureDimensions(
+    newFeature.wallPosition,
+    newFeature.alignment,
+    newFeature.xOffset,
+    newFeature.yOffset,
+    dimensions
+  );
+
+  // Get available space around current position
+  const availableSpace = getAvailableSpace(
+    newFeature.wallPosition,
+    newFeature.alignment,
+    newFeature.xOffset,
+    newFeature.yOffset,
+    dimensions
   );
 
   const handleAddFeature = () => {
     // Validate the new feature before adding
-    const validation = validateNewFeature(
+    const heightValidation = validateNewFeature(
       {
         type: newFeature.type,
         width: newFeature.width,
@@ -63,8 +87,27 @@ const WallFeaturesPanel: React.FC = () => {
       dimensions.height
     );
 
-    if (!validation.valid) {
-      setValidationErrors(validation.errors);
+    // Validate bounds
+    const boundsValid = isValidFeaturePosition(
+      {
+        type: newFeature.type,
+        width: newFeature.width,
+        height: newFeature.height,
+        position: {
+          wallPosition: newFeature.wallPosition,
+          xOffset: newFeature.xOffset,
+          yOffset: newFeature.yOffset,
+          alignment: newFeature.alignment
+        }
+      },
+      dimensions
+    );
+
+    if (!heightValidation.valid || !boundsValid) {
+      setValidationErrors([
+        ...heightValidation.errors,
+        ...(boundsValid ? [] : ['Feature extends beyond wall boundaries'])
+      ]);
       return;
     }
 
@@ -94,7 +137,7 @@ const WallFeaturesPanel: React.FC = () => {
     if (!feature) return;
 
     // Validate the updated feature
-    const validation = validateNewFeature(
+    const heightValidation = validateNewFeature(
       {
         type: newFeature.type,
         width: newFeature.width,
@@ -110,8 +153,26 @@ const WallFeaturesPanel: React.FC = () => {
       dimensions.height
     );
 
-    if (!validation.valid) {
-      setValidationErrors(validation.errors);
+    const boundsValid = isValidFeaturePosition(
+      {
+        type: newFeature.type,
+        width: newFeature.width,
+        height: newFeature.height,
+        position: {
+          wallPosition: newFeature.wallPosition,
+          xOffset: newFeature.xOffset,
+          yOffset: newFeature.yOffset,
+          alignment: newFeature.alignment
+        }
+      },
+      dimensions
+    );
+
+    if (!heightValidation.valid || !boundsValid) {
+      setValidationErrors([
+        ...heightValidation.errors,
+        ...(boundsValid ? [] : ['Feature extends beyond wall boundaries'])
+      ]);
       return;
     }
 
@@ -148,7 +209,35 @@ const WallFeaturesPanel: React.FC = () => {
   };
 
   const handleSuggestValidPosition = () => {
-    const suggestion = suggestValidPosition(
+    const suggestion = suggestValidFeaturePosition(
+      {
+        id: 'temp',
+        type: newFeature.type,
+        width: newFeature.width,
+        height: newFeature.height,
+        position: {
+          wallPosition: newFeature.wallPosition,
+          xOffset: newFeature.xOffset,
+          yOffset: newFeature.yOffset,
+          alignment: newFeature.alignment
+        }
+      },
+      dimensions
+    );
+
+    setNewFeature({
+      ...newFeature,
+      width: suggestion.suggestedWidth,
+      height: suggestion.suggestedHeight,
+      xOffset: suggestion.suggestedXOffset,
+      yOffset: suggestion.suggestedYOffset
+    });
+    setValidationErrors([]);
+  };
+
+  // Check if current feature configuration is valid
+  const isCurrentFeatureValid = () => {
+    return isValidFeaturePosition(
       {
         type: newFeature.type,
         width: newFeature.width,
@@ -160,24 +249,25 @@ const WallFeaturesPanel: React.FC = () => {
           alignment: newFeature.alignment
         }
       },
-      dimensions.height
+      dimensions
     );
-
-    setNewFeature({
-      ...newFeature,
-      height: suggestion.height,
-      yOffset: suggestion.yOffset
-    });
-    setValidationErrors([]);
   };
 
-  // Check if current feature configuration is valid
-  const isCurrentFeatureValid = () => {
-    if (newFeature.height > dimensions.height) return false;
-    if (newFeature.yOffset + newFeature.height > dimensions.height) return false;
-    if (newFeature.yOffset < 0) return false;
-    return true;
+  // Get wall dimensions for current wall position
+  const getCurrentWallDimensions = () => {
+    switch (newFeature.wallPosition) {
+      case 'front':
+      case 'back':
+        return { width: dimensions.width, height: dimensions.height };
+      case 'left':
+      case 'right':
+        return { width: dimensions.length, height: dimensions.height };
+      default:
+        return { width: dimensions.width, height: dimensions.height };
+    }
   };
+
+  const currentWallDimensions = getCurrentWallDimensions();
   
   return (
     <motion.div 
@@ -186,15 +276,35 @@ const WallFeaturesPanel: React.FC = () => {
       exit={{ opacity: 0 }}
       className="space-y-4"
     >
-      {/* Wall Height Information */}
+      {/* Wall Dimensions Information */}
       <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
         <div className="flex items-center space-x-2 mb-2">
           <Info className="w-4 h-4 text-blue-600" />
-          <span className="text-sm font-medium text-blue-800">Wall Height: {dimensions.height} ft</span>
+          <span className="text-sm font-medium text-blue-800">
+            {newFeature.wallPosition.charAt(0).toUpperCase() + newFeature.wallPosition.slice(1)} Wall: {currentWallDimensions.width}ft × {currentWallDimensions.height}ft
+          </span>
         </div>
         <p className="text-xs text-blue-700">
-          All doors and windows must fit within this height limit.
+          All doors and windows must be positioned within these wall boundaries.
         </p>
+      </div>
+
+      {/* Position Information */}
+      <div className="bg-gray-50 border border-gray-200 rounded-lg p-3">
+        <div className="flex items-center space-x-2 mb-2">
+          <MapPin className="w-4 h-4 text-gray-600" />
+          <span className="text-sm font-medium text-gray-800">Available Space at Current Position</span>
+        </div>
+        <div className="grid grid-cols-2 gap-2 text-xs text-gray-700">
+          <div>Left space:</div>
+          <div className="font-medium">{availableSpace.leftSpace.toFixed(1)}ft</div>
+          <div>Right space:</div>
+          <div className="font-medium">{availableSpace.rightSpace.toFixed(1)}ft</div>
+          <div>Bottom space:</div>
+          <div className="font-medium">{availableSpace.bottomSpace.toFixed(1)}ft</div>
+          <div>Top space:</div>
+          <div className="font-medium">{availableSpace.topSpace.toFixed(1)}ft</div>
+        </div>
       </div>
 
       {/* Global Validation Status */}
@@ -230,7 +340,7 @@ const WallFeaturesPanel: React.FC = () => {
         <div className="bg-green-50 border border-green-200 rounded-lg p-3">
           <div className="flex items-center space-x-2">
             <CheckCircle className="w-4 h-4 text-green-600" />
-            <span className="text-sm font-medium text-green-800">All features are valid</span>
+            <span className="text-sm font-medium text-green-800">All features are positioned within wall bounds</span>
           </div>
         </div>
       )}
@@ -252,37 +362,47 @@ const WallFeaturesPanel: React.FC = () => {
       
       <div className="grid grid-cols-2 gap-3">
         <div>
-          <label htmlFor="featureWidth" className="form-label">Width (ft)</label>
+          <label htmlFor="featureWidth" className="form-label">
+            Width (ft)
+            <span className="text-xs text-gray-500 ml-1">
+              (max: {maxAllowedDimensions.maxWidth.toFixed(1)}ft)
+            </span>
+          </label>
           <input
             type="number"
             id="featureWidth"
-            className="form-input"
+            className={`form-input ${newFeature.width > maxAllowedDimensions.maxWidth ? 'border-red-300 bg-red-50' : ''}`}
             min="1"
-            max="20"
+            max={maxAllowedDimensions.maxWidth}
             step="0.5"
             value={newFeature.width}
             onChange={(e) => setNewFeature({ ...newFeature, width: parseFloat(e.target.value) })}
           />
+          {newFeature.width > maxAllowedDimensions.maxWidth && (
+            <p className="text-xs text-red-600 mt-1">
+              Width exceeds available space at this position
+            </p>
+          )}
         </div>
         
         <div>
           <label htmlFor="featureHeight" className="form-label">
             Height (ft)
             <span className="text-xs text-gray-500 ml-1">
-              (max: {maxAllowedHeight.toFixed(1)}ft)
+              (max: {maxAllowedDimensions.maxHeight.toFixed(1)}ft)
             </span>
           </label>
           <input
             type="number"
             id="featureHeight"
-            className={`form-input ${newFeature.height > maxAllowedHeight ? 'border-red-300 bg-red-50' : ''}`}
+            className={`form-input ${newFeature.height > maxAllowedDimensions.maxHeight ? 'border-red-300 bg-red-50' : ''}`}
             min="1"
-            max={dimensions.height}
+            max={maxAllowedDimensions.maxHeight}
             step="0.5"
             value={newFeature.height}
             onChange={(e) => setNewFeature({ ...newFeature, height: parseFloat(e.target.value) })}
           />
-          {newFeature.height > maxAllowedHeight && (
+          {newFeature.height > maxAllowedDimensions.maxHeight && (
             <p className="text-xs text-red-600 mt-1">
               Height exceeds available space at this position
             </p>
@@ -298,10 +418,10 @@ const WallFeaturesPanel: React.FC = () => {
           value={newFeature.wallPosition}
           onChange={(e) => setNewFeature({ ...newFeature, wallPosition: e.target.value as WallPosition })}
         >
-          <option value="front">Front</option>
-          <option value="back">Back</option>
-          <option value="left">Left</option>
-          <option value="right">Right</option>
+          <option value="front">Front ({dimensions.width}ft wide)</option>
+          <option value="back">Back ({dimensions.width}ft wide)</option>
+          <option value="left">Left ({dimensions.length}ft wide)</option>
+          <option value="right">Right ({dimensions.length}ft wide)</option>
         </select>
       </div>
       
@@ -313,14 +433,19 @@ const WallFeaturesPanel: React.FC = () => {
           value={newFeature.alignment}
           onChange={(e) => setNewFeature({ ...newFeature, alignment: e.target.value as 'left' | 'center' | 'right' })}
         >
-          <option value="left">Left</option>
+          <option value="left">Left Edge</option>
           <option value="center">Center</option>
-          <option value="right">Right</option>
+          <option value="right">Right Edge</option>
         </select>
       </div>
       
       <div>
-        <label htmlFor="xOffset" className="form-label">Position Offset (ft)</label>
+        <label htmlFor="xOffset" className="form-label">
+          Position Offset (ft)
+          <span className="text-xs text-gray-500 ml-1">
+            ({newFeature.alignment} alignment)
+          </span>
+        </label>
         <input
           type="number"
           id="xOffset"
@@ -330,6 +455,9 @@ const WallFeaturesPanel: React.FC = () => {
           value={newFeature.xOffset}
           onChange={(e) => setNewFeature({ ...newFeature, xOffset: parseFloat(e.target.value) })}
         />
+        <p className="text-xs text-gray-500 mt-1">
+          Distance from {newFeature.alignment} edge of wall
+        </p>
       </div>
       
       <div>
@@ -363,7 +491,7 @@ const WallFeaturesPanel: React.FC = () => {
           onClick={handleSuggestValidPosition}
         >
           <AlertTriangle className="w-4 h-4 mr-1" />
-          Auto-fix Position & Size
+          Auto-fix Position & Size to Fit Wall Bounds
         </button>
       )}
       
@@ -390,9 +518,12 @@ const WallFeaturesPanel: React.FC = () => {
           <h3 className="text-sm font-medium text-gray-700 mb-2">Existing Features</h3>
           <div className="space-y-2 max-h-40 overflow-y-auto pr-1">
             {features.map((feature) => {
-              const isValid = feature.height <= dimensions.height && 
-                             feature.position.yOffset + feature.height <= dimensions.height &&
-                             feature.position.yOffset >= 0;
+              const heightValid = feature.height <= dimensions.height && 
+                                 feature.position.yOffset + feature.height <= dimensions.height &&
+                                 feature.position.yOffset >= 0;
+              
+              const boundsValid = boundsValidation?.featureValidations?.get(feature.id)?.valid ?? true;
+              const isValid = heightValid && boundsValid;
               
               return (
                 <div 
@@ -418,8 +549,11 @@ const WallFeaturesPanel: React.FC = () => {
                       </div>
                       <p className="text-xs text-gray-500">
                         {feature.position.wallPosition} wall, {feature.width}x{feature.height}ft
-                        {!isValid && (
+                        {!heightValid && (
                           <span className="text-red-600 ml-1">(Invalid height)</span>
+                        )}
+                        {!boundsValid && (
+                          <span className="text-red-600 ml-1">(Out of bounds)</span>
                         )}
                       </p>
                     </div>
