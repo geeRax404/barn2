@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 import { v4 as uuidv4 } from 'uuid';
+import { validateWallHeights } from '../utils/wallHeightValidation';
 import type { BuildingStore, Project, ViewMode, BuildingDimensions, WallFeature, Skylight } from '../types';
 
 // Default initial building
@@ -26,42 +27,70 @@ const createDefaultProject = (): Project => ({
 });
 
 // Create the store
-export const useBuildingStore = create<BuildingStore>((set) => ({
+export const useBuildingStore = create<BuildingStore>((set, get) => ({
   currentProject: createDefaultProject(),
   savedProjects: [],
   currentView: '3d' as ViewMode,
 
-  // Update building dimensions
+  // Update building dimensions with validation
   updateDimensions: (dimensions: Partial<BuildingDimensions>) => 
-    set((state) => ({
-      currentProject: {
-        ...state.currentProject,
-        lastModified: new Date(),
-        building: {
-          ...state.currentProject.building,
-          dimensions: {
-            ...state.currentProject.building.dimensions,
-            ...dimensions,
+    set((state) => {
+      const newDimensions = {
+        ...state.currentProject.building.dimensions,
+        ...dimensions,
+      };
+
+      // If height changed, validate all existing features
+      if (dimensions.height !== undefined) {
+        const validation = validateWallHeights(newDimensions, state.currentProject.building.features);
+        
+        if (!validation.valid) {
+          console.warn('Wall height validation failed:', validation.errors);
+          // You could show a notification here or handle the validation failure
+        }
+      }
+
+      return {
+        currentProject: {
+          ...state.currentProject,
+          lastModified: new Date(),
+          building: {
+            ...state.currentProject.building,
+            dimensions: newDimensions,
           },
         },
-      },
-    })),
+      };
+    }),
 
-  // Add a new wall feature
+  // Add a new wall feature with validation
   addFeature: (feature: Omit<WallFeature, 'id'>) => 
-    set((state) => ({
-      currentProject: {
-        ...state.currentProject,
-        lastModified: new Date(),
-        building: {
-          ...state.currentProject.building,
-          features: [
-            ...state.currentProject.building.features,
-            { ...feature, id: uuidv4() },
-          ],
+    set((state) => {
+      const newFeature = { ...feature, id: uuidv4() };
+      const newFeatures = [...state.currentProject.building.features, newFeature];
+      
+      // Validate the new feature configuration
+      const validation = validateWallHeights(
+        state.currentProject.building.dimensions,
+        newFeatures
+      );
+
+      if (!validation.valid) {
+        console.error('Feature validation failed:', validation.errors);
+        // Return state unchanged if validation fails
+        return state;
+      }
+
+      return {
+        currentProject: {
+          ...state.currentProject,
+          lastModified: new Date(),
+          building: {
+            ...state.currentProject.building,
+            features: newFeatures,
+          },
         },
-      },
-    })),
+      };
+    }),
 
   // Remove a wall feature
   removeFeature: (id: string) => 
@@ -104,20 +133,36 @@ export const useBuildingStore = create<BuildingStore>((set) => ({
       },
     })),
 
-  // Update a wall feature
+  // Update a wall feature with validation
   updateFeature: (id: string, updates: Partial<Omit<WallFeature, 'id'>>) => 
-    set((state) => ({
-      currentProject: {
-        ...state.currentProject,
-        lastModified: new Date(),
-        building: {
-          ...state.currentProject.building,
-          features: state.currentProject.building.features.map((feature) =>
-            feature.id === id ? { ...feature, ...updates } : feature
-          ),
+    set((state) => {
+      const updatedFeatures = state.currentProject.building.features.map((feature) =>
+        feature.id === id ? { ...feature, ...updates } : feature
+      );
+
+      // Validate the updated feature configuration
+      const validation = validateWallHeights(
+        state.currentProject.building.dimensions,
+        updatedFeatures
+      );
+
+      if (!validation.valid) {
+        console.error('Feature update validation failed:', validation.errors);
+        // Return state unchanged if validation fails
+        return state;
+      }
+
+      return {
+        currentProject: {
+          ...state.currentProject,
+          lastModified: new Date(),
+          building: {
+            ...state.currentProject.building,
+            features: updatedFeatures,
+          },
         },
-      },
-    })),
+      };
+    }),
 
   // Set building color
   setColor: (color: string) => 
