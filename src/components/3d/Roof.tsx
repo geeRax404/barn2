@@ -172,6 +172,172 @@ const Roof: React.FC<RoofProps> = ({ width, length, height, pitch, color, skylig
     };
   }, [color, length, width, panelLength, skylights]);
 
+  // Create roof ridge lines that split around skylights
+  const roofRidgeLines = useMemo(() => {
+    const ridgeSegments: { start: [number, number, number]; end: [number, number, number] }[] = [];
+    
+    // Main ridge line along the peak
+    const ridgeY = height + roofHeight;
+    let currentZ = -length / 2;
+    const ridgeEnd = length / 2;
+    
+    // Get all skylights that might intersect the ridge
+    const ridgeIntersectingSkylights = skylights
+      .filter(skylight => {
+        const skylightFront = skylight.yOffset - skylight.length / 2;
+        const skylightBack = skylight.yOffset + skylight.length / 2;
+        return skylightBack > -length/2 && skylightFront < length/2;
+      })
+      .sort((a, b) => (a.yOffset - a.length/2) - (b.yOffset - b.length/2));
+    
+    console.log(`Ridge intersecting skylights: ${ridgeIntersectingSkylights.length}`);
+    
+    // Create ridge segments between skylights
+    ridgeIntersectingSkylights.forEach(skylight => {
+      const skylightFront = skylight.yOffset - skylight.length / 2 - 0.1; // Small gap
+      const skylightBack = skylight.yOffset + skylight.length / 2 + 0.1; // Small gap
+      
+      // Add segment before skylight
+      if (currentZ < skylightFront) {
+        ridgeSegments.push({
+          start: [0, ridgeY, currentZ],
+          end: [0, ridgeY, skylightFront]
+        });
+        console.log(`Ridge segment: ${currentZ.toFixed(2)} to ${skylightFront.toFixed(2)}`);
+      }
+      
+      // Skip over the skylight
+      currentZ = Math.max(currentZ, skylightBack);
+    });
+    
+    // Add final segment after all skylights
+    if (currentZ < ridgeEnd) {
+      ridgeSegments.push({
+        start: [0, ridgeY, currentZ],
+        end: [0, ridgeY, ridgeEnd]
+      });
+      console.log(`Final ridge segment: ${currentZ.toFixed(2)} to ${ridgeEnd.toFixed(2)}`);
+    }
+    
+    return ridgeSegments;
+  }, [skylights, length, height, roofHeight]);
+
+  // Create panel edge lines that split around skylights
+  const panelEdgeLines = useMemo(() => {
+    const createPanelEdgeSegments = (isLeftPanel: boolean) => {
+      const panelSkylights = skylights.filter(s => s.panel === (isLeftPanel ? 'left' : 'right'));
+      const segments: { start: [number, number, number]; end: [number, number, number] }[] = [];
+      
+      // Panel edge coordinates
+      const panelX = isLeftPanel ? -width / 4 : width / 4;
+      const panelEdgeY = height + roofHeight / 2;
+      
+      let currentZ = -length / 2;
+      const edgeEnd = length / 2;
+      
+      // Sort skylights by Y position
+      const sortedSkylights = panelSkylights
+        .filter(skylight => {
+          const skylightFront = skylight.yOffset - skylight.length / 2;
+          const skylightBack = skylight.yOffset + skylight.length / 2;
+          return skylightBack > -length/2 && skylightFront < length/2;
+        })
+        .sort((a, b) => (a.yOffset - a.length/2) - (b.yOffset - b.length/2));
+      
+      // Create edge segments between skylights
+      sortedSkylights.forEach(skylight => {
+        const skylightFront = skylight.yOffset - skylight.length / 2 - 0.05;
+        const skylightBack = skylight.yOffset + skylight.length / 2 + 0.05;
+        
+        // Add segment before skylight
+        if (currentZ < skylightFront) {
+          segments.push({
+            start: [panelX, panelEdgeY, currentZ],
+            end: [panelX, panelEdgeY, skylightFront]
+          });
+        }
+        
+        // Skip over the skylight
+        currentZ = Math.max(currentZ, skylightBack);
+      });
+      
+      // Add final segment after all skylights
+      if (currentZ < edgeEnd) {
+        segments.push({
+          start: [panelX, panelEdgeY, currentZ],
+          end: [panelX, panelEdgeY, edgeEnd]
+        });
+      }
+      
+      return segments;
+    };
+    
+    return {
+      left: createPanelEdgeSegments(true),
+      right: createPanelEdgeSegments(false)
+    };
+  }, [skylights, width, length, height, roofHeight]);
+
+  // Create cross-ridge lines (perpendicular to main ridge)
+  const crossRidgeLines = useMemo(() => {
+    const segments: { start: [number, number, number]; end: [number, number, number] }[] = [];
+    const ridgeY = height + roofHeight;
+    const spacing = 8; // Cross-ridge every 8 feet
+    
+    for (let z = -length/2 + spacing; z < length/2; z += spacing) {
+      // Check if this cross-ridge intersects any skylights
+      const intersectingSkylights = skylights.filter(skylight => {
+        const skylightFront = skylight.yOffset - skylight.length / 2;
+        const skylightBack = skylight.yOffset + skylight.length / 2;
+        return z >= skylightFront && z <= skylightBack;
+      });
+      
+      if (intersectingSkylights.length === 0) {
+        // No skylights intersect, create full cross-ridge
+        segments.push({
+          start: [-width/2, height, z],
+          end: [width/2, height, z]
+        });
+      } else {
+        // Split cross-ridge around skylights
+        let currentX = -width/2;
+        
+        intersectingSkylights
+          .sort((a, b) => a.xOffset - b.xOffset)
+          .forEach(skylight => {
+            // Convert skylight panel position to roof coordinates
+            const skylightX = skylight.panel === 'left' ? 
+              -width/4 + skylight.xOffset * 0.5 : 
+              width/4 + skylight.xOffset * 0.5;
+            
+            const skylightLeft = skylightX - skylight.width / 2 - 0.1;
+            const skylightRight = skylightX + skylight.width / 2 + 0.1;
+            
+            // Add segment before skylight
+            if (currentX < skylightLeft) {
+              segments.push({
+                start: [currentX, height, z],
+                end: [skylightLeft, height, z]
+              });
+            }
+            
+            // Skip over skylight
+            currentX = Math.max(currentX, skylightRight);
+          });
+        
+        // Add final segment
+        if (currentX < width/2) {
+          segments.push({
+            start: [currentX, height, z],
+            end: [width/2, height, z]
+          });
+        }
+      }
+    }
+    
+    return segments;
+  }, [skylights, width, length, height, roofHeight]);
+
   const skylightMaterial = new THREE.MeshPhysicalMaterial({
     color: '#FFFFFF',
     metalness: 0.1,
@@ -214,6 +380,19 @@ const Roof: React.FC<RoofProps> = ({ width, length, height, pitch, color, skylig
         <boxGeometry args={[skylightWidth * (panelLength / (width/2)), 0.1, skylightLength]} />
         <primitive object={skylightMaterial} attach="material" />
       </mesh>
+    );
+  };
+
+  // Create ridge line components
+  const createRidgeLine = (start: [number, number, number], end: [number, number, number], key: string) => {
+    const points = [new THREE.Vector3(...start), new THREE.Vector3(...end)];
+    const geometry = new THREE.BufferGeometry().setFromPoints(points);
+    
+    return (
+      <line key={key}>
+        <primitive object={geometry} attach="geometry" />
+        <lineBasicMaterial attach="material" color="#2D3748" linewidth={3} />
+      </line>
     );
   };
   
@@ -269,6 +448,74 @@ const Roof: React.FC<RoofProps> = ({ width, length, height, pitch, color, skylig
           envMapIntensity={color === '#FFFFFF' ? 0.6 : 1.0}
         />
       </mesh>
+
+      {/* Roof Ridge Lines - Split around skylights */}
+      {roofRidgeLines.map((segment, index) => 
+        createRidgeLine(segment.start, segment.end, `ridge-${index}`)
+      )}
+
+      {/* Panel Edge Lines - Split around skylights */}
+      {panelEdgeLines.left.map((segment, index) => 
+        createRidgeLine(segment.start, segment.end, `left-edge-${index}`)
+      )}
+      {panelEdgeLines.right.map((segment, index) => 
+        createRidgeLine(segment.start, segment.end, `right-edge-${index}`)
+      )}
+
+      {/* Cross-Ridge Lines - Split around skylights */}
+      {crossRidgeLines.map((segment, index) => 
+        createRidgeLine(segment.start, segment.end, `cross-ridge-${index}`)
+      )}
+
+      {/* Eave Lines (bottom edges of roof panels) */}
+      <line>
+        <bufferGeometry attach="geometry">
+          <bufferAttribute
+            attach="attributes-position"
+            count={2}
+            array={new Float32Array([-width/2, 0, -length/2, -width/2, 0, length/2])}
+            itemSize={3}
+          />
+        </bufferGeometry>
+        <lineBasicMaterial attach="material" color="#2D3748" linewidth={2} />
+      </line>
+      
+      <line>
+        <bufferGeometry attach="geometry">
+          <bufferAttribute
+            attach="attributes-position"
+            count={2}
+            array={new Float32Array([width/2, 0, -length/2, width/2, 0, length/2])}
+            itemSize={3}
+          />
+        </bufferGeometry>
+        <lineBasicMaterial attach="material" color="#2D3748" linewidth={2} />
+      </line>
+
+      {/* Gable End Lines */}
+      <line>
+        <bufferGeometry attach="geometry">
+          <bufferAttribute
+            attach="attributes-position"
+            count={3}
+            array={new Float32Array([-width/2, 0, -length/2, 0, roofHeight, -length/2, width/2, 0, -length/2])}
+            itemSize={3}
+          />
+        </bufferGeometry>
+        <lineBasicMaterial attach="material" color="#2D3748" linewidth={2} />
+      </line>
+      
+      <line>
+        <bufferGeometry attach="geometry">
+          <bufferAttribute
+            attach="attributes-position"
+            count={3}
+            array={new Float32Array([-width/2, 0, length/2, 0, roofHeight, length/2, width/2, 0, length/2])}
+            itemSize={3}
+          />
+        </bufferGeometry>
+        <lineBasicMaterial attach="material" color="#2D3748" linewidth={2} />
+      </line>
     </group>
   );
 };
