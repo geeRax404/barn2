@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { Plus, X, AlertTriangle, CheckCircle, Info } from 'lucide-react';
+import { Plus, X, Edit2, AlertTriangle, CheckCircle, Info } from 'lucide-react';
 import { useBuildingStore } from '../../store/buildingStore';
 import { 
   validateSkylight, 
@@ -13,12 +13,13 @@ import {
 import type { Skylight, RoofPanel } from '../../types';
 
 const RoofPanel: React.FC = () => {
-  const { dimensions, skylights, updateDimensions, addSkylight, removeSkylight } = useBuildingStore((state) => ({
+  const { dimensions, skylights, updateDimensions, addSkylight, removeSkylight, updateSkylight } = useBuildingStore((state) => ({
     dimensions: state.currentProject.building.dimensions,
     skylights: state.currentProject.building.skylights,
     updateDimensions: state.updateDimensions,
     addSkylight: state.addSkylight,
-    removeSkylight: state.removeSkylight
+    removeSkylight: state.removeSkylight,
+    updateSkylight: state.updateSkylight
   }));
 
   const [newSkylight, setNewSkylight] = useState<Skylight>({
@@ -29,6 +30,7 @@ const RoofPanel: React.FC = () => {
     panel: 'left' as RoofPanel
   });
 
+  const [editingSkylight, setEditingSkylight] = useState<number | null>(null);
   const [validationErrors, setValidationErrors] = useState<string[]>([]);
   const [validationWarnings, setValidationWarnings] = useState<string[]>([]);
   const [skylightValidation, setSkylightValidation] = useState<any>(null);
@@ -72,6 +74,43 @@ const RoofPanel: React.FC = () => {
     setValidationErrors([]);
     addSkylight(newSkylight);
     setNewSkylight({ width: 4, length: 4, xOffset: 0, yOffset: 0, panel: 'left' });
+  };
+
+  const handleUpdateSkylight = (index: number) => {
+    // Validate the updated skylight
+    const validation = validateSkylight(newSkylight, dimensions);
+
+    if (!validation.valid) {
+      setValidationErrors(validation.errors);
+      return;
+    }
+
+    // Clear validation errors and update the skylight
+    setValidationErrors([]);
+    updateSkylight(index, newSkylight);
+    setEditingSkylight(null);
+    setNewSkylight({ width: 4, length: 4, xOffset: 0, yOffset: 0, panel: 'left' });
+  };
+
+  const startEditing = (index: number) => {
+    const skylight = skylights[index];
+    if (!skylight) return;
+
+    setNewSkylight({
+      width: skylight.width,
+      length: skylight.length,
+      xOffset: skylight.xOffset,
+      yOffset: skylight.yOffset,
+      panel: skylight.panel
+    });
+    setEditingSkylight(index);
+    setValidationErrors([]); // Clear errors when starting to edit
+  };
+
+  const cancelEditing = () => {
+    setEditingSkylight(null);
+    setNewSkylight({ width: 4, length: 4, xOffset: 0, yOffset: 0, panel: 'left' });
+    setValidationErrors([]);
   };
 
   const handleSuggestValidPosition = () => {
@@ -185,7 +224,9 @@ const RoofPanel: React.FC = () => {
       </div>
 
       <div className="mt-6">
-        <h3 className="text-sm font-medium text-gray-700 mb-2">Skylights</h3>
+        <h3 className="text-sm font-medium text-gray-700 mb-2">
+          {editingSkylight !== null ? 'Edit Skylight' : 'Add New Skylight'}
+        </h3>
         
         <div className="space-y-4">
           {/* Roof Panel Selection */}
@@ -320,13 +361,33 @@ const RoofPanel: React.FC = () => {
             </button>
           )}
           
-          <button
-            className="w-full btn"
-            onClick={handleAddSkylight}
-          >
-            <Plus className="w-4 h-4 mr-1" />
-            Add Skylight to {newSkylight.panel.charAt(0).toUpperCase() + newSkylight.panel.slice(1)} Panel
-          </button>
+          <div className="flex space-x-2">
+            {editingSkylight !== null ? (
+              <>
+                <button
+                  className="flex-1 btn"
+                  onClick={() => handleUpdateSkylight(editingSkylight)}
+                >
+                  <Edit2 className="w-4 h-4 mr-1" />
+                  Update Skylight
+                </button>
+                <button
+                  className="flex-1 btn-secondary btn"
+                  onClick={cancelEditing}
+                >
+                  Cancel
+                </button>
+              </>
+            ) : (
+              <button
+                className="w-full btn"
+                onClick={handleAddSkylight}
+              >
+                <Plus className="w-4 h-4 mr-1" />
+                Add Skylight to {newSkylight.panel.charAt(0).toUpperCase() + newSkylight.panel.slice(1)} Panel
+              </button>
+            )}
+          </div>
         </div>
 
         {skylights.length > 0 && (
@@ -341,7 +402,11 @@ const RoofPanel: React.FC = () => {
                   <div 
                     key={index}
                     className={`flex items-center justify-between p-2 rounded border ${
-                      isValid ? 'bg-gray-50 border-gray-200' : 'bg-red-50 border-red-200'
+                      editingSkylight === index 
+                        ? 'bg-blue-50 border-blue-200' 
+                        : isValid
+                          ? 'bg-gray-50 border-gray-200'
+                          : 'bg-red-50 border-red-200'
                     }`}
                   >
                     <div className="flex items-center">
@@ -367,12 +432,28 @@ const RoofPanel: React.FC = () => {
                         </p>
                       </div>
                     </div>
-                    <button
-                      className="p-1 text-gray-400 hover:text-error rounded-full hover:bg-gray-100"
-                      onClick={() => removeSkylight(index)}
-                    >
-                      <X className="w-4 h-4" />
-                    </button>
+                    <div className="flex items-center space-x-2">
+                      <button
+                        className={`p-1 rounded-full hover:bg-gray-100 ${
+                          editingSkylight === index ? 'text-blue-500' : 'text-gray-400'
+                        }`}
+                        onClick={() => {
+                          if (editingSkylight === index) {
+                            cancelEditing();
+                          } else {
+                            startEditing(index);
+                          }
+                        }}
+                      >
+                        <Edit2 className="w-4 h-4" />
+                      </button>
+                      <button
+                        className="p-1 text-gray-400 hover:text-error rounded-full hover:bg-gray-100"
+                        onClick={() => removeSkylight(index)}
+                      >
+                        <X className="w-4 h-4" />
+                      </button>
+                    </div>
                   </div>
                 );
               })}

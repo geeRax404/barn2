@@ -171,6 +171,34 @@ export const useBuildingStore = create<BuildingStore>((set, get) => ({
       },
     })),
 
+  // Update a skylight with validation
+  updateSkylight: (index: number, updates: Partial<Skylight>) =>
+    set((state) => {
+      const updatedSkylights = state.currentProject.building.skylights.map((skylight, i) =>
+        i === index ? { ...skylight, ...updates } : skylight
+      );
+
+      // Validate the updated skylight
+      const updatedSkylight = updatedSkylights[index];
+      const boundsValid = isValidSkylightPosition(updatedSkylight, state.currentProject.building.dimensions);
+
+      if (!boundsValid) {
+        console.error('Skylight update bounds validation failed: Skylight extends beyond roof boundaries');
+        return state;
+      }
+
+      return {
+        currentProject: {
+          ...state.currentProject,
+          lastModified: new Date(),
+          building: {
+            ...state.currentProject.building,
+            skylights: updatedSkylights,
+          },
+        },
+      };
+    }),
+
   // Update a wall feature with comprehensive validation
   updateFeature: (id: string, updates: Partial<Omit<WallFeature, 'id'>>) => 
     set((state) => {

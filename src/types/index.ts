@@ -99,6 +99,7 @@ export interface BuildingStore {
   updateFeature: (id: string, updates: Partial<Omit<WallFeature, 'id'>>) => void;
   addSkylight: (skylight: Skylight) => void;
   removeSkylight: (index: number) => void;
+  updateSkylight: (index: number, updates: Partial<Skylight>) => void;
   setColor: (color: string) => void;
   setRoofColor: (color: string) => void;
   setCurrentView: (view: ViewMode) => void;
