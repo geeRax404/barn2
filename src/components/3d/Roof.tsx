@@ -21,7 +21,7 @@ const Roof: React.FC<RoofProps> = ({ width, length, height, pitch, color, skylig
 
   // Create roof materials and geometries with cutouts for skylights
   const { leftRoofGeometry, rightRoofGeometry, leftRoofMaterial, rightRoofMaterial } = useMemo(() => {
-    // 🎯 ALWAYS CREATE RIBBED TEXTURE - regardless of skylights
+    // 🎯 ENHANCED RIBBED TEXTURE - More defined ribs with stronger contrast
     const createRoofTexture = (panelSide: 'left' | 'right') => {
       const textureWidth = 512;
       const textureHeight = 512;
@@ -31,39 +31,93 @@ const Roof: React.FC<RoofProps> = ({ width, length, height, pitch, color, skylig
       const ctx = canvas.getContext('2d');
       
       if (ctx) {
+        // Base color fill
         ctx.fillStyle = color;
         ctx.fillRect(0, 0, textureWidth, textureHeight);
         
-        // 🔧 ALWAYS CREATE RIBBED PATTERN - this is the key fix!
-        const ribWidth = textureWidth / 24;
-        const gradient = ctx.createLinearGradient(0, 0, ribWidth, 0);
+        // 🔧 ENHANCED RIBBED PATTERN - More defined with stronger contrast
+        const ribWidth = textureWidth / 20; // Slightly wider ribs for better definition
+        const ribSpacing = ribWidth * 1.2; // Add spacing between ribs
         
         // Special handling for pure white to maintain brightness
         const isWhite = color === '#FFFFFF';
-        const shadowOpacity = isWhite ? 0.08 : 0.25;
-        const highlightOpacity = isWhite ? 0.05 : 0.15;
         
-        gradient.addColorStop(0, `rgba(255,255,255,${highlightOpacity})`);
-        gradient.addColorStop(0.2, `rgba(255,255,255,${highlightOpacity * 0.5})`);
-        gradient.addColorStop(0.4, `rgba(0,0,0,${shadowOpacity})`);
-        gradient.addColorStop(0.6, `rgba(0,0,0,${shadowOpacity})`);
-        gradient.addColorStop(0.8, `rgba(255,255,255,${highlightOpacity * 0.5})`);
-        gradient.addColorStop(1, `rgba(255,255,255,${highlightOpacity})`);
+        // 🎯 ENHANCED CONTRAST VALUES - Much stronger definition
+        const deepShadowOpacity = isWhite ? 0.15 : 0.4; // Deeper shadows
+        const lightShadowOpacity = isWhite ? 0.08 : 0.25; // Medium shadows
+        const highlightOpacity = isWhite ? 0.12 : 0.3; // Brighter highlights
+        const brightHighlightOpacity = isWhite ? 0.18 : 0.4; // Very bright highlights
         
-        ctx.fillStyle = gradient;
-        
-        // 🎯 ALWAYS DRAW RIBS - this creates the metal roofing pattern
-        for (let x = 0; x < textureWidth; x += ribWidth) {
-          ctx.fillRect(x, 0, ribWidth, textureHeight);
+        // 🎯 ENHANCED RIB PATTERN - Create more defined metal roofing ribs
+        for (let x = 0; x < textureWidth; x += ribSpacing) {
+          // Create a more complex rib profile with multiple gradients
+          
+          // 1. Deep shadow at the base of the rib (valley)
+          const valleyGradient = ctx.createLinearGradient(x, 0, x + ribWidth * 0.2, 0);
+          valleyGradient.addColorStop(0, `rgba(0,0,0,${deepShadowOpacity})`);
+          valleyGradient.addColorStop(1, `rgba(0,0,0,${lightShadowOpacity})`);
+          ctx.fillStyle = valleyGradient;
+          ctx.fillRect(x, 0, ribWidth * 0.2, textureHeight);
+          
+          // 2. Rising slope with gradient from shadow to highlight
+          const riseGradient = ctx.createLinearGradient(x + ribWidth * 0.2, 0, x + ribWidth * 0.6, 0);
+          riseGradient.addColorStop(0, `rgba(0,0,0,${lightShadowOpacity})`);
+          riseGradient.addColorStop(0.3, `rgba(0,0,0,0)`); // Neutral
+          riseGradient.addColorStop(0.7, `rgba(255,255,255,${highlightOpacity * 0.3})`);
+          riseGradient.addColorStop(1, `rgba(255,255,255,${highlightOpacity})`);
+          ctx.fillStyle = riseGradient;
+          ctx.fillRect(x + ribWidth * 0.2, 0, ribWidth * 0.4, textureHeight);
+          
+          // 3. Bright highlight at the peak of the rib
+          const peakGradient = ctx.createLinearGradient(x + ribWidth * 0.6, 0, x + ribWidth * 0.8, 0);
+          peakGradient.addColorStop(0, `rgba(255,255,255,${highlightOpacity})`);
+          peakGradient.addColorStop(0.5, `rgba(255,255,255,${brightHighlightOpacity})`); // Peak highlight
+          peakGradient.addColorStop(1, `rgba(255,255,255,${highlightOpacity})`);
+          ctx.fillStyle = peakGradient;
+          ctx.fillRect(x + ribWidth * 0.6, 0, ribWidth * 0.2, textureHeight);
+          
+          // 4. Falling slope back to shadow
+          const fallGradient = ctx.createLinearGradient(x + ribWidth * 0.8, 0, x + ribWidth, 0);
+          fallGradient.addColorStop(0, `rgba(255,255,255,${highlightOpacity})`);
+          fallGradient.addColorStop(0.3, `rgba(255,255,255,${highlightOpacity * 0.3})`);
+          fallGradient.addColorStop(0.7, `rgba(0,0,0,0)`); // Neutral
+          fallGradient.addColorStop(1, `rgba(0,0,0,${lightShadowOpacity})`);
+          ctx.fillStyle = fallGradient;
+          ctx.fillRect(x + ribWidth * 0.8, 0, ribWidth * 0.2, textureHeight);
+          
+          // 5. Add subtle secondary highlights for more realism
+          if (ribWidth > 15) { // Only for larger ribs
+            // Thin bright line at the very peak
+            ctx.fillStyle = `rgba(255,255,255,${brightHighlightOpacity * 1.2})`;
+            ctx.fillRect(x + ribWidth * 0.68, 0, 2, textureHeight);
+            
+            // Thin shadow line in the valley
+            ctx.fillStyle = `rgba(0,0,0,${deepShadowOpacity * 1.2})`;
+            ctx.fillRect(x + ribWidth * 0.05, 0, 1, textureHeight);
+          }
         }
         
-        console.log(`✅ RIBBED TEXTURE CREATED for ${panelSide} panel - ribs will ALWAYS be visible`);
+        // 🎯 ADD SUBTLE WEATHERING PATTERN for more realism
+        if (!isWhite) {
+          // Add very subtle random weathering marks
+          ctx.globalAlpha = 0.05;
+          for (let i = 0; i < 50; i++) {
+            const wx = Math.random() * textureWidth;
+            const wy = Math.random() * textureHeight;
+            const wsize = Math.random() * 3 + 1;
+            ctx.fillStyle = Math.random() > 0.5 ? 'rgba(255,255,255,0.3)' : 'rgba(0,0,0,0.3)';
+            ctx.fillRect(wx, wy, wsize, wsize * 0.3);
+          }
+          ctx.globalAlpha = 1.0;
+        }
+        
+        console.log(`✅ ENHANCED RIBBED TEXTURE CREATED for ${panelSide} panel - HIGHLY DEFINED RIBS with stronger contrast`);
       }
       
       const texture = new THREE.CanvasTexture(canvas);
       texture.wrapS = THREE.RepeatWrapping;
       texture.wrapT = THREE.RepeatWrapping;
-      texture.repeat.set(4, length/2);
+      texture.repeat.set(6, length/2); // Increased repeat for more ribs
       
       return texture;
     };
@@ -78,17 +132,17 @@ const Roof: React.FC<RoofProps> = ({ width, length, height, pitch, color, skylig
       console.log(`${isLeftPanel ? 'Left' : 'Right'} panel has ${panelSkylights.length} skylights`);
 
       if (panelSkylights.length === 0) {
-        // 🎯 NO SKYLIGHTS: Use simple box geometry with PRESERVED ribbed texture
-        console.log(`${isLeftPanel ? 'Left' : 'Right'} panel: Using simple BoxGeometry - RIBS ALWAYS VISIBLE`);
+        // 🎯 NO SKYLIGHTS: Use simple box geometry with PRESERVED enhanced ribbed texture
+        console.log(`${isLeftPanel ? 'Left' : 'Right'} panel: Using simple BoxGeometry - ENHANCED RIBS ALWAYS VISIBLE`);
         const geometry = new THREE.BoxGeometry(panelLength, 0.2, length);
         
-        // 🔧 CRITICAL: Apply proper UV mapping for ribbed texture on simple geometry
+        // 🔧 CRITICAL: Apply proper UV mapping for enhanced ribbed texture on simple geometry
         const uvAttribute = geometry.attributes.uv;
         const positionAttribute = geometry.attributes.position;
         const uvArray = uvAttribute.array;
         const positionArray = positionAttribute.array;
         
-        // Map UVs to show ribs running along the panel length
+        // Map UVs to show enhanced ribs running along the panel length
         for (let i = 0; i < positionArray.length; i += 3) {
           const x = positionArray[i];
           const y = positionArray[i + 1];
@@ -96,19 +150,19 @@ const Roof: React.FC<RoofProps> = ({ width, length, height, pitch, color, skylig
           
           const uvIndex = (i / 3) * 2;
           
-          // Calculate UV coordinates for ribbed pattern
+          // Calculate UV coordinates for enhanced ribbed pattern
           // Ribs run along the length (Z direction), so use Z for the ribbed axis
-          uvArray[uvIndex] = (z + length/2) / length * 4; // U coordinate - ribs along length
+          uvArray[uvIndex] = (z + length/2) / length * 6; // U coordinate - more ribs along length
           uvArray[uvIndex + 1] = (x + panelLength/2) / panelLength * (length/2); // V coordinate - across width
         }
         
         uvAttribute.needsUpdate = true;
-        console.log(`${isLeftPanel ? 'Left' : 'Right'} panel: Applied ribbed UV mapping to BoxGeometry - RIBS ALWAYS VISIBLE`);
+        console.log(`${isLeftPanel ? 'Left' : 'Right'} panel: Applied enhanced ribbed UV mapping to BoxGeometry - ENHANCED RIBS ALWAYS VISIBLE`);
         return geometry;
       }
 
-      // 🎯 HAS SKYLIGHTS: Use extruded geometry with SELECTIVE cutouts and PRESERVED ribs
-      console.log(`${isLeftPanel ? 'Left' : 'Right'} panel: Using ExtrudeGeometry with ${panelSkylights.length} skylight cutouts - RIBS PRESERVED EXCEPT IN CUTOUTS`);
+      // 🎯 HAS SKYLIGHTS: Use extruded geometry with SELECTIVE cutouts and PRESERVED enhanced ribs
+      console.log(`${isLeftPanel ? 'Left' : 'Right'} panel: Using ExtrudeGeometry with ${panelSkylights.length} skylight cutouts - ENHANCED RIBS PRESERVED EXCEPT IN CUTOUTS`);
       
       // Create the roof panel shape in the XY plane (will be rotated later)
       const roofShape = new THREE.Shape();
@@ -146,7 +200,7 @@ const Roof: React.FC<RoofProps> = ({ width, length, height, pitch, color, skylig
         skylightHole.closePath();
         
         roofShape.holes.push(skylightHole);
-        console.log(`  ✂️ Added SELECTIVE hole for skylight - ribs preserved everywhere else`);
+        console.log(`  ✂️ Added SELECTIVE hole for skylight - enhanced ribs preserved everywhere else`);
       });
 
       const extrudeSettings = {
@@ -157,15 +211,15 @@ const Roof: React.FC<RoofProps> = ({ width, length, height, pitch, color, skylig
 
       const geometry = new THREE.ExtrudeGeometry(roofShape, extrudeSettings);
       
-      // 🔧 CRITICAL: Apply proper UV mapping to extruded geometry for PRESERVED ribbed texture
+      // 🔧 CRITICAL: Apply proper UV mapping to extruded geometry for PRESERVED enhanced ribbed texture
       const uvAttribute = geometry.attributes.uv;
       const positionAttribute = geometry.attributes.position;
       const uvArray = uvAttribute.array;
       const positionArray = positionAttribute.array;
       
-      console.log(`${isLeftPanel ? 'Left' : 'Right'} panel: Applying ribbed UV mapping to ExtrudeGeometry with selective cutouts`);
+      console.log(`${isLeftPanel ? 'Left' : 'Right'} panel: Applying enhanced ribbed UV mapping to ExtrudeGeometry with selective cutouts`);
       
-      // Apply UV mapping that preserves the ribbed pattern EVERYWHERE except in the holes
+      // Apply UV mapping that preserves the enhanced ribbed pattern EVERYWHERE except in the holes
       for (let i = 0; i < positionArray.length; i += 3) {
         const x = positionArray[i];
         const y = positionArray[i + 1];
@@ -173,11 +227,11 @@ const Roof: React.FC<RoofProps> = ({ width, length, height, pitch, color, skylig
         
         const uvIndex = (i / 3) * 2;
         
-        // 🎯 PRESERVE RIBS: Map UV coordinates to show ribs running along the panel length
+        // 🎯 PRESERVE ENHANCED RIBS: Map UV coordinates to show enhanced ribs running along the panel length
         // The extruded geometry is in XY plane, so:
         // - X corresponds to the panel length direction (where ribs run)
         // - Y corresponds to the panel width direction (across ribs)
-        uvArray[uvIndex] = (x + panelLength/2) / panelLength * 4; // U coordinate - ribs along length
+        uvArray[uvIndex] = (x + panelLength/2) / panelLength * 6; // U coordinate - more enhanced ribs along length
         uvArray[uvIndex + 1] = (y + length/2) / length * (length/2); // V coordinate - across width
       }
       
@@ -186,31 +240,31 @@ const Roof: React.FC<RoofProps> = ({ width, length, height, pitch, color, skylig
       geometry.rotateX(-Math.PI / 2); // Rotate to lie flat in XZ plane
       
       uvAttribute.needsUpdate = true;
-      console.log(`${isLeftPanel ? 'Left' : 'Right'} panel: Ribbed texture applied to ExtrudeGeometry - RIBS PRESERVED with selective skylight cutouts`);
+      console.log(`${isLeftPanel ? 'Left' : 'Right'} panel: Enhanced ribbed texture applied to ExtrudeGeometry - ENHANCED RIBS PRESERVED with selective skylight cutouts`);
       return geometry;
     };
 
-    // 🎯 ALWAYS CREATE RIBBED TEXTURES - regardless of skylights
+    // 🎯 ALWAYS CREATE ENHANCED RIBBED TEXTURES - regardless of skylights
     const leftTexture = createRoofTexture('left');
     const rightTexture = createRoofTexture('right');
     
-    // Special material properties for white vs other colors
+    // 🎯 ENHANCED MATERIAL PROPERTIES for better rib definition
     const isWhite = color === '#FFFFFF';
     const materialProps = isWhite ? {
-      metalness: 0.3,
-      roughness: 0.6,
-      envMapIntensity: 0.8,
+      metalness: 0.4, // Increased metalness for better reflection
+      roughness: 0.5, // Reduced roughness for more defined highlights
+      envMapIntensity: 1.0, // Increased environment reflection
     } : {
-      metalness: 0.7,
-      roughness: 0.3,
-      envMapIntensity: 0.5,
+      metalness: 0.8, // High metalness for metal roofing
+      roughness: 0.2, // Low roughness for sharp highlights
+      envMapIntensity: 0.7, // Good environment reflection
     };
     
-    // Create geometries with SELECTIVE cutouts and PRESERVED ribs
+    // Create geometries with SELECTIVE cutouts and PRESERVED enhanced ribs
     const leftGeometry = createRoofGeometryWithCutouts(true);
     const rightGeometry = createRoofGeometryWithCutouts(false);
     
-    // 🎯 ALWAYS CREATE MATERIALS WITH RIBBED TEXTURES
+    // 🎯 ALWAYS CREATE MATERIALS WITH ENHANCED RIBBED TEXTURES
     const leftMaterial = new THREE.MeshStandardMaterial({
       map: leftTexture,
       ...materialProps,
@@ -223,7 +277,7 @@ const Roof: React.FC<RoofProps> = ({ width, length, height, pitch, color, skylig
       side: THREE.DoubleSide,
     });
     
-    console.log(`🎯 ROOF MATERIALS CREATED: Both panels have RIBBED TEXTURES ALWAYS VISIBLE (with or without skylights)`);
+    console.log(`🎯 ENHANCED ROOF MATERIALS CREATED: Both panels have HIGHLY DEFINED RIBBED TEXTURES ALWAYS VISIBLE (with or without skylights)`);
     
     return { 
       leftRoofGeometry: leftGeometry,
@@ -280,7 +334,7 @@ const Roof: React.FC<RoofProps> = ({ width, length, height, pitch, color, skylig
   
   return (
     <group position={[0, height, 0]}>
-      {/* Left roof panel with RIBBED TEXTURE ALWAYS VISIBLE */}
+      {/* Left roof panel with ENHANCED RIBBED TEXTURE ALWAYS VISIBLE */}
       <group 
         position={[-width / 4, roofHeight / 2, 0]}
         rotation={[0, 0, pitchAngle]}
@@ -298,7 +352,7 @@ const Roof: React.FC<RoofProps> = ({ width, length, height, pitch, color, skylig
         }
       </group>
       
-      {/* Right roof panel with RIBBED TEXTURE ALWAYS VISIBLE */}
+      {/* Right roof panel with ENHANCED RIBBED TEXTURE ALWAYS VISIBLE */}
       <group
         position={[width / 4, roofHeight / 2, 0]}
         rotation={[0, 0, -pitchAngle]}
@@ -316,7 +370,7 @@ const Roof: React.FC<RoofProps> = ({ width, length, height, pitch, color, skylig
         }
       </group>
       
-      {/* Ridge cap with ribbed texture */}
+      {/* Ridge cap with enhanced ribbed texture */}
       <mesh 
         position={[0, roofHeight, 0]} 
         castShadow 
@@ -325,9 +379,9 @@ const Roof: React.FC<RoofProps> = ({ width, length, height, pitch, color, skylig
         <boxGeometry args={[0.4, 0.3, length]} />
         <meshStandardMaterial 
           color={color} 
-          metalness={color === '#FFFFFF' ? 0.2 : 0.8} 
-          roughness={color === '#FFFFFF' ? 0.7 : 0.2}
-          envMapIntensity={color === '#FFFFFF' ? 0.6 : 1.0}
+          metalness={color === '#FFFFFF' ? 0.3 : 0.9} 
+          roughness={color === '#FFFFFF' ? 0.6 : 0.1}
+          envMapIntensity={color === '#FFFFFF' ? 0.8 : 1.2}
         />
       </mesh>
     </group>
