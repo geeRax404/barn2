@@ -31,29 +31,29 @@ const Roof: React.FC<RoofProps> = ({ width, length, height, pitch, color, skylig
       const ctx = canvas.getContext('2d');
       
       if (ctx) {
-        // Fill base color
         ctx.fillStyle = color;
         ctx.fillRect(0, 0, textureWidth, textureHeight);
         
         // 🔧 ALWAYS CREATE RIBBED PATTERN - this is the key fix!
         const ribWidth = textureWidth / 24;
+        const gradient = ctx.createLinearGradient(0, 0, ribWidth, 0);
         
         // Special handling for pure white to maintain brightness
         const isWhite = color === '#FFFFFF';
         const shadowOpacity = isWhite ? 0.08 : 0.25;
         const highlightOpacity = isWhite ? 0.05 : 0.15;
         
+        gradient.addColorStop(0, `rgba(255,255,255,${highlightOpacity})`);
+        gradient.addColorStop(0.2, `rgba(255,255,255,${highlightOpacity * 0.5})`);
+        gradient.addColorStop(0.4, `rgba(0,0,0,${shadowOpacity})`);
+        gradient.addColorStop(0.6, `rgba(0,0,0,${shadowOpacity})`);
+        gradient.addColorStop(0.8, `rgba(255,255,255,${highlightOpacity * 0.5})`);
+        gradient.addColorStop(1, `rgba(255,255,255,${highlightOpacity})`);
+        
+        ctx.fillStyle = gradient;
+        
         // 🎯 ALWAYS DRAW RIBS - this creates the metal roofing pattern
         for (let x = 0; x < textureWidth; x += ribWidth) {
-          const gradient = ctx.createLinearGradient(x, 0, x + ribWidth, 0);
-          gradient.addColorStop(0, `rgba(255,255,255,${highlightOpacity})`);
-          gradient.addColorStop(0.2, `rgba(255,255,255,${highlightOpacity * 0.5})`);
-          gradient.addColorStop(0.4, `rgba(0,0,0,${shadowOpacity})`);
-          gradient.addColorStop(0.6, `rgba(0,0,0,${shadowOpacity})`);
-          gradient.addColorStop(0.8, `rgba(255,255,255,${highlightOpacity * 0.5})`);
-          gradient.addColorStop(1, `rgba(255,255,255,${highlightOpacity})`);
-          
-          ctx.fillStyle = gradient;
           ctx.fillRect(x, 0, ribWidth, textureHeight);
         }
         
@@ -82,35 +82,28 @@ const Roof: React.FC<RoofProps> = ({ width, length, height, pitch, color, skylig
         console.log(`${isLeftPanel ? 'Left' : 'Right'} panel: Using simple BoxGeometry - RIBS ALWAYS VISIBLE`);
         const geometry = new THREE.BoxGeometry(panelLength, 0.2, length);
         
-        // 🔧 CRITICAL FIX: Apply proper UV mapping for ribbed texture on simple geometry
+        // 🔧 CRITICAL: Apply proper UV mapping for ribbed texture on simple geometry
         const uvAttribute = geometry.attributes.uv;
         const positionAttribute = geometry.attributes.position;
+        const uvArray = uvAttribute.array;
+        const positionArray = positionAttribute.array;
         
-        if (uvAttribute && positionAttribute) {
-          const uvArray = uvAttribute.array as Float32Array;
-          const positionArray = positionAttribute.array as Float32Array;
+        // Map UVs to show ribs running along the panel length
+        for (let i = 0; i < positionArray.length; i += 3) {
+          const x = positionArray[i];
+          const y = positionArray[i + 1];
+          const z = positionArray[i + 2];
           
-          console.log(`${isLeftPanel ? 'Left' : 'Right'} panel: Applying ribbed UV mapping to BoxGeometry`);
+          const uvIndex = (i / 3) * 2;
           
-          // 🎯 PROPER UV MAPPING: Map UVs to show ribs running along the panel length
-          for (let i = 0; i < positionArray.length; i += 3) {
-            const x = positionArray[i];     // Panel length direction
-            const y = positionArray[i + 1]; // Panel thickness (ignore)
-            const z = positionArray[i + 2]; // Panel width direction
-            
-            const uvIndex = (i / 3) * 2;
-            
-            // 🔧 CRITICAL: Map UV coordinates for ribbed pattern
-            // Ribs run along the panel length (X direction), so use X for the ribbed axis
-            // Scale appropriately to show the ribbed pattern
-            uvArray[uvIndex] = (x + panelLength/2) / panelLength * 4; // U coordinate - ribs along length
-            uvArray[uvIndex + 1] = (z + length/2) / length * (length/2); // V coordinate - across width
-          }
-          
-          uvAttribute.needsUpdate = true;
-          console.log(`${isLeftPanel ? 'Left' : 'Right'} panel: ✅ RIBBED UV mapping applied to BoxGeometry - RIBS WILL BE VISIBLE`);
+          // Calculate UV coordinates for ribbed pattern
+          // Ribs run along the length (Z direction), so use Z for the ribbed axis
+          uvArray[uvIndex] = (z + length/2) / length * 4; // U coordinate - ribs along length
+          uvArray[uvIndex + 1] = (x + panelLength/2) / panelLength * (length/2); // V coordinate - across width
         }
         
+        uvAttribute.needsUpdate = true;
+        console.log(`${isLeftPanel ? 'Left' : 'Right'} panel: Applied ribbed UV mapping to BoxGeometry - RIBS ALWAYS VISIBLE`);
         return geometry;
       }
 
@@ -167,37 +160,33 @@ const Roof: React.FC<RoofProps> = ({ width, length, height, pitch, color, skylig
       // 🔧 CRITICAL: Apply proper UV mapping to extruded geometry for PRESERVED ribbed texture
       const uvAttribute = geometry.attributes.uv;
       const positionAttribute = geometry.attributes.position;
+      const uvArray = uvAttribute.array;
+      const positionArray = positionAttribute.array;
       
-      if (uvAttribute && positionAttribute) {
-        const uvArray = uvAttribute.array as Float32Array;
-        const positionArray = positionAttribute.array as Float32Array;
+      console.log(`${isLeftPanel ? 'Left' : 'Right'} panel: Applying ribbed UV mapping to ExtrudeGeometry with selective cutouts`);
+      
+      // Apply UV mapping that preserves the ribbed pattern EVERYWHERE except in the holes
+      for (let i = 0; i < positionArray.length; i += 3) {
+        const x = positionArray[i];
+        const y = positionArray[i + 1];
+        const z = positionArray[i + 2];
         
-        console.log(`${isLeftPanel ? 'Left' : 'Right'} panel: Applying ribbed UV mapping to ExtrudeGeometry with selective cutouts`);
+        const uvIndex = (i / 3) * 2;
         
-        // Apply UV mapping that preserves the ribbed pattern EVERYWHERE except in the holes
-        for (let i = 0; i < positionArray.length; i += 3) {
-          const x = positionArray[i];
-          const y = positionArray[i + 1];
-          const z = positionArray[i + 2];
-          
-          const uvIndex = (i / 3) * 2;
-          
-          // 🎯 PRESERVE RIBS: Map UV coordinates to show ribs running along the panel length
-          // The extruded geometry is in XY plane, so:
-          // - X corresponds to the panel length direction (where ribs run)
-          // - Y corresponds to the panel width direction (across ribs)
-          uvArray[uvIndex] = (x + panelLength/2) / panelLength * 4; // U coordinate - ribs along length
-          uvArray[uvIndex + 1] = (y + length/2) / length * (length/2); // V coordinate - across width
-        }
-        
-        uvAttribute.needsUpdate = true;
-        console.log(`${isLeftPanel ? 'Left' : 'Right'} panel: ✅ RIBBED texture applied to ExtrudeGeometry - RIBS PRESERVED with selective skylight cutouts`);
+        // 🎯 PRESERVE RIBS: Map UV coordinates to show ribs running along the panel length
+        // The extruded geometry is in XY plane, so:
+        // - X corresponds to the panel length direction (where ribs run)
+        // - Y corresponds to the panel width direction (across ribs)
+        uvArray[uvIndex] = (x + panelLength/2) / panelLength * 4; // U coordinate - ribs along length
+        uvArray[uvIndex + 1] = (y + length/2) / length * (length/2); // V coordinate - across width
       }
       
       // Rotate the geometry to align with the roof pitch
       // The extruded geometry is created in XY plane, we need to rotate it to XZ plane
       geometry.rotateX(-Math.PI / 2); // Rotate to lie flat in XZ plane
       
+      uvAttribute.needsUpdate = true;
+      console.log(`${isLeftPanel ? 'Left' : 'Right'} panel: Ribbed texture applied to ExtrudeGeometry - RIBS PRESERVED with selective skylight cutouts`);
       return geometry;
     };
 
