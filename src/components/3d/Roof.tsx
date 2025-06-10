@@ -66,18 +66,15 @@ const Roof: React.FC<RoofProps> = ({ width, length, height, pitch, color, skylig
 
     // Create roof geometries with skylight cutouts
     const createRoofGeometryWithCutouts = (isLeftPanel: boolean) => {
-      // Filter skylights for this panel - only include skylights that are actually on this roof panel
+      // Filter skylights for this panel - more lenient filtering
       const panelSkylights = skylights.filter(s => {
-        // Check if skylight is positioned on this roof panel
-        const skylightLeft = s.xOffset - s.width / 2;
-        const skylightRight = s.xOffset + s.width / 2;
-        
+        // Check if skylight center is on this roof panel
         if (isLeftPanel) {
           // Left panel covers negative X values (left side of roof)
-          return skylightRight <= 0; // Skylight must be entirely on left side
+          return s.xOffset <= 0; // Skylight center on left side or center
         } else {
           // Right panel covers positive X values (right side of roof)
-          return skylightLeft >= 0; // Skylight must be entirely on right side
+          return s.xOffset >= 0; // Skylight center on right side or center
         }
       });
 
@@ -208,13 +205,13 @@ const Roof: React.FC<RoofProps> = ({ width, length, height, pitch, color, skylig
     const skylightY = 0.05; // Slightly above the roof surface to prevent z-fighting
     const skylightZ = localY;
     
-    // Ensure skylight is within roof bounds
+    // Ensure skylight is within reasonable bounds (but don't filter out completely)
     const maxX = (width/2 - skylightWidth/2);
     const maxY = (length/2 - skylightLength/2);
     
-    if (Math.abs(skylight.xOffset) > maxX || Math.abs(skylight.yOffset) > maxY) {
-      console.warn(`Skylight at (${skylight.xOffset}, ${skylight.yOffset}) is out of roof bounds`);
-      return null; // Don't render out-of-bounds skylights
+    if (Math.abs(skylight.xOffset) > maxX + 2 || Math.abs(skylight.yOffset) > maxY + 2) {
+      console.warn(`Skylight at (${skylight.xOffset}, ${skylight.yOffset}) is significantly out of roof bounds`);
+      return null; // Only filter out skylights that are way out of bounds
     }
     
     return (
@@ -245,7 +242,7 @@ const Roof: React.FC<RoofProps> = ({ width, length, height, pitch, color, skylig
         
         {/* Skylights positioned in the cutouts for left panel */}
         {skylights
-          .filter(s => s.xOffset + s.width/2 <= 0) // Only skylights entirely on left side
+          .filter(s => s.xOffset <= 0) // More lenient filtering - include center skylights
           .map(s => createSkylight(s, true))
           .filter(Boolean) // Remove null skylights
         }
@@ -263,7 +260,7 @@ const Roof: React.FC<RoofProps> = ({ width, length, height, pitch, color, skylig
         
         {/* Skylights positioned in the cutouts for right panel */}
         {skylights
-          .filter(s => s.xOffset - s.width/2 >= 0) // Only skylights entirely on right side
+          .filter(s => s.xOffset >= 0) // More lenient filtering - include center skylights
           .map(s => createSkylight(s, false))
           .filter(Boolean) // Remove null skylights
         }
