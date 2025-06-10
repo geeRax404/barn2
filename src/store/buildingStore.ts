@@ -1,5 +1,7 @@
 import { create } from 'zustand';
 import { v4 as uuidv4 } from 'uuid';
+import { validateWallHeights } from '../utils/wallHeightValidation';
+import { isValidFeaturePosition } from '../utils/wallBoundsValidation';
 import type { BuildingStore, Project, ViewMode, BuildingDimensions, WallFeature, Skylight } from '../types';
 
 // Default initial building
@@ -26,42 +28,87 @@ const createDefaultProject = (): Project => ({
 });
 
 // Create the store
-export const useBuildingStore = create<BuildingStore>((set) => ({
+export const useBuildingStore = create<BuildingStore>((set, get) => ({
   currentProject: createDefaultProject(),
   savedProjects: [],
   currentView: '3d' as ViewMode,
 
-  // Update building dimensions
+  // Update building dimensions with comprehensive validation
   updateDimensions: (dimensions: Partial<BuildingDimensions>) => 
-    set((state) => ({
-      currentProject: {
-        ...state.currentProject,
-        lastModified: new Date(),
-        building: {
-          ...state.currentProject.building,
-          dimensions: {
-            ...state.currentProject.building.dimensions,
-            ...dimensions,
+    set((state) => {
+      const newDimensions = {
+        ...state.currentProject.building.dimensions,
+        ...dimensions,
+      };
+
+      // If height changed, validate all existing features
+      if (dimensions.height !== undefined) {
+        const heightValidation = validateWallHeights(newDimensions, state.currentProject.building.features);
+        
+        if (!heightValidation.valid) {
+          console.warn('Wall height validation failed:', heightValidation.errors);
+        }
+      }
+
+      // If width or length changed, validate wall bounds for all features
+      if (dimensions.width !== undefined || dimensions.length !== undefined) {
+        const invalidFeatures = state.currentProject.building.features.filter(feature => {
+          return !isValidFeaturePosition(feature, newDimensions);
+        });
+
+        if (invalidFeatures.length > 0) {
+          console.warn('Wall bounds validation failed for features:', invalidFeatures.map(f => f.id));
+        }
+      }
+
+      return {
+        currentProject: {
+          ...state.currentProject,
+          lastModified: new Date(),
+          building: {
+            ...state.currentProject.building,
+            dimensions: newDimensions,
           },
         },
-      },
-    })),
+      };
+    }),
 
-  // Add a new wall feature
+  // Add a new wall feature with comprehensive validation
   addFeature: (feature: Omit<WallFeature, 'id'>) => 
-    set((state) => ({
-      currentProject: {
-        ...state.currentProject,
-        lastModified: new Date(),
-        building: {
-          ...state.currentProject.building,
-          features: [
-            ...state.currentProject.building.features,
-            { ...feature, id: uuidv4() },
-          ],
+    set((state) => {
+      const newFeature = { ...feature, id: uuidv4() };
+      const newFeatures = [...state.currentProject.building.features, newFeature];
+      
+      // Validate height constraints
+      const heightValidation = validateWallHeights(
+        state.currentProject.building.dimensions,
+        newFeatures
+      );
+
+      if (!heightValidation.valid) {
+        console.error('Feature height validation failed:', heightValidation.errors);
+        return state;
+      }
+
+      // Validate wall bounds
+      const boundsValid = isValidFeaturePosition(feature, state.currentProject.building.dimensions);
+
+      if (!boundsValid) {
+        console.error('Feature bounds validation failed: Feature extends beyond wall boundaries');
+        return state;
+      }
+
+      return {
+        currentProject: {
+          ...state.currentProject,
+          lastModified: new Date(),
+          building: {
+            ...state.currentProject.building,
+            features: newFeatures,
+          },
         },
-      },
-    })),
+      };
+    }),
 
   // Remove a wall feature
   removeFeature: (id: string) => 
@@ -104,20 +151,46 @@ export const useBuildingStore = create<BuildingStore>((set) => ({
       },
     })),
 
-  // Update a wall feature
+  // Update a wall feature with comprehensive validation
   updateFeature: (id: string, updates: Partial<Omit<WallFeature, 'id'>>) => 
-    set((state) => ({
-      currentProject: {
-        ...state.currentProject,
-        lastModified: new Date(),
-        building: {
-          ...state.currentProject.building,
-          features: state.currentProject.building.features.map((feature) =>
-            feature.id === id ? { ...feature, ...updates } : feature
-          ),
+    set((state) => {
+      const updatedFeatures = state.currentProject.building.features.map((feature) =>
+        feature.id === id ? { ...feature, ...updates } : feature
+      );
+
+      // Validate height constraints
+      const heightValidation = validateWallHeights(
+        state.currentProject.building.dimensions,
+        updatedFeatures
+      );
+
+      if (!heightValidation.valid) {
+        console.error('Feature update height validation failed:', heightValidation.errors);
+        return state;
+      }
+
+      // Validate wall bounds for the updated feature
+      const updatedFeature = updatedFeatures.find(f => f.id === id);
+      if (updatedFeature) {
+        const boundsValid = isValidFeaturePosition(updatedFeature, state.currentProject.building.dimensions);
+
+        if (!boundsValid) {
+          console.error('Feature update bounds validation failed: Feature extends beyond wall boundaries');
+          return state;
+        }
+      }
+
+      return {
+        currentProject: {
+          ...state.currentProject,
+          lastModified: new Date(),
+          building: {
+            ...state.currentProject.building,
+            features: updatedFeatures,
+          },
         },
-      },
-    })),
+      };
+    }),
 
   // Set building color
   setColor: (color: string) => 
