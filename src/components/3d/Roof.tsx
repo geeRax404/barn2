@@ -64,7 +64,7 @@ const Roof: React.FC<RoofProps> = ({ width, length, height, pitch, color, skylig
       return texture;
     };
 
-    // Create roof geometries with skylight cutouts
+    // Create roof geometries with skylight cutouts ONLY where needed
     const createRoofGeometryWithCutouts = (isLeftPanel: boolean) => {
       // Filter skylights for this specific panel only
       const panelSkylights = skylights.filter(s => 
@@ -74,28 +74,39 @@ const Roof: React.FC<RoofProps> = ({ width, length, height, pitch, color, skylig
       console.log(`${isLeftPanel ? 'Left' : 'Right'} panel has ${panelSkylights.length} skylights`);
 
       if (panelSkylights.length === 0) {
-        // No skylights, return simple box geometry with proper UV mapping
+        // 🎯 NO SKYLIGHTS: Use simple box geometry with PRESERVED ribbed texture
+        console.log(`${isLeftPanel ? 'Left' : 'Right'} panel: Using simple BoxGeometry - RIBS PRESERVED`);
         const geometry = new THREE.BoxGeometry(panelLength, 0.2, length);
         
-        // Apply proper UV mapping for ribbed texture
+        // 🔧 CRITICAL: Apply proper UV mapping for ribbed texture on simple geometry
         const uvAttribute = geometry.attributes.uv;
+        const positionAttribute = geometry.attributes.position;
         const uvArray = uvAttribute.array;
+        const positionArray = positionAttribute.array;
         
         // Map UVs to show ribs running along the panel length
-        for (let i = 0; i < uvArray.length; i += 2) {
-          const u = uvArray[i];
-          const v = uvArray[i + 1];
+        for (let i = 0; i < positionArray.length; i += 3) {
+          const x = positionArray[i];
+          const y = positionArray[i + 1];
+          const z = positionArray[i + 2];
           
-          // Scale UV coordinates to match texture repeat
-          uvArray[i] = u * 4; // Match texture repeat X
-          uvArray[i + 1] = v * (length / 2); // Match texture repeat Y
+          const uvIndex = (i / 3) * 2;
+          
+          // Calculate UV coordinates for ribbed pattern
+          // Ribs run along the length (Z direction), so use Z for the ribbed axis
+          uvArray[uvIndex] = (z + length/2) / length * 4; // U coordinate - ribs along length
+          uvArray[uvIndex + 1] = (x + panelLength/2) / panelLength * (length/2); // V coordinate - across width
         }
         
         uvAttribute.needsUpdate = true;
+        console.log(`${isLeftPanel ? 'Left' : 'Right'} panel: Applied ribbed UV mapping to BoxGeometry`);
         return geometry;
       }
 
-      // Create a shape for the roof panel in the XY plane (will be rotated later)
+      // 🎯 HAS SKYLIGHTS: Use extruded geometry with SELECTIVE cutouts and PRESERVED ribs
+      console.log(`${isLeftPanel ? 'Left' : 'Right'} panel: Using ExtrudeGeometry with ${panelSkylights.length} skylight cutouts - RIBS PRESERVED EXCEPT IN CUTOUTS`);
+      
+      // Create the roof panel shape in the XY plane (will be rotated later)
       const roofShape = new THREE.Shape();
       roofShape.moveTo(-panelLength/2, -length/2);
       roofShape.lineTo(panelLength/2, -length/2);
@@ -103,7 +114,7 @@ const Roof: React.FC<RoofProps> = ({ width, length, height, pitch, color, skylig
       roofShape.lineTo(-panelLength/2, length/2);
       roofShape.closePath();
 
-      // Create holes for each skylight on this panel
+      // 🔪 SELECTIVE CUTTING: Create holes ONLY for skylights on this panel
       panelSkylights.forEach(skylight => {
         const skylightHole = new THREE.Path();
         
@@ -121,9 +132,9 @@ const Roof: React.FC<RoofProps> = ({ width, length, height, pitch, color, skylig
         const clampedLocalX = Math.max(-maxLocalX, Math.min(maxLocalX, localX));
         const clampedLocalY = Math.max(-maxLocalY, Math.min(maxLocalY, localY));
         
-        console.log(`Creating skylight hole on ${isLeftPanel ? 'left' : 'right'} panel at (${clampedLocalX.toFixed(2)}, ${clampedLocalY.toFixed(2)}) size ${holeWidth.toFixed(2)}x${holeLength.toFixed(2)}`);
+        console.log(`🔪 SELECTIVE CUT: Creating skylight hole on ${isLeftPanel ? 'left' : 'right'} panel at (${clampedLocalX.toFixed(2)}, ${clampedLocalY.toFixed(2)}) size ${holeWidth.toFixed(2)}x${holeLength.toFixed(2)}`);
         
-        // Create rectangular hole
+        // Create rectangular hole ONLY where the skylight is
         skylightHole.moveTo(clampedLocalX - holeWidth/2, clampedLocalY - holeLength/2);
         skylightHole.lineTo(clampedLocalX + holeWidth/2, clampedLocalY - holeLength/2);
         skylightHole.lineTo(clampedLocalX + holeWidth/2, clampedLocalY + holeLength/2);
@@ -131,6 +142,7 @@ const Roof: React.FC<RoofProps> = ({ width, length, height, pitch, color, skylig
         skylightHole.closePath();
         
         roofShape.holes.push(skylightHole);
+        console.log(`  ✂️ Added SELECTIVE hole for skylight - ribs preserved everywhere else`);
       });
 
       const extrudeSettings = {
@@ -141,13 +153,15 @@ const Roof: React.FC<RoofProps> = ({ width, length, height, pitch, color, skylig
 
       const geometry = new THREE.ExtrudeGeometry(roofShape, extrudeSettings);
       
-      // CRITICAL FIX: Apply proper UV mapping to extruded geometry for ribbed texture
+      // 🔧 CRITICAL: Apply proper UV mapping to extruded geometry for PRESERVED ribbed texture
       const uvAttribute = geometry.attributes.uv;
       const positionAttribute = geometry.attributes.position;
       const uvArray = uvAttribute.array;
       const positionArray = positionAttribute.array;
       
-      // Apply UV mapping that preserves the ribbed pattern
+      console.log(`${isLeftPanel ? 'Left' : 'Right'} panel: Applying ribbed UV mapping to ExtrudeGeometry with selective cutouts`);
+      
+      // Apply UV mapping that preserves the ribbed pattern EVERYWHERE except in the holes
       for (let i = 0; i < positionArray.length; i += 3) {
         const x = positionArray[i];
         const y = positionArray[i + 1];
@@ -155,8 +169,10 @@ const Roof: React.FC<RoofProps> = ({ width, length, height, pitch, color, skylig
         
         const uvIndex = (i / 3) * 2;
         
-        // Map UV coordinates to show ribs running along the panel length
-        // Scale to match the texture repeat pattern
+        // 🎯 PRESERVE RIBS: Map UV coordinates to show ribs running along the panel length
+        // The extruded geometry is in XY plane, so:
+        // - X corresponds to the panel length direction (where ribs run)
+        // - Y corresponds to the panel width direction (across ribs)
         uvArray[uvIndex] = (x + panelLength/2) / panelLength * 4; // U coordinate - ribs along length
         uvArray[uvIndex + 1] = (y + length/2) / length * (length/2); // V coordinate - across width
       }
@@ -166,6 +182,7 @@ const Roof: React.FC<RoofProps> = ({ width, length, height, pitch, color, skylig
       geometry.rotateX(-Math.PI / 2); // Rotate to lie flat in XZ plane
       
       uvAttribute.needsUpdate = true;
+      console.log(`${isLeftPanel ? 'Left' : 'Right'} panel: Ribbed texture applied to ExtrudeGeometry - RIBS PRESERVED with selective skylight cutouts`);
       return geometry;
     };
 
@@ -185,11 +202,11 @@ const Roof: React.FC<RoofProps> = ({ width, length, height, pitch, color, skylig
       envMapIntensity: 0.5,
     };
     
-    // Create geometries with cutouts
+    // Create geometries with SELECTIVE cutouts and PRESERVED ribs
     const leftGeometry = createRoofGeometryWithCutouts(true);
     const rightGeometry = createRoofGeometryWithCutouts(false);
     
-    // Create separate materials with optimized properties for white and ribbed texture
+    // Create separate materials with optimized properties for white and PRESERVED ribbed texture
     const leftMaterial = new THREE.MeshStandardMaterial({
       map: leftTexture,
       ...materialProps,
@@ -201,6 +218,8 @@ const Roof: React.FC<RoofProps> = ({ width, length, height, pitch, color, skylig
       ...materialProps,
       side: THREE.DoubleSide,
     });
+    
+    console.log(`🎯 ROOF MATERIALS CREATED: Both panels have PRESERVED ribbed textures with selective skylight cutouts`);
     
     return { 
       leftRoofGeometry: leftGeometry,
@@ -257,7 +276,7 @@ const Roof: React.FC<RoofProps> = ({ width, length, height, pitch, color, skylig
   
   return (
     <group position={[0, height, 0]}>
-      {/* Left roof panel with cutouts and preserved ribbed texture */}
+      {/* Left roof panel with SELECTIVE cutouts and PRESERVED ribbed texture */}
       <group 
         position={[-width / 4, roofHeight / 2, 0]}
         rotation={[0, 0, pitchAngle]}
@@ -275,7 +294,7 @@ const Roof: React.FC<RoofProps> = ({ width, length, height, pitch, color, skylig
         }
       </group>
       
-      {/* Right roof panel with cutouts and preserved ribbed texture */}
+      {/* Right roof panel with SELECTIVE cutouts and PRESERVED ribbed texture */}
       <group
         position={[width / 4, roofHeight / 2, 0]}
         rotation={[0, 0, -pitchAngle]}
