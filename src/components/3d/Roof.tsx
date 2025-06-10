@@ -21,8 +21,8 @@ const Roof: React.FC<RoofProps> = ({ width, length, height, pitch, color, skylig
 
   // Create roof materials and geometries with cutouts for skylights
   const { leftRoofGeometry, rightRoofGeometry, leftRoofMaterial, rightRoofMaterial } = useMemo(() => {
-    // 🎯 ENHANCED RIBBED TEXTURE - More defined ribs with stronger contrast
-    const createRoofTexture = (panelSide: 'left' | 'right') => {
+    // 🎯 ENHANCED RIBBED TEXTURE - ALWAYS CREATED regardless of skylights
+    const createEnhancedRibbedTexture = (panelSide: 'left' | 'right') => {
       const textureWidth = 512;
       const textureHeight = 512;
       const canvas = document.createElement('canvas');
@@ -111,7 +111,7 @@ const Roof: React.FC<RoofProps> = ({ width, length, height, pitch, color, skylig
           ctx.globalAlpha = 1.0;
         }
         
-        console.log(`✅ ENHANCED RIBBED TEXTURE CREATED for ${panelSide} panel - HIGHLY DEFINED RIBS with stronger contrast`);
+        console.log(`✅ ENHANCED RIBBED TEXTURE CREATED for ${panelSide} panel - ALWAYS VISIBLE with highly defined ribs`);
       }
       
       const texture = new THREE.CanvasTexture(canvas);
@@ -121,6 +121,38 @@ const Roof: React.FC<RoofProps> = ({ width, length, height, pitch, color, skylig
       
       return texture;
     };
+
+    // 🎯 ALWAYS CREATE ENHANCED RIBBED TEXTURES - regardless of skylights
+    console.log(`🎯 CREATING ENHANCED RIBBED TEXTURES for both roof panels - ALWAYS VISIBLE`);
+    const leftTexture = createEnhancedRibbedTexture('left');
+    const rightTexture = createEnhancedRibbedTexture('right');
+    
+    // 🎯 ENHANCED MATERIAL PROPERTIES for better rib definition
+    const isWhite = color === '#FFFFFF';
+    const materialProps = isWhite ? {
+      metalness: 0.4, // Increased metalness for better reflection
+      roughness: 0.5, // Reduced roughness for more defined highlights
+      envMapIntensity: 1.0, // Increased environment reflection
+    } : {
+      metalness: 0.8, // High metalness for metal roofing
+      roughness: 0.2, // Low roughness for sharp highlights
+      envMapIntensity: 0.7, // Good environment reflection
+    };
+    
+    // 🎯 ALWAYS CREATE MATERIALS WITH ENHANCED RIBBED TEXTURES
+    const leftMaterial = new THREE.MeshStandardMaterial({
+      map: leftTexture,
+      ...materialProps,
+      side: THREE.DoubleSide,
+    });
+
+    const rightMaterial = new THREE.MeshStandardMaterial({
+      map: rightTexture,
+      ...materialProps,
+      side: THREE.DoubleSide,
+    });
+    
+    console.log(`🎯 ENHANCED ROOF MATERIALS CREATED: Both panels have HIGHLY DEFINED RIBBED TEXTURES ALWAYS VISIBLE`);
 
     // Create roof geometries with skylight cutouts ONLY where needed
     const createRoofGeometryWithCutouts = (isLeftPanel: boolean) => {
@@ -132,7 +164,7 @@ const Roof: React.FC<RoofProps> = ({ width, length, height, pitch, color, skylig
       console.log(`${isLeftPanel ? 'Left' : 'Right'} panel has ${panelSkylights.length} skylights`);
 
       if (panelSkylights.length === 0) {
-        // 🎯 NO SKYLIGHTS: Use simple box geometry with PRESERVED enhanced ribbed texture
+        // 🎯 NO SKYLIGHTS: Use simple box geometry - ENHANCED RIBS ALWAYS VISIBLE
         console.log(`${isLeftPanel ? 'Left' : 'Right'} panel: Using simple BoxGeometry - ENHANCED RIBS ALWAYS VISIBLE`);
         const geometry = new THREE.BoxGeometry(panelLength, 0.2, length);
         
@@ -161,7 +193,7 @@ const Roof: React.FC<RoofProps> = ({ width, length, height, pitch, color, skylig
         return geometry;
       }
 
-      // 🎯 HAS SKYLIGHTS: Use extruded geometry with SELECTIVE cutouts and PRESERVED enhanced ribs
+      // 🎯 HAS SKYLIGHTS: Use extruded geometry with SELECTIVE cutouts - ENHANCED RIBS PRESERVED
       console.log(`${isLeftPanel ? 'Left' : 'Right'} panel: Using ExtrudeGeometry with ${panelSkylights.length} skylight cutouts - ENHANCED RIBS PRESERVED EXCEPT IN CUTOUTS`);
       
       // Create the roof panel shape in the XY plane (will be rotated later)
@@ -243,41 +275,10 @@ const Roof: React.FC<RoofProps> = ({ width, length, height, pitch, color, skylig
       console.log(`${isLeftPanel ? 'Left' : 'Right'} panel: Enhanced ribbed texture applied to ExtrudeGeometry - ENHANCED RIBS PRESERVED with selective skylight cutouts`);
       return geometry;
     };
-
-    // 🎯 ALWAYS CREATE ENHANCED RIBBED TEXTURES - regardless of skylights
-    const leftTexture = createRoofTexture('left');
-    const rightTexture = createRoofTexture('right');
-    
-    // 🎯 ENHANCED MATERIAL PROPERTIES for better rib definition
-    const isWhite = color === '#FFFFFF';
-    const materialProps = isWhite ? {
-      metalness: 0.4, // Increased metalness for better reflection
-      roughness: 0.5, // Reduced roughness for more defined highlights
-      envMapIntensity: 1.0, // Increased environment reflection
-    } : {
-      metalness: 0.8, // High metalness for metal roofing
-      roughness: 0.2, // Low roughness for sharp highlights
-      envMapIntensity: 0.7, // Good environment reflection
-    };
     
     // Create geometries with SELECTIVE cutouts and PRESERVED enhanced ribs
     const leftGeometry = createRoofGeometryWithCutouts(true);
     const rightGeometry = createRoofGeometryWithCutouts(false);
-    
-    // 🎯 ALWAYS CREATE MATERIALS WITH ENHANCED RIBBED TEXTURES
-    const leftMaterial = new THREE.MeshStandardMaterial({
-      map: leftTexture,
-      ...materialProps,
-      side: THREE.DoubleSide,
-    });
-
-    const rightMaterial = new THREE.MeshStandardMaterial({
-      map: rightTexture,
-      ...materialProps,
-      side: THREE.DoubleSide,
-    });
-    
-    console.log(`🎯 ENHANCED ROOF MATERIALS CREATED: Both panels have HIGHLY DEFINED RIBBED TEXTURES ALWAYS VISIBLE (with or without skylights)`);
     
     return { 
       leftRoofGeometry: leftGeometry,
