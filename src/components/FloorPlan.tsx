@@ -1,22 +1,14 @@
 import React, { useRef, useEffect, useState } from 'react';
 import { useBuildingStore } from '../store/buildingStore';
-import RoofLines from './RoofLines';
 import type { WallFeature } from '../types';
 
 const FloorPlan: React.FC = () => {
-  const { dimensions, features, color, skylights } = useBuildingStore((state) => ({
-    dimensions: state.currentProject.building.dimensions,
-    features: state.currentProject.building.features,
-    color: state.currentProject.building.color,
-    skylights: state.currentProject.building.skylights
-  }));
-  
+  const { dimensions, features, color } = useBuildingStore((state) => state.currentProject.building);
   const containerRef = useRef<HTMLDivElement>(null);
   const [scale, setScale] = useState(20); // pixels per foot
   const [isDragging, setIsDragging] = useState(false);
   const [position, setPosition] = useState({ x: 0, y: 0 });
   const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
-  const [showRoofLines, setShowRoofLines] = useState(true);
   
   const width = dimensions.width * scale;
   const length = dimensions.length * scale;
@@ -127,44 +119,6 @@ const FloorPlan: React.FC = () => {
     );
   };
 
-  const renderSkylight = (skylight: any, index: number) => {
-    // Convert skylight coordinates to floor plan coordinates
-    const skylightWidth = skylight.width * scale;
-    const skylightLength = skylight.length * scale;
-    
-    // Calculate position based on panel and offsets
-    let centerX: number;
-    if (skylight.panel === 'left') {
-      // Left panel center is at 1/4 of building width
-      centerX = (width / 4) + (skylight.xOffset * scale);
-    } else {
-      // Right panel center is at 3/4 of building width
-      centerX = (3 * width / 4) + (skylight.xOffset * scale);
-    }
-    
-    const centerY = (length / 2) + (skylight.yOffset * scale);
-    
-    const skylightStyle = {
-      position: 'absolute' as const,
-      left: `${centerX - skylightWidth/2}px`,
-      top: `${centerY - skylightLength/2}px`,
-      width: `${skylightWidth}px`,
-      height: `${skylightLength}px`,
-      backgroundColor: 'rgba(135, 206, 235, 0.3)', // Light blue with transparency
-      border: '2px solid #87CEEB',
-      borderRadius: '4px'
-    };
-    
-    return (
-      <div
-        key={`skylight-${index}`}
-        style={skylightStyle}
-        className="shadow-sm"
-        title={`Skylight ${index + 1} (${skylight.width}'x${skylight.length}') - ${skylight.panel} panel`}
-      />
-    );
-  };
-
   const renderDimensionLine = (start: number, length: number, isHorizontal: boolean) => {
     const style = {
       position: 'absolute' as const,
@@ -249,39 +203,12 @@ const FloorPlan: React.FC = () => {
   return (
     <div 
       ref={containerRef}
-      className="w-full h-full overflow-hidden bg-gray-100 cursor-move relative"
+      className="w-full h-full overflow-hidden bg-gray-100 cursor-move"
       onMouseDown={handleMouseDown}
       onMouseMove={handleMouseMove}
       onMouseUp={handleMouseUp}
       onMouseLeave={handleMouseUp}
     >
-      {/* Roof Lines Toggle */}
-      <div className="absolute top-4 right-4 z-10">
-        <button
-          onClick={() => setShowRoofLines(!showRoofLines)}
-          className={`px-3 py-2 rounded-md text-sm font-medium transition-colors ${
-            showRoofLines 
-              ? 'bg-blue-600 text-white' 
-              : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
-          }`}
-        >
-          {showRoofLines ? 'Hide' : 'Show'} Roof Lines
-        </button>
-      </div>
-
-      {/* Skylight Count Display */}
-      {skylights.length > 0 && (
-        <div className="absolute top-4 left-4 z-10 bg-white px-3 py-2 rounded-md shadow-sm border border-gray-200">
-          <div className="text-sm font-medium text-gray-700">
-            Skylights: {skylights.length}
-          </div>
-          <div className="text-xs text-gray-500">
-            Left: {skylights.filter(s => s.panel === 'left').length} | 
-            Right: {skylights.filter(s => s.panel === 'right').length}
-          </div>
-        </div>
-      )}
-      
       <div 
         className="relative"
         style={{
@@ -291,27 +218,6 @@ const FloorPlan: React.FC = () => {
           margin: '2rem auto'
         }}
       >
-        {/* SVG for roof lines */}
-        {showRoofLines && (
-          <svg
-            className="absolute inset-0 pointer-events-none"
-            style={{
-              left: '60px',
-              top: '60px',
-              width: `${width}px`,
-              height: `${length}px`,
-              zIndex: 1
-            }}
-          >
-            <RoofLines
-              scale={scale}
-              width={width}
-              length={length}
-              position={{ x: 0, y: 0 }}
-            />
-          </svg>
-        )}
-
         {/* Main building outline */}
         <div 
           className="absolute"
@@ -321,15 +227,10 @@ const FloorPlan: React.FC = () => {
             width: `${width}px`,
             height: `${length}px`,
             border: '8px solid #1f2937',
-            backgroundColor: color,
-            zIndex: 2
+            backgroundColor: color
           }}
         >
-          {/* Wall features */}
           {features.map(renderFeature)}
-          
-          {/* Skylights */}
-          {skylights.map(renderSkylight)}
         </div>
 
         {/* Dimension lines */}
@@ -376,34 +277,6 @@ const FloorPlan: React.FC = () => {
         {renderWallLabel('FRONT', 'bottom')}
         {renderWallLabel('LEFT', 'left')}
         {renderWallLabel('RIGHT', 'right')}
-
-        {/* Roof panel indicators */}
-        {showRoofLines && (
-          <>
-            <div 
-              className="absolute bg-blue-50 border border-blue-200 rounded px-2 py-1 text-xs font-medium text-blue-800"
-              style={{
-                left: `${60 + width/4}px`,
-                top: `${60 + length/2}px`,
-                transform: 'translate(-50%, -50%)',
-                zIndex: 3
-              }}
-            >
-              LEFT PANEL
-            </div>
-            <div 
-              className="absolute bg-green-50 border border-green-200 rounded px-2 py-1 text-xs font-medium text-green-800"
-              style={{
-                left: `${60 + 3*width/4}px`,
-                top: `${60 + length/2}px`,
-                transform: 'translate(-50%, -50%)',
-                zIndex: 3
-              }}
-            >
-              RIGHT PANEL
-            </div>
-          </>
-        )}
       </div>
     </div>
   );
