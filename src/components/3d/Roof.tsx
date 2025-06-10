@@ -66,17 +66,10 @@ const Roof: React.FC<RoofProps> = ({ width, length, height, pitch, color, skylig
 
     // Create roof geometries with skylight cutouts
     const createRoofGeometryWithCutouts = (isLeftPanel: boolean) => {
-      // Filter skylights for this panel - more lenient filtering
-      const panelSkylights = skylights.filter(s => {
-        // Check if skylight center is on this roof panel
-        if (isLeftPanel) {
-          // Left panel covers negative X values (left side of roof)
-          return s.xOffset <= 0; // Skylight center on left side or center
-        } else {
-          // Right panel covers positive X values (right side of roof)
-          return s.xOffset >= 0; // Skylight center on right side or center
-        }
-      });
+      // Filter skylights for this specific panel only
+      const panelSkylights = skylights.filter(s => 
+        s.panel === (isLeftPanel ? 'left' : 'right')
+      );
 
       console.log(`${isLeftPanel ? 'Left' : 'Right'} panel has ${panelSkylights.length} skylights`);
 
@@ -93,13 +86,13 @@ const Roof: React.FC<RoofProps> = ({ width, length, height, pitch, color, skylig
       roofShape.lineTo(-panelLength/2, length/2);
       roofShape.closePath();
 
-      // Create holes for each skylight
+      // Create holes for each skylight on this panel
       panelSkylights.forEach(skylight => {
         const skylightHole = new THREE.Path();
         
         // Convert skylight position to roof panel coordinates
-        // For the extruded geometry, we work in the XY plane
-        const localX = Math.abs(skylight.xOffset) * (panelLength / (width/2));
+        // Panel coordinates: xOffset is relative to panel center, yOffset is relative to ridge
+        const localX = skylight.xOffset * (panelLength / (width/2));
         const localY = skylight.yOffset;
         
         const holeWidth = skylight.width * (panelLength / (width/2));
@@ -111,7 +104,7 @@ const Roof: React.FC<RoofProps> = ({ width, length, height, pitch, color, skylig
         const clampedLocalX = Math.max(-maxLocalX, Math.min(maxLocalX, localX));
         const clampedLocalY = Math.max(-maxLocalY, Math.min(maxLocalY, localY));
         
-        console.log(`Creating skylight hole at (${clampedLocalX.toFixed(2)}, ${clampedLocalY.toFixed(2)}) size ${holeWidth.toFixed(2)}x${holeLength.toFixed(2)}`);
+        console.log(`Creating skylight hole on ${isLeftPanel ? 'left' : 'right'} panel at (${clampedLocalX.toFixed(2)}, ${clampedLocalY.toFixed(2)}) size ${holeWidth.toFixed(2)}x${holeLength.toFixed(2)}`);
         
         // Create rectangular hole
         skylightHole.moveTo(clampedLocalX - holeWidth/2, clampedLocalY - holeLength/2);
@@ -192,33 +185,29 @@ const Roof: React.FC<RoofProps> = ({ width, length, height, pitch, color, skylig
   });
 
   const createSkylight = (skylight: Skylight, isLeftPanel: boolean) => {
+    // Only create skylight if it belongs to this panel
+    if (skylight.panel !== (isLeftPanel ? 'left' : 'right')) {
+      return null;
+    }
+
     const skylightWidth = skylight.width;
     const skylightLength = skylight.length;
     
     // Calculate position in roof panel coordinates
-    const localX = Math.abs(skylight.xOffset) * (panelLength / (width/2));
+    // Panel coordinates: xOffset is relative to panel center, yOffset is relative to ridge
+    const localX = skylight.xOffset * (panelLength / (width/2));
     const localY = skylight.yOffset;
     
     // Position the skylight to sit flush in the cutout
-    // The skylight should be positioned relative to the roof panel's coordinate system
     const skylightX = localX;
     const skylightY = 0.05; // Slightly above the roof surface to prevent z-fighting
     const skylightZ = localY;
-    
-    // Ensure skylight is within reasonable bounds (but don't filter out completely)
-    const maxX = (width/2 - skylightWidth/2);
-    const maxY = (length/2 - skylightLength/2);
-    
-    if (Math.abs(skylight.xOffset) > maxX + 2 || Math.abs(skylight.yOffset) > maxY + 2) {
-      console.warn(`Skylight at (${skylight.xOffset}, ${skylight.yOffset}) is significantly out of roof bounds`);
-      return null; // Only filter out skylights that are way out of bounds
-    }
     
     return (
       <mesh
         key={`${isLeftPanel ? 'left' : 'right'}-${skylight.xOffset}-${skylight.yOffset}`}
         position={[skylightX, skylightY, skylightZ]}
-        rotation={[0, 0, 0]} // No additional rotation needed since it's in panel space
+        rotation={[0, 0, 0]}
         castShadow
         receiveShadow
       >
@@ -242,7 +231,7 @@ const Roof: React.FC<RoofProps> = ({ width, length, height, pitch, color, skylig
         
         {/* Skylights positioned in the cutouts for left panel */}
         {skylights
-          .filter(s => s.xOffset <= 0) // More lenient filtering - include center skylights
+          .filter(s => s.panel === 'left')
           .map(s => createSkylight(s, true))
           .filter(Boolean) // Remove null skylights
         }
@@ -260,7 +249,7 @@ const Roof: React.FC<RoofProps> = ({ width, length, height, pitch, color, skylig
         
         {/* Skylights positioned in the cutouts for right panel */}
         {skylights
-          .filter(s => s.xOffset >= 0) // More lenient filtering - include center skylights
+          .filter(s => s.panel === 'right')
           .map(s => createSkylight(s, false))
           .filter(Boolean) // Remove null skylights
         }

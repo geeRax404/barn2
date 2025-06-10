@@ -10,7 +10,7 @@ import {
   getSkylightBounds,
   isValidSkylightPosition
 } from '../../utils/skylightValidation';
-import type { Skylight } from '../../types';
+import type { Skylight, RoofPanel } from '../../types';
 
 const RoofPanel: React.FC = () => {
   const { dimensions, skylights, updateDimensions, addSkylight, removeSkylight } = useBuildingStore((state) => ({
@@ -25,7 +25,8 @@ const RoofPanel: React.FC = () => {
     width: 4,
     length: 4,
     xOffset: 0,
-    yOffset: 0
+    yOffset: 0,
+    panel: 'left' as RoofPanel
   });
 
   const [validationErrors, setValidationErrors] = useState<string[]>([]);
@@ -40,14 +41,15 @@ const RoofPanel: React.FC = () => {
     setSkylightValidation(validation);
   }, [dimensions, skylights]);
 
-  // Get skylight bounds for current roof
-  const skylightBounds = getSkylightBounds(dimensions);
+  // Get skylight bounds for current roof panel
+  const skylightBounds = getSkylightBounds(dimensions, newSkylight.panel);
 
   // Get maximum allowed dimensions for current position
   const maxAllowedDimensions = getMaxAllowedSkylightDimensions(
     newSkylight.xOffset,
     newSkylight.yOffset,
-    dimensions
+    dimensions,
+    newSkylight.panel
   );
 
   const handlePitchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -69,7 +71,7 @@ const RoofPanel: React.FC = () => {
     // Clear validation errors and add the skylight
     setValidationErrors([]);
     addSkylight(newSkylight);
-    setNewSkylight({ width: 4, length: 4, xOffset: 0, yOffset: 0 });
+    setNewSkylight({ width: 4, length: 4, xOffset: 0, yOffset: 0, panel: 'left' });
   };
 
   const handleSuggestValidPosition = () => {
@@ -79,7 +81,8 @@ const RoofPanel: React.FC = () => {
       width: suggestion.suggestedWidth,
       length: suggestion.suggestedLength,
       xOffset: suggestion.suggestedXOffset,
-      yOffset: suggestion.suggestedYOffset
+      yOffset: suggestion.suggestedYOffset,
+      panel: newSkylight.panel
     });
     setValidationErrors([]);
   };
@@ -98,18 +101,19 @@ const RoofPanel: React.FC = () => {
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
     >
-      {/* Roof Bounds Information */}
+      {/* Roof Panel Information */}
       <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 mb-4">
         <div className="flex items-center space-x-2 mb-2">
           <Info className="w-4 h-4 text-blue-600" />
           <span className="text-sm font-medium text-blue-800">
-            Roof Dimensions: {dimensions.width}ft × {dimensions.length}ft
+            {newSkylight.panel.charAt(0).toUpperCase() + newSkylight.panel.slice(1)} Roof Panel
           </span>
         </div>
         <div className="text-xs text-blue-700 space-y-1">
-          <div>Valid skylight area: {skylightBounds.minXOffset.toFixed(1)}ft to {skylightBounds.maxXOffset.toFixed(1)}ft (X-axis)</div>
-          <div>Valid skylight area: {skylightBounds.minYOffset.toFixed(1)}ft to {skylightBounds.maxYOffset.toFixed(1)}ft (Y-axis)</div>
-          <div>Maximum skylight size: {skylightBounds.maxWidth.toFixed(1)}ft × {skylightBounds.maxLength.toFixed(1)}ft</div>
+          <div>Panel dimensions: {(dimensions.width/2).toFixed(1)}ft × {dimensions.length}ft</div>
+          <div>Valid X range: {skylightBounds.minXOffset.toFixed(1)}ft to {skylightBounds.maxXOffset.toFixed(1)}ft</div>
+          <div>Valid Y range: {skylightBounds.minYOffset.toFixed(1)}ft to {skylightBounds.maxYOffset.toFixed(1)}ft</div>
+          <div>Max skylight size: {skylightBounds.maxWidth.toFixed(1)}ft × {skylightBounds.maxLength.toFixed(1)}ft</div>
         </div>
       </div>
 
@@ -146,7 +150,7 @@ const RoofPanel: React.FC = () => {
         <div className="bg-green-50 border border-green-200 rounded-lg p-3 mb-4">
           <div className="flex items-center space-x-2">
             <CheckCircle className="w-4 h-4 text-green-600" />
-            <span className="text-sm font-medium text-green-800">All skylights are positioned within roof bounds</span>
+            <span className="text-sm font-medium text-green-800">All skylights are positioned within roof panel bounds</span>
           </div>
         </div>
       )}
@@ -184,6 +188,29 @@ const RoofPanel: React.FC = () => {
         <h3 className="text-sm font-medium text-gray-700 mb-2">Skylights</h3>
         
         <div className="space-y-4">
+          {/* Roof Panel Selection */}
+          <div>
+            <label className="form-label">Roof Panel</label>
+            <select
+              className="form-input"
+              value={newSkylight.panel}
+              onChange={(e) => {
+                const newPanel = e.target.value as RoofPanel;
+                setNewSkylight({ 
+                  ...newSkylight, 
+                  panel: newPanel,
+                  xOffset: 0 // Reset position when changing panels
+                });
+              }}
+            >
+              <option value="left">Left Panel</option>
+              <option value="right">Right Panel</option>
+            </select>
+            <p className="text-xs text-gray-500 mt-1">
+              Choose which side of the roof to place the skylight
+            </p>
+          </div>
+
           <div className="grid grid-cols-2 gap-3">
             <div>
               <label className="form-label">
@@ -234,7 +261,7 @@ const RoofPanel: React.FC = () => {
           <div className="grid grid-cols-2 gap-3">
             <div>
               <label className="form-label">
-                Left/Right Position (ft)
+                Panel Position (ft)
                 <span className="text-xs text-gray-500 ml-1">
                   ({skylightBounds.minXOffset.toFixed(1)} to {skylightBounds.maxXOffset.toFixed(1)})
                 </span>
@@ -253,12 +280,12 @@ const RoofPanel: React.FC = () => {
                 onChange={(e) => setNewSkylight({ ...newSkylight, xOffset: parseFloat(e.target.value) })}
               />
               <p className="text-xs text-gray-500 mt-1">
-                Center position from roof center (negative = left, positive = right)
+                Position from panel center (0 = center of {newSkylight.panel} panel)
               </p>
             </div>
             <div>
               <label className="form-label">
-                Front/Back Position (ft)
+                Ridge Distance (ft)
                 <span className="text-xs text-gray-500 ml-1">
                   ({skylightBounds.minYOffset.toFixed(1)} to {skylightBounds.maxYOffset.toFixed(1)})
                 </span>
@@ -277,7 +304,7 @@ const RoofPanel: React.FC = () => {
                 onChange={(e) => setNewSkylight({ ...newSkylight, yOffset: parseFloat(e.target.value) })}
               />
               <p className="text-xs text-gray-500 mt-1">
-                Center position from roof center (negative = front, positive = back)
+                Distance from roof ridge (negative = toward eave)
               </p>
             </div>
           </div>
@@ -289,7 +316,7 @@ const RoofPanel: React.FC = () => {
               onClick={handleSuggestValidPosition}
             >
               <AlertTriangle className="w-4 h-4 mr-1" />
-              Auto-fix Position & Size to Fit Roof Bounds
+              Auto-fix Position & Size to Fit Panel Bounds
             </button>
           )}
           
@@ -298,7 +325,7 @@ const RoofPanel: React.FC = () => {
             onClick={handleAddSkylight}
           >
             <Plus className="w-4 h-4 mr-1" />
-            Add Skylight
+            Add Skylight to {newSkylight.panel.charAt(0).toUpperCase() + newSkylight.panel.slice(1)} Panel
           </button>
         </div>
 
@@ -323,12 +350,17 @@ const RoofPanel: React.FC = () => {
                           <p className="text-sm font-medium">
                             {skylight.width}' × {skylight.length}'
                           </p>
+                          <span className={`text-xs px-2 py-1 rounded ${
+                            skylight.panel === 'left' ? 'bg-blue-100 text-blue-800' : 'bg-green-100 text-green-800'
+                          }`}>
+                            {skylight.panel}
+                          </span>
                           {!isValid && (
                             <AlertTriangle className="w-3 h-3 text-red-500" />
                           )}
                         </div>
                         <p className="text-xs text-gray-500">
-                          Position: {skylight.xOffset}'L/R, {skylight.yOffset}'F/B
+                          Panel pos: {skylight.xOffset}', Ridge: {skylight.yOffset}'
                           {!isValid && (
                             <span className="text-red-600 ml-1">(Out of bounds)</span>
                           )}

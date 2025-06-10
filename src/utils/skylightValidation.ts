@@ -1,4 +1,4 @@
-import type { Skylight, BuildingDimensions } from '../types';
+import type { Skylight, BuildingDimensions, RoofPanel } from '../types';
 
 export interface SkylightBounds {
   maxXOffset: number;
@@ -17,32 +17,35 @@ export interface SkylightValidationResult {
 }
 
 /**
- * Calculates the valid bounds for skylights on the roof
+ * Calculates the valid bounds for skylights on a specific roof panel
  */
-export const getSkylightBounds = (dimensions: BuildingDimensions): SkylightBounds => {
+export const getSkylightBounds = (dimensions: BuildingDimensions, panel: RoofPanel): SkylightBounds => {
   const { width, length } = dimensions;
   
-  // Skylights must be positioned within the roof panels
-  // Leave a margin from roof edges for structural integrity
-  const edgeMargin = 1.0; // 1 foot margin from roof edges
+  // Each panel is half the roof width
+  const panelWidth = width / 2;
+  
+  // Leave a margin from panel edges for structural integrity
+  const edgeMargin = 1.0; // 1 foot margin from panel edges
   
   return {
-    // X-axis bounds (left/right on roof)
-    maxXOffset: width / 2 - edgeMargin,
-    minXOffset: -width / 2 + edgeMargin,
+    // X-axis bounds (across the panel width)
+    // Panel coordinates: 0 is center of panel, negative toward ridge, positive toward eave
+    maxXOffset: panelWidth / 2 - edgeMargin,
+    minXOffset: -panelWidth / 2 + edgeMargin,
     
-    // Y-axis bounds (front/back on roof)
+    // Y-axis bounds (along the roof length)
     maxYOffset: length / 2 - edgeMargin,
     minYOffset: -length / 2 + edgeMargin,
     
-    // Maximum dimensions
-    maxWidth: width - (2 * edgeMargin),
+    // Maximum dimensions for this panel
+    maxWidth: panelWidth - (2 * edgeMargin),
     maxLength: length - (2 * edgeMargin)
   };
 };
 
 /**
- * Validates a single skylight against roof bounds
+ * Validates a single skylight against its roof panel bounds
  */
 export const validateSkylight = (
   skylight: Skylight,
@@ -50,14 +53,14 @@ export const validateSkylight = (
 ): SkylightValidationResult => {
   const errors: string[] = [];
   const warnings: string[] = [];
-  const bounds = getSkylightBounds(dimensions);
+  const bounds = getSkylightBounds(dimensions, skylight.panel);
   
   console.log(`\n🏠 SKYLIGHT VALIDATION`);
-  console.log(`Roof dimensions: ${dimensions.width}ft × ${dimensions.length}ft`);
+  console.log(`Roof panel: ${skylight.panel} (${(dimensions.width/2).toFixed(1)}ft × ${dimensions.length}ft)`);
   console.log(`Skylight: ${skylight.width}ft × ${skylight.length}ft at (${skylight.xOffset}, ${skylight.yOffset})`);
   console.log(`Valid bounds: X(${bounds.minXOffset} to ${bounds.maxXOffset}), Y(${bounds.minYOffset} to ${bounds.maxYOffset})`);
   
-  // Calculate skylight edges
+  // Calculate skylight edges relative to panel center
   const skylightLeft = skylight.xOffset - skylight.width / 2;
   const skylightRight = skylight.xOffset + skylight.width / 2;
   const skylightFront = skylight.yOffset - skylight.length / 2;
@@ -65,18 +68,18 @@ export const validateSkylight = (
   
   console.log(`Skylight edges: Left=${skylightLeft}, Right=${skylightRight}, Front=${skylightFront}, Back=${skylightBack}`);
   
-  // Validate X-axis bounds (left/right)
+  // Validate X-axis bounds (across panel width)
   if (skylightLeft < bounds.minXOffset) {
     const overhang = bounds.minXOffset - skylightLeft;
-    errors.push(`Skylight extends ${overhang.toFixed(2)}ft beyond left roof edge`);
+    errors.push(`Skylight extends ${overhang.toFixed(2)}ft beyond ${skylight.panel} panel ridge edge`);
   }
   
   if (skylightRight > bounds.maxXOffset) {
     const overhang = skylightRight - bounds.maxXOffset;
-    errors.push(`Skylight extends ${overhang.toFixed(2)}ft beyond right roof edge`);
+    errors.push(`Skylight extends ${overhang.toFixed(2)}ft beyond ${skylight.panel} panel eave edge`);
   }
   
-  // Validate Y-axis bounds (front/back)
+  // Validate Y-axis bounds (along roof length)
   if (skylightFront < bounds.minYOffset) {
     const overhang = bounds.minYOffset - skylightFront;
     errors.push(`Skylight extends ${overhang.toFixed(2)}ft beyond front roof edge`);
@@ -89,7 +92,7 @@ export const validateSkylight = (
   
   // Validate dimensions
   if (skylight.width > bounds.maxWidth) {
-    errors.push(`Skylight width (${skylight.width}ft) exceeds maximum allowed (${bounds.maxWidth}ft)`);
+    errors.push(`Skylight width (${skylight.width}ft) exceeds maximum allowed for ${skylight.panel} panel (${bounds.maxWidth}ft)`);
   }
   
   if (skylight.length > bounds.maxLength) {
@@ -100,11 +103,11 @@ export const validateSkylight = (
   const warningMargin = 0.5; // 6 inches
   
   if (skylightLeft - bounds.minXOffset < warningMargin && skylightLeft >= bounds.minXOffset) {
-    warnings.push(`Skylight is very close to left roof edge (${(skylightLeft - bounds.minXOffset).toFixed(2)}ft clearance)`);
+    warnings.push(`Skylight is very close to ${skylight.panel} panel ridge edge (${(skylightLeft - bounds.minXOffset).toFixed(2)}ft clearance)`);
   }
   
   if (bounds.maxXOffset - skylightRight < warningMargin && skylightRight <= bounds.maxXOffset) {
-    warnings.push(`Skylight is very close to right roof edge (${(bounds.maxXOffset - skylightRight).toFixed(2)}ft clearance)`);
+    warnings.push(`Skylight is very close to ${skylight.panel} panel eave edge (${(bounds.maxXOffset - skylightRight).toFixed(2)}ft clearance)`);
   }
   
   if (skylightFront - bounds.minYOffset < warningMargin && skylightFront >= bounds.minYOffset) {
@@ -127,7 +130,7 @@ export const validateSkylight = (
 };
 
 /**
- * Validates all skylights against roof bounds
+ * Validates all skylights against their respective roof panel bounds
  */
 export const validateAllSkylights = (
   skylights: Skylight[],
@@ -147,7 +150,7 @@ export const validateAllSkylights = (
   const skylightValidations: SkylightValidationResult[] = [];
   
   skylights.forEach((skylight, index) => {
-    console.log(`\n--- Skylight ${index + 1}/${skylights.length} ---`);
+    console.log(`\n--- Skylight ${index + 1}/${skylights.length} (${skylight.panel} panel) ---`);
     
     const validation = validateSkylight(skylight, dimensions);
     skylightValidations.push(validation);
@@ -156,15 +159,18 @@ export const validateAllSkylights = (
     allWarnings.push(...validation.warnings);
   });
   
-  // Check for skylight overlaps
+  // Check for skylight overlaps within the same panel
   for (let i = 0; i < skylights.length; i++) {
     for (let j = i + 1; j < skylights.length; j++) {
       const skylight1 = skylights[i];
       const skylight2 = skylights[j];
       
-      const overlap = checkSkylightOverlap(skylight1, skylight2);
-      if (overlap.overlaps) {
-        allErrors.push(`Skylights ${i + 1} and ${j + 1} overlap`);
+      // Only check overlap if they're on the same panel
+      if (skylight1.panel === skylight2.panel) {
+        const overlap = checkSkylightOverlap(skylight1, skylight2);
+        if (overlap.overlaps) {
+          allErrors.push(`Skylights ${i + 1} and ${j + 1} overlap on ${skylight1.panel} panel`);
+        }
       }
     }
   }
@@ -185,12 +191,17 @@ export const validateAllSkylights = (
 };
 
 /**
- * Checks if two skylights overlap
+ * Checks if two skylights overlap (only relevant if on same panel)
  */
 export const checkSkylightOverlap = (
   skylight1: Skylight,
   skylight2: Skylight
 ): { overlaps: boolean; overlapArea?: number } => {
+  // Only check overlap if they're on the same panel
+  if (skylight1.panel !== skylight2.panel) {
+    return { overlaps: false };
+  }
+  
   const s1Left = skylight1.xOffset - skylight1.width / 2;
   const s1Right = skylight1.xOffset + skylight1.width / 2;
   const s1Front = skylight1.yOffset - skylight1.length / 2;
@@ -224,7 +235,7 @@ export const suggestValidSkylightPosition = (
   suggestedLength: number;
   adjustments: string[];
 } => {
-  const bounds = getSkylightBounds(dimensions);
+  const bounds = getSkylightBounds(dimensions, skylight.panel);
   const adjustments: string[] = [];
   
   let suggestedWidth = skylight.width;
@@ -232,31 +243,31 @@ export const suggestValidSkylightPosition = (
   let suggestedXOffset = skylight.xOffset;
   let suggestedYOffset = skylight.yOffset;
   
-  // Adjust dimensions if too large
+  // Adjust dimensions if too large for the panel
   if (skylight.width > bounds.maxWidth) {
     suggestedWidth = bounds.maxWidth * 0.9; // 90% of max width
-    adjustments.push(`Reduced width from ${skylight.width}ft to ${suggestedWidth.toFixed(2)}ft to fit roof`);
+    adjustments.push(`Reduced width from ${skylight.width}ft to ${suggestedWidth.toFixed(2)}ft to fit ${skylight.panel} panel`);
   }
   
   if (skylight.length > bounds.maxLength) {
     suggestedLength = bounds.maxLength * 0.9; // 90% of max length
-    adjustments.push(`Reduced length from ${skylight.length}ft to ${suggestedLength.toFixed(2)}ft to fit roof`);
+    adjustments.push(`Reduced length from ${skylight.length}ft to ${suggestedLength.toFixed(2)}ft to fit panel`);
   }
   
-  // Adjust position to keep within bounds
+  // Adjust position to keep within panel bounds
   const halfWidth = suggestedWidth / 2;
   const halfLength = suggestedLength / 2;
   
-  // X-axis adjustment
+  // X-axis adjustment (across panel width)
   if (suggestedXOffset - halfWidth < bounds.minXOffset) {
     suggestedXOffset = bounds.minXOffset + halfWidth;
-    adjustments.push(`Moved right to stay within roof bounds`);
+    adjustments.push(`Moved away from ridge to stay within ${skylight.panel} panel bounds`);
   } else if (suggestedXOffset + halfWidth > bounds.maxXOffset) {
     suggestedXOffset = bounds.maxXOffset - halfWidth;
-    adjustments.push(`Moved left to stay within roof bounds`);
+    adjustments.push(`Moved away from eave to stay within ${skylight.panel} panel bounds`);
   }
   
-  // Y-axis adjustment
+  // Y-axis adjustment (along roof length)
   if (suggestedYOffset - halfLength < bounds.minYOffset) {
     suggestedYOffset = bounds.minYOffset + halfLength;
     adjustments.push(`Moved back to stay within roof bounds`);
@@ -275,21 +286,22 @@ export const suggestValidSkylightPosition = (
 };
 
 /**
- * Gets the maximum allowed dimensions for a skylight at a specific position
+ * Gets the maximum allowed dimensions for a skylight at a specific position on a panel
  */
 export const getMaxAllowedSkylightDimensions = (
   xOffset: number,
   yOffset: number,
-  dimensions: BuildingDimensions
+  dimensions: BuildingDimensions,
+  panel: RoofPanel
 ): { maxWidth: number; maxLength: number } => {
-  const bounds = getSkylightBounds(dimensions);
+  const bounds = getSkylightBounds(dimensions, panel);
   
-  // Calculate maximum width based on position
-  const distanceToLeft = xOffset - bounds.minXOffset;
-  const distanceToRight = bounds.maxXOffset - xOffset;
-  const maxWidth = Math.min(distanceToLeft, distanceToRight) * 2;
+  // Calculate maximum width based on position within panel
+  const distanceToRidge = xOffset - bounds.minXOffset;
+  const distanceToEave = bounds.maxXOffset - xOffset;
+  const maxWidth = Math.min(distanceToRidge, distanceToEave) * 2;
   
-  // Calculate maximum length based on position
+  // Calculate maximum length based on position along roof
   const distanceToFront = yOffset - bounds.minYOffset;
   const distanceToBack = bounds.maxYOffset - yOffset;
   const maxLength = Math.min(distanceToFront, distanceToBack) * 2;
@@ -301,7 +313,7 @@ export const getMaxAllowedSkylightDimensions = (
 };
 
 /**
- * Checks if a skylight position is valid for the given roof
+ * Checks if a skylight position is valid for the given roof panel
  */
 export const isValidSkylightPosition = (
   skylight: Skylight,
