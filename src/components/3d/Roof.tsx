@@ -30,68 +30,81 @@ const Roof: React.FC<RoofProps> = ({ width, length, height, pitch, color, skylig
       const ctx = canvas.getContext('2d');
       
       if (ctx) {
+        // Fill base color
         ctx.fillStyle = color;
         ctx.fillRect(0, 0, textureWidth, textureHeight);
         
-        // Create ribbed pattern with special handling for white
-        const ribWidth = textureWidth / 24;
-        const gradient = ctx.createLinearGradient(0, 0, ribWidth, 0);
+        // 🎯 ENHANCED RIBBED PATTERN - More visible ribs
+        const ribWidth = textureWidth / 16; // Wider ribs for better visibility
         
         // Special handling for pure white to maintain brightness
         const isWhite = color === '#FFFFFF';
-        const shadowOpacity = isWhite ? 0.08 : 0.25;
-        const highlightOpacity = isWhite ? 0.05 : 0.15;
+        const shadowOpacity = isWhite ? 0.15 : 0.3; // Increased contrast
+        const highlightOpacity = isWhite ? 0.1 : 0.2; // Increased contrast
         
-        gradient.addColorStop(0, `rgba(255,255,255,${highlightOpacity})`);
-        gradient.addColorStop(0.2, `rgba(255,255,255,${highlightOpacity * 0.5})`);
-        gradient.addColorStop(0.4, `rgba(0,0,0,${shadowOpacity})`);
-        gradient.addColorStop(0.6, `rgba(0,0,0,${shadowOpacity})`);
-        gradient.addColorStop(0.8, `rgba(255,255,255,${highlightOpacity * 0.5})`);
-        gradient.addColorStop(1, `rgba(255,255,255,${highlightOpacity})`);
-        
-        ctx.fillStyle = gradient;
-        
+        // Create more pronounced ribbed pattern
         for (let x = 0; x < textureWidth; x += ribWidth) {
+          // Create gradient for each rib
+          const gradient = ctx.createLinearGradient(x, 0, x + ribWidth, 0);
+          gradient.addColorStop(0, `rgba(255,255,255,${highlightOpacity})`);
+          gradient.addColorStop(0.3, `rgba(255,255,255,${highlightOpacity * 0.5})`);
+          gradient.addColorStop(0.5, `rgba(0,0,0,${shadowOpacity})`);
+          gradient.addColorStop(0.7, `rgba(255,255,255,${highlightOpacity * 0.5})`);
+          gradient.addColorStop(1, `rgba(255,255,255,${highlightOpacity})`);
+          
+          ctx.fillStyle = gradient;
           ctx.fillRect(x, 0, ribWidth, textureHeight);
         }
+        
+        console.log(`🎨 Created enhanced ribbed texture for ${panelSide} panel with ${Math.floor(textureWidth / ribWidth)} ribs`);
       }
       
       const texture = new THREE.CanvasTexture(canvas);
       texture.wrapS = THREE.RepeatWrapping;
       texture.wrapT = THREE.RepeatWrapping;
-      texture.repeat.set(4, length/2);
+      // 🔧 CRITICAL: Proper texture repeat for visible ribs
+      texture.repeat.set(6, length/4); // Increased repeat for more visible ribs
       
       return texture;
     };
 
-    // 🎯 ALWAYS USE SIMPLE GEOMETRY WITH PRESERVED RIBBED TEXTURE
-    // The skylight cutouts will be handled by separate geometry overlays
+    // 🎯 ALWAYS USE SIMPLE GEOMETRY WITH CORRECTED UV MAPPING
     const createRoofGeometry = (isLeftPanel: boolean) => {
-      console.log(`${isLeftPanel ? 'Left' : 'Right'} panel: Using simple BoxGeometry - RIBS ALWAYS PRESERVED`);
+      console.log(`${isLeftPanel ? 'Left' : 'Right'} panel: Creating geometry with CORRECTED UV mapping for visible ribs`);
       const geometry = new THREE.BoxGeometry(panelLength, 0.2, length);
       
-      // 🔧 CRITICAL: Apply proper UV mapping for ribbed texture
+      // 🔧 CRITICAL FIX: Proper UV mapping for ribbed texture visibility
       const uvAttribute = geometry.attributes.uv;
       const positionAttribute = geometry.attributes.position;
-      const uvArray = uvAttribute.array;
-      const positionArray = positionAttribute.array;
       
-      // Map UVs to show ribs running along the panel length
-      for (let i = 0; i < positionArray.length; i += 3) {
-        const x = positionArray[i];
-        const y = positionArray[i + 1];
-        const z = positionArray[i + 2];
+      if (uvAttribute && positionAttribute) {
+        const uvArray = uvAttribute.array as Float32Array;
+        const positionArray = positionAttribute.array as Float32Array;
         
-        const uvIndex = (i / 3) * 2;
+        console.log(`Applying UV mapping to ${uvArray.length / 2} vertices`);
         
-        // Calculate UV coordinates for ribbed pattern
-        // Ribs run along the length (Z direction), so use Z for the ribbed axis
-        uvArray[uvIndex] = (z + length/2) / length * 4; // U coordinate - ribs along length
-        uvArray[uvIndex + 1] = (x + panelLength/2) / panelLength * (length/2); // V coordinate - across width
+        // 🎯 ENHANCED UV MAPPING: Map UVs correctly for ribbed pattern visibility
+        for (let i = 0; i < positionArray.length; i += 3) {
+          const x = positionArray[i];     // Along panel length (ribs run this way)
+          const y = positionArray[i + 1]; // Panel thickness
+          const z = positionArray[i + 2]; // Across roof width
+          
+          const uvIndex = (i / 3) * 2;
+          
+          // 🔧 CORRECTED UV COORDINATES for visible ribs
+          // U coordinate: ribs run along the panel length (X direction)
+          uvArray[uvIndex] = (x + panelLength/2) / panelLength * 6; // Scale for rib visibility
+          
+          // V coordinate: across the roof width (Z direction)  
+          uvArray[uvIndex + 1] = (z + length/2) / length * (length/4); // Scale for proper tiling
+        }
+        
+        uvAttribute.needsUpdate = true;
+        console.log(`✅ Applied corrected UV mapping for ${isLeftPanel ? 'left' : 'right'} panel - RIBS SHOULD BE VISIBLE`);
+      } else {
+        console.error(`❌ Failed to get UV or position attributes for ${isLeftPanel ? 'left' : 'right'} panel`);
       }
       
-      uvAttribute.needsUpdate = true;
-      console.log(`${isLeftPanel ? 'Left' : 'Right'} panel: Applied ribbed UV mapping - RIBS PRESERVED`);
       return geometry;
     };
 
@@ -111,11 +124,11 @@ const Roof: React.FC<RoofProps> = ({ width, length, height, pitch, color, skylig
       envMapIntensity: 0.5,
     };
     
-    // 🎯 ALWAYS CREATE SIMPLE GEOMETRIES WITH PRESERVED RIBBED TEXTURE
+    // 🎯 CREATE GEOMETRIES WITH CORRECTED UV MAPPING
     const leftGeometry = createRoofGeometry(true);
     const rightGeometry = createRoofGeometry(false);
     
-    // Create separate materials with PRESERVED ribbed texture
+    // Create separate materials with ENHANCED ribbed texture
     const leftMaterial = new THREE.MeshStandardMaterial({
       map: leftTexture,
       ...materialProps,
@@ -128,7 +141,7 @@ const Roof: React.FC<RoofProps> = ({ width, length, height, pitch, color, skylig
       side: THREE.DoubleSide,
     });
     
-    console.log(`🎯 ROOF MATERIALS CREATED: Both panels have ALWAYS PRESERVED ribbed textures`);
+    console.log(`🎯 ROOF MATERIALS CREATED: Both panels have ENHANCED ribbed textures with corrected UV mapping`);
     
     return { 
       leftRoofGeometry: leftGeometry,
