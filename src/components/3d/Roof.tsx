@@ -74,8 +74,25 @@ const Roof: React.FC<RoofProps> = ({ width, length, height, pitch, color, skylig
       console.log(`${isLeftPanel ? 'Left' : 'Right'} panel has ${panelSkylights.length} skylights`);
 
       if (panelSkylights.length === 0) {
-        // No skylights, return simple box geometry
-        return new THREE.BoxGeometry(panelLength, 0.2, length);
+        // No skylights, return simple box geometry with proper UV mapping
+        const geometry = new THREE.BoxGeometry(panelLength, 0.2, length);
+        
+        // Apply proper UV mapping for ribbed texture
+        const uvAttribute = geometry.attributes.uv;
+        const uvArray = uvAttribute.array;
+        
+        // Map UVs to show ribs running along the panel length
+        for (let i = 0; i < uvArray.length; i += 2) {
+          const u = uvArray[i];
+          const v = uvArray[i + 1];
+          
+          // Scale UV coordinates to match texture repeat
+          uvArray[i] = u * 4; // Match texture repeat X
+          uvArray[i + 1] = v * (length / 2); // Match texture repeat Y
+        }
+        
+        uvAttribute.needsUpdate = true;
+        return geometry;
       }
 
       // Create a shape for the roof panel in the XY plane (will be rotated later)
@@ -124,10 +141,31 @@ const Roof: React.FC<RoofProps> = ({ width, length, height, pitch, color, skylig
 
       const geometry = new THREE.ExtrudeGeometry(roofShape, extrudeSettings);
       
+      // CRITICAL FIX: Apply proper UV mapping to extruded geometry for ribbed texture
+      const uvAttribute = geometry.attributes.uv;
+      const positionAttribute = geometry.attributes.position;
+      const uvArray = uvAttribute.array;
+      const positionArray = positionAttribute.array;
+      
+      // Apply UV mapping that preserves the ribbed pattern
+      for (let i = 0; i < positionArray.length; i += 3) {
+        const x = positionArray[i];
+        const y = positionArray[i + 1];
+        const z = positionArray[i + 2];
+        
+        const uvIndex = (i / 3) * 2;
+        
+        // Map UV coordinates to show ribs running along the panel length
+        // Scale to match the texture repeat pattern
+        uvArray[uvIndex] = (x + panelLength/2) / panelLength * 4; // U coordinate - ribs along length
+        uvArray[uvIndex + 1] = (y + length/2) / length * (length/2); // V coordinate - across width
+      }
+      
       // Rotate the geometry to align with the roof pitch
       // The extruded geometry is created in XY plane, we need to rotate it to XZ plane
       geometry.rotateX(-Math.PI / 2); // Rotate to lie flat in XZ plane
       
+      uvAttribute.needsUpdate = true;
       return geometry;
     };
 
@@ -151,7 +189,7 @@ const Roof: React.FC<RoofProps> = ({ width, length, height, pitch, color, skylig
     const leftGeometry = createRoofGeometryWithCutouts(true);
     const rightGeometry = createRoofGeometryWithCutouts(false);
     
-    // Create separate materials with optimized properties for white
+    // Create separate materials with optimized properties for white and ribbed texture
     const leftMaterial = new THREE.MeshStandardMaterial({
       map: leftTexture,
       ...materialProps,
@@ -219,7 +257,7 @@ const Roof: React.FC<RoofProps> = ({ width, length, height, pitch, color, skylig
   
   return (
     <group position={[0, height, 0]}>
-      {/* Left roof panel with cutouts */}
+      {/* Left roof panel with cutouts and preserved ribbed texture */}
       <group 
         position={[-width / 4, roofHeight / 2, 0]}
         rotation={[0, 0, pitchAngle]}
@@ -237,7 +275,7 @@ const Roof: React.FC<RoofProps> = ({ width, length, height, pitch, color, skylig
         }
       </group>
       
-      {/* Right roof panel with cutouts */}
+      {/* Right roof panel with cutouts and preserved ribbed texture */}
       <group
         position={[width / 4, roofHeight / 2, 0]}
         rotation={[0, 0, -pitchAngle]}
@@ -255,7 +293,7 @@ const Roof: React.FC<RoofProps> = ({ width, length, height, pitch, color, skylig
         }
       </group>
       
-      {/* Ridge cap with special white handling */}
+      {/* Ridge cap with special white handling and ribbed texture */}
       <mesh 
         position={[0, roofHeight, 0]} 
         castShadow 
