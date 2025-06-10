@@ -21,6 +21,7 @@ const Roof: React.FC<RoofProps> = ({ width, length, height, pitch, color, skylig
 
   // Create roof materials and geometries with cutouts for skylights
   const { leftRoofGeometry, rightRoofGeometry, leftRoofMaterial, rightRoofMaterial } = useMemo(() => {
+    // 🎯 ALWAYS CREATE RIBBED TEXTURE - regardless of skylights
     const createRoofTexture = (panelSide: 'left' | 'right') => {
       const textureWidth = 512;
       const textureHeight = 512;
@@ -33,7 +34,7 @@ const Roof: React.FC<RoofProps> = ({ width, length, height, pitch, color, skylig
         ctx.fillStyle = color;
         ctx.fillRect(0, 0, textureWidth, textureHeight);
         
-        // Create ribbed pattern with special handling for white
+        // 🔧 ALWAYS CREATE RIBBED PATTERN - this is the key fix!
         const ribWidth = textureWidth / 24;
         const gradient = ctx.createLinearGradient(0, 0, ribWidth, 0);
         
@@ -51,9 +52,12 @@ const Roof: React.FC<RoofProps> = ({ width, length, height, pitch, color, skylig
         
         ctx.fillStyle = gradient;
         
+        // 🎯 ALWAYS DRAW RIBS - this creates the metal roofing pattern
         for (let x = 0; x < textureWidth; x += ribWidth) {
           ctx.fillRect(x, 0, ribWidth, textureHeight);
         }
+        
+        console.log(`✅ RIBBED TEXTURE CREATED for ${panelSide} panel - ribs will ALWAYS be visible`);
       }
       
       const texture = new THREE.CanvasTexture(canvas);
@@ -75,7 +79,7 @@ const Roof: React.FC<RoofProps> = ({ width, length, height, pitch, color, skylig
 
       if (panelSkylights.length === 0) {
         // 🎯 NO SKYLIGHTS: Use simple box geometry with PRESERVED ribbed texture
-        console.log(`${isLeftPanel ? 'Left' : 'Right'} panel: Using simple BoxGeometry - RIBS PRESERVED`);
+        console.log(`${isLeftPanel ? 'Left' : 'Right'} panel: Using simple BoxGeometry - RIBS ALWAYS VISIBLE`);
         const geometry = new THREE.BoxGeometry(panelLength, 0.2, length);
         
         // 🔧 CRITICAL: Apply proper UV mapping for ribbed texture on simple geometry
@@ -99,7 +103,7 @@ const Roof: React.FC<RoofProps> = ({ width, length, height, pitch, color, skylig
         }
         
         uvAttribute.needsUpdate = true;
-        console.log(`${isLeftPanel ? 'Left' : 'Right'} panel: Applied ribbed UV mapping to BoxGeometry`);
+        console.log(`${isLeftPanel ? 'Left' : 'Right'} panel: Applied ribbed UV mapping to BoxGeometry - RIBS ALWAYS VISIBLE`);
         return geometry;
       }
 
@@ -186,7 +190,7 @@ const Roof: React.FC<RoofProps> = ({ width, length, height, pitch, color, skylig
       return geometry;
     };
 
-    // Create separate textures for each panel
+    // 🎯 ALWAYS CREATE RIBBED TEXTURES - regardless of skylights
     const leftTexture = createRoofTexture('left');
     const rightTexture = createRoofTexture('right');
     
@@ -206,7 +210,7 @@ const Roof: React.FC<RoofProps> = ({ width, length, height, pitch, color, skylig
     const leftGeometry = createRoofGeometryWithCutouts(true);
     const rightGeometry = createRoofGeometryWithCutouts(false);
     
-    // Create separate materials with optimized properties for white and PRESERVED ribbed texture
+    // 🎯 ALWAYS CREATE MATERIALS WITH RIBBED TEXTURES
     const leftMaterial = new THREE.MeshStandardMaterial({
       map: leftTexture,
       ...materialProps,
@@ -219,7 +223,7 @@ const Roof: React.FC<RoofProps> = ({ width, length, height, pitch, color, skylig
       side: THREE.DoubleSide,
     });
     
-    console.log(`🎯 ROOF MATERIALS CREATED: Both panels have PRESERVED ribbed textures with selective skylight cutouts`);
+    console.log(`🎯 ROOF MATERIALS CREATED: Both panels have RIBBED TEXTURES ALWAYS VISIBLE (with or without skylights)`);
     
     return { 
       leftRoofGeometry: leftGeometry,
@@ -276,7 +280,7 @@ const Roof: React.FC<RoofProps> = ({ width, length, height, pitch, color, skylig
   
   return (
     <group position={[0, height, 0]}>
-      {/* Left roof panel with SELECTIVE cutouts and PRESERVED ribbed texture */}
+      {/* Left roof panel with RIBBED TEXTURE ALWAYS VISIBLE */}
       <group 
         position={[-width / 4, roofHeight / 2, 0]}
         rotation={[0, 0, pitchAngle]}
@@ -294,7 +298,7 @@ const Roof: React.FC<RoofProps> = ({ width, length, height, pitch, color, skylig
         }
       </group>
       
-      {/* Right roof panel with SELECTIVE cutouts and PRESERVED ribbed texture */}
+      {/* Right roof panel with RIBBED TEXTURE ALWAYS VISIBLE */}
       <group
         position={[width / 4, roofHeight / 2, 0]}
         rotation={[0, 0, -pitchAngle]}
@@ -312,7 +316,7 @@ const Roof: React.FC<RoofProps> = ({ width, length, height, pitch, color, skylig
         }
       </group>
       
-      {/* Ridge cap with special white handling and ribbed texture */}
+      {/* Ridge cap with ribbed texture */}
       <mesh 
         position={[0, roofHeight, 0]} 
         castShadow 
