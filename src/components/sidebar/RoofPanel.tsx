@@ -1,7 +1,15 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { Plus, X } from 'lucide-react';
+import { Plus, X, AlertTriangle, CheckCircle, Info } from 'lucide-react';
 import { useBuildingStore } from '../../store/buildingStore';
+import { 
+  validateSkylight, 
+  validateAllSkylights, 
+  suggestValidSkylightPosition,
+  getMaxAllowedSkylightDimensions,
+  getSkylightBounds,
+  isValidSkylightPosition
+} from '../../utils/skylightValidation';
 import type { Skylight } from '../../types';
 
 const RoofPanel: React.FC = () => {
@@ -20,6 +28,28 @@ const RoofPanel: React.FC = () => {
     yOffset: 0
   });
 
+  const [validationErrors, setValidationErrors] = useState<string[]>([]);
+  const [validationWarnings, setValidationWarnings] = useState<string[]>([]);
+  const [skylightValidation, setSkylightValidation] = useState<any>(null);
+
+  // Validate all existing skylights whenever dimensions or skylights change
+  useEffect(() => {
+    const validation = validateAllSkylights(skylights, dimensions);
+    setValidationErrors(validation.errors);
+    setValidationWarnings(validation.warnings);
+    setSkylightValidation(validation);
+  }, [dimensions, skylights]);
+
+  // Get skylight bounds for current roof
+  const skylightBounds = getSkylightBounds(dimensions);
+
+  // Get maximum allowed dimensions for current position
+  const maxAllowedDimensions = getMaxAllowedSkylightDimensions(
+    newSkylight.xOffset,
+    newSkylight.yOffset,
+    dimensions
+  );
+
   const handlePitchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = parseFloat(e.target.value);
     if (!isNaN(value)) {
@@ -28,8 +58,35 @@ const RoofPanel: React.FC = () => {
   };
 
   const handleAddSkylight = () => {
+    // Validate the new skylight before adding
+    const validation = validateSkylight(newSkylight, dimensions);
+
+    if (!validation.valid) {
+      setValidationErrors(validation.errors);
+      return;
+    }
+
+    // Clear validation errors and add the skylight
+    setValidationErrors([]);
     addSkylight(newSkylight);
     setNewSkylight({ width: 4, length: 4, xOffset: 0, yOffset: 0 });
+  };
+
+  const handleSuggestValidPosition = () => {
+    const suggestion = suggestValidSkylightPosition(newSkylight, dimensions);
+    
+    setNewSkylight({
+      width: suggestion.suggestedWidth,
+      length: suggestion.suggestedLength,
+      xOffset: suggestion.suggestedXOffset,
+      yOffset: suggestion.suggestedYOffset
+    });
+    setValidationErrors([]);
+  };
+
+  // Check if current skylight configuration is valid
+  const isCurrentSkylightValid = () => {
+    return isValidSkylightPosition(newSkylight, dimensions);
   };
 
   // Calculate roof rise based on pitch
@@ -41,6 +98,59 @@ const RoofPanel: React.FC = () => {
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
     >
+      {/* Roof Bounds Information */}
+      <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 mb-4">
+        <div className="flex items-center space-x-2 mb-2">
+          <Info className="w-4 h-4 text-blue-600" />
+          <span className="text-sm font-medium text-blue-800">
+            Roof Dimensions: {dimensions.width}ft × {dimensions.length}ft
+          </span>
+        </div>
+        <div className="text-xs text-blue-700 space-y-1">
+          <div>Valid skylight area: {skylightBounds.minXOffset.toFixed(1)}ft to {skylightBounds.maxXOffset.toFixed(1)}ft (X-axis)</div>
+          <div>Valid skylight area: {skylightBounds.minYOffset.toFixed(1)}ft to {skylightBounds.maxYOffset.toFixed(1)}ft (Y-axis)</div>
+          <div>Maximum skylight size: {skylightBounds.maxWidth.toFixed(1)}ft × {skylightBounds.maxLength.toFixed(1)}ft</div>
+        </div>
+      </div>
+
+      {/* Global Validation Status */}
+      {validationErrors.length > 0 && (
+        <div className="bg-red-50 border border-red-200 rounded-lg p-3 mb-4">
+          <div className="flex items-center space-x-2 mb-2">
+            <AlertTriangle className="w-4 h-4 text-red-600" />
+            <span className="text-sm font-medium text-red-800">Skylight Validation Errors</span>
+          </div>
+          <ul className="text-xs text-red-700 space-y-1">
+            {validationErrors.map((error, index) => (
+              <li key={index}>• {error}</li>
+            ))}
+          </ul>
+        </div>
+      )}
+
+      {validationWarnings.length > 0 && (
+        <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-3 mb-4">
+          <div className="flex items-center space-x-2 mb-2">
+            <AlertTriangle className="w-4 h-4 text-yellow-600" />
+            <span className="text-sm font-medium text-yellow-800">Warnings</span>
+          </div>
+          <ul className="text-xs text-yellow-700 space-y-1">
+            {validationWarnings.map((warning, index) => (
+              <li key={index}>• {warning}</li>
+            ))}
+          </ul>
+        </div>
+      )}
+
+      {validationErrors.length === 0 && validationWarnings.length === 0 && skylights.length > 0 && (
+        <div className="bg-green-50 border border-green-200 rounded-lg p-3 mb-4">
+          <div className="flex items-center space-x-2">
+            <CheckCircle className="w-4 h-4 text-green-600" />
+            <span className="text-sm font-medium text-green-800">All skylights are positioned within roof bounds</span>
+          </div>
+        </div>
+      )}
+
       <div className="mb-4">
         <label htmlFor="roofPitch" className="form-label">Roof Pitch (rise:12)</label>
         <div className="flex items-center">
@@ -76,61 +186,117 @@ const RoofPanel: React.FC = () => {
         <div className="space-y-4">
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="form-label">Width (ft)</label>
+              <label className="form-label">
+                Width (ft)
+                <span className="text-xs text-gray-500 ml-1">
+                  (max: {maxAllowedDimensions.maxWidth.toFixed(1)}ft)
+                </span>
+              </label>
               <input
                 type="number"
-                className="form-input"
+                className={`form-input ${newSkylight.width > maxAllowedDimensions.maxWidth ? 'border-red-300 bg-red-50' : ''}`}
                 min="2"
-                max="8"
+                max={maxAllowedDimensions.maxWidth}
                 step="0.5"
                 value={newSkylight.width}
                 onChange={(e) => setNewSkylight({ ...newSkylight, width: parseFloat(e.target.value) })}
               />
+              {newSkylight.width > maxAllowedDimensions.maxWidth && (
+                <p className="text-xs text-red-600 mt-1">
+                  Width exceeds available space at this position
+                </p>
+              )}
             </div>
             <div>
-              <label className="form-label">Length (ft)</label>
+              <label className="form-label">
+                Length (ft)
+                <span className="text-xs text-gray-500 ml-1">
+                  (max: {maxAllowedDimensions.maxLength.toFixed(1)}ft)
+                </span>
+              </label>
               <input
                 type="number"
-                className="form-input"
+                className={`form-input ${newSkylight.length > maxAllowedDimensions.maxLength ? 'border-red-300 bg-red-50' : ''}`}
                 min="2"
-                max="8"
+                max={maxAllowedDimensions.maxLength}
                 step="0.5"
                 value={newSkylight.length}
                 onChange={(e) => setNewSkylight({ ...newSkylight, length: parseFloat(e.target.value) })}
               />
+              {newSkylight.length > maxAllowedDimensions.maxLength && (
+                <p className="text-xs text-red-600 mt-1">
+                  Length exceeds available space at this position
+                </p>
+              )}
             </div>
           </div>
           
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="form-label">Left/Right (ft)</label>
+              <label className="form-label">
+                Left/Right Position (ft)
+                <span className="text-xs text-gray-500 ml-1">
+                  ({skylightBounds.minXOffset.toFixed(1)} to {skylightBounds.maxXOffset.toFixed(1)})
+                </span>
+              </label>
               <input
                 type="number"
-                className="form-input"
-                min={-dimensions.width/2 + newSkylight.width}
-                max={dimensions.width/2 - newSkylight.width}
+                className={`form-input ${
+                  newSkylight.xOffset - newSkylight.width/2 < skylightBounds.minXOffset || 
+                  newSkylight.xOffset + newSkylight.width/2 > skylightBounds.maxXOffset 
+                    ? 'border-red-300 bg-red-50' : ''
+                }`}
+                min={skylightBounds.minXOffset + newSkylight.width/2}
+                max={skylightBounds.maxXOffset - newSkylight.width/2}
                 step="0.5"
                 value={newSkylight.xOffset}
                 onChange={(e) => setNewSkylight({ ...newSkylight, xOffset: parseFloat(e.target.value) })}
               />
+              <p className="text-xs text-gray-500 mt-1">
+                Center position from roof center (negative = left, positive = right)
+              </p>
             </div>
             <div>
-              <label className="form-label">Up/Down (ft)</label>
+              <label className="form-label">
+                Front/Back Position (ft)
+                <span className="text-xs text-gray-500 ml-1">
+                  ({skylightBounds.minYOffset.toFixed(1)} to {skylightBounds.maxYOffset.toFixed(1)})
+                </span>
+              </label>
               <input
                 type="number"
-                className="form-input"
-                min={0}
-                max={dimensions.length/2 - newSkylight.length}
+                className={`form-input ${
+                  newSkylight.yOffset - newSkylight.length/2 < skylightBounds.minYOffset || 
+                  newSkylight.yOffset + newSkylight.length/2 > skylightBounds.maxYOffset 
+                    ? 'border-red-300 bg-red-50' : ''
+                }`}
+                min={skylightBounds.minYOffset + newSkylight.length/2}
+                max={skylightBounds.maxYOffset - newSkylight.length/2}
                 step="0.5"
                 value={newSkylight.yOffset}
                 onChange={(e) => setNewSkylight({ ...newSkylight, yOffset: parseFloat(e.target.value) })}
               />
+              <p className="text-xs text-gray-500 mt-1">
+                Center position from roof center (negative = front, positive = back)
+              </p>
             </div>
           </div>
+
+          {/* Auto-fix suggestion button */}
+          {!isCurrentSkylightValid() && (
+            <button
+              className="w-full btn-secondary btn text-sm"
+              onClick={handleSuggestValidPosition}
+            >
+              <AlertTriangle className="w-4 h-4 mr-1" />
+              Auto-fix Position & Size to Fit Roof Bounds
+            </button>
+          )}
           
           <button
-            className="w-full btn"
+            className={`w-full btn ${!isCurrentSkylightValid() ? 'opacity-50 cursor-not-allowed' : ''}`}
             onClick={handleAddSkylight}
+            disabled={!isCurrentSkylightValid()}
           >
             <Plus className="w-4 h-4 mr-1" />
             Add Skylight
@@ -141,27 +307,44 @@ const RoofPanel: React.FC = () => {
           <div className="mt-4">
             <h4 className="text-sm font-medium text-gray-700 mb-2">Existing Skylights</h4>
             <div className="space-y-2">
-              {skylights.map((skylight, index) => (
-                <div 
-                  key={index}
-                  className="flex items-center justify-between p-2 bg-gray-50 rounded border border-gray-200"
-                >
-                  <div>
-                    <p className="text-sm font-medium">
-                      {skylight.width}' × {skylight.length}'
-                    </p>
-                    <p className="text-xs text-gray-500">
-                      Offset: {skylight.xOffset}'L/R, {skylight.yOffset}'U/D
-                    </p>
-                  </div>
-                  <button
-                    className="p-1 text-gray-400 hover:text-error rounded-full hover:bg-gray-100"
-                    onClick={() => removeSkylight(index)}
+              {skylights.map((skylight, index) => {
+                const validation = skylightValidation?.skylightValidations?.[index];
+                const isValid = validation?.valid ?? true;
+                
+                return (
+                  <div 
+                    key={index}
+                    className={`flex items-center justify-between p-2 rounded border ${
+                      isValid ? 'bg-gray-50 border-gray-200' : 'bg-red-50 border-red-200'
+                    }`}
                   >
-                    <X className="w-4 h-4" />
-                  </button>
-                </div>
-              ))}
+                    <div className="flex items-center">
+                      <div>
+                        <div className="flex items-center space-x-2">
+                          <p className="text-sm font-medium">
+                            {skylight.width}' × {skylight.length}'
+                          </p>
+                          {!isValid && (
+                            <AlertTriangle className="w-3 h-3 text-red-500" />
+                          )}
+                        </div>
+                        <p className="text-xs text-gray-500">
+                          Position: {skylight.xOffset}'L/R, {skylight.yOffset}'F/B
+                          {!isValid && (
+                            <span className="text-red-600 ml-1">(Out of bounds)</span>
+                          )}
+                        </p>
+                      </div>
+                    </div>
+                    <button
+                      className="p-1 text-gray-400 hover:text-error rounded-full hover:bg-gray-100"
+                      onClick={() => removeSkylight(index)}
+                    >
+                      <X className="w-4 h-4" />
+                    </button>
+                  </div>
+                );
+              })}
             </div>
           </div>
         )}

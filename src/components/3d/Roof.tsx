@@ -66,10 +66,22 @@ const Roof: React.FC<RoofProps> = ({ width, length, height, pitch, color, skylig
 
     // Create roof geometries with skylight cutouts
     const createRoofGeometryWithCutouts = (isLeftPanel: boolean) => {
-      // Filter skylights for this panel
-      const panelSkylights = skylights.filter(s => 
-        isLeftPanel ? s.xOffset < 0 : s.xOffset >= 0
-      );
+      // Filter skylights for this panel - only include skylights that are actually on this roof panel
+      const panelSkylights = skylights.filter(s => {
+        // Check if skylight is positioned on this roof panel
+        const skylightLeft = s.xOffset - s.width / 2;
+        const skylightRight = s.xOffset + s.width / 2;
+        
+        if (isLeftPanel) {
+          // Left panel covers negative X values (left side of roof)
+          return skylightRight <= 0; // Skylight must be entirely on left side
+        } else {
+          // Right panel covers positive X values (right side of roof)
+          return skylightLeft >= 0; // Skylight must be entirely on right side
+        }
+      });
+
+      console.log(`${isLeftPanel ? 'Left' : 'Right'} panel has ${panelSkylights.length} skylights`);
 
       if (panelSkylights.length === 0) {
         // No skylights, return simple box geometry
@@ -96,11 +108,19 @@ const Roof: React.FC<RoofProps> = ({ width, length, height, pitch, color, skylig
         const holeWidth = skylight.width * (panelLength / (width/2));
         const holeLength = skylight.length;
         
+        // Ensure skylight hole is within panel bounds
+        const maxLocalX = panelLength/2 - holeWidth/2;
+        const maxLocalY = length/2 - holeLength/2;
+        const clampedLocalX = Math.max(-maxLocalX, Math.min(maxLocalX, localX));
+        const clampedLocalY = Math.max(-maxLocalY, Math.min(maxLocalY, localY));
+        
+        console.log(`Creating skylight hole at (${clampedLocalX.toFixed(2)}, ${clampedLocalY.toFixed(2)}) size ${holeWidth.toFixed(2)}x${holeLength.toFixed(2)}`);
+        
         // Create rectangular hole
-        skylightHole.moveTo(localX - holeWidth/2, localY - holeLength/2);
-        skylightHole.lineTo(localX + holeWidth/2, localY - holeLength/2);
-        skylightHole.lineTo(localX + holeWidth/2, localY + holeLength/2);
-        skylightHole.lineTo(localX - holeWidth/2, localY + holeLength/2);
+        skylightHole.moveTo(clampedLocalX - holeWidth/2, clampedLocalY - holeLength/2);
+        skylightHole.lineTo(clampedLocalX + holeWidth/2, clampedLocalY - holeLength/2);
+        skylightHole.lineTo(clampedLocalX + holeWidth/2, clampedLocalY + holeLength/2);
+        skylightHole.lineTo(clampedLocalX - holeWidth/2, clampedLocalY + holeLength/2);
         skylightHole.closePath();
         
         roofShape.holes.push(skylightHole);
@@ -188,6 +208,15 @@ const Roof: React.FC<RoofProps> = ({ width, length, height, pitch, color, skylig
     const skylightY = 0.05; // Slightly above the roof surface to prevent z-fighting
     const skylightZ = localY;
     
+    // Ensure skylight is within roof bounds
+    const maxX = (width/2 - skylightWidth/2);
+    const maxY = (length/2 - skylightLength/2);
+    
+    if (Math.abs(skylight.xOffset) > maxX || Math.abs(skylight.yOffset) > maxY) {
+      console.warn(`Skylight at (${skylight.xOffset}, ${skylight.yOffset}) is out of roof bounds`);
+      return null; // Don't render out-of-bounds skylights
+    }
+    
     return (
       <mesh
         key={`${isLeftPanel ? 'left' : 'right'}-${skylight.xOffset}-${skylight.yOffset}`}
@@ -215,7 +244,11 @@ const Roof: React.FC<RoofProps> = ({ width, length, height, pitch, color, skylig
         </mesh>
         
         {/* Skylights positioned in the cutouts for left panel */}
-        {skylights.filter(s => s.xOffset < 0).map(s => createSkylight(s, true))}
+        {skylights
+          .filter(s => s.xOffset + s.width/2 <= 0) // Only skylights entirely on left side
+          .map(s => createSkylight(s, true))
+          .filter(Boolean) // Remove null skylights
+        }
       </group>
       
       {/* Right roof panel with cutouts */}
@@ -229,7 +262,11 @@ const Roof: React.FC<RoofProps> = ({ width, length, height, pitch, color, skylig
         </mesh>
         
         {/* Skylights positioned in the cutouts for right panel */}
-        {skylights.filter(s => s.xOffset >= 0).map(s => createSkylight(s, false))}
+        {skylights
+          .filter(s => s.xOffset - s.width/2 >= 0) // Only skylights entirely on right side
+          .map(s => createSkylight(s, false))
+          .filter(Boolean) // Remove null skylights
+        }
       </group>
       
       {/* Ridge cap with special white handling */}
