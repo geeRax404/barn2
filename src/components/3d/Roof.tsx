@@ -345,6 +345,54 @@ const Roof: React.FC<RoofProps> = ({ width, length, height, pitch, color, skylig
     };
   }, [color, length, width, panelLength, skylights]);
 
+  // 🎯 CREATE PHYSICAL RIBS - 3D raised elements on the roof
+  const createRoofRibs = (isLeftPanel: boolean) => {
+    const ribs = [];
+    const ribSpacing = 2; // 2 feet between ribs
+    const ribWidth = 0.08; // 1 inch wide ribs
+    const ribHeight = 0.04; // 0.5 inch tall ribs
+    const numRibs = Math.floor(length / ribSpacing);
+    
+    console.log(`🏗️ Creating ${numRibs} physical ribs for ${isLeftPanel ? 'left' : 'right'} panel`);
+    
+    // Rib material - same color as roof but slightly darker for definition
+    const ribMaterial = new THREE.MeshStandardMaterial({
+      color: color,
+      metalness: 0.02,
+      roughness: 0.92,
+      envMapIntensity: 0.12,
+      side: THREE.DoubleSide,
+    });
+    
+    for (let i = 0; i < numRibs; i++) {
+      const ribZ = -length/2 + (i + 1) * ribSpacing;
+      
+      // Skip ribs where skylights are positioned
+      const hasSkylightHere = skylights.some(skylight => {
+        if (skylight.panel !== (isLeftPanel ? 'left' : 'right')) return false;
+        const skylightFront = skylight.yOffset - skylight.length/2;
+        const skylightBack = skylight.yOffset + skylight.length/2;
+        return ribZ >= skylightFront && ribZ <= skylightBack;
+      });
+      
+      if (!hasSkylightHere) {
+        ribs.push(
+          <mesh
+            key={`rib-${i}`}
+            position={[0, ribHeight/2, ribZ]}
+            castShadow
+            receiveShadow
+          >
+            <boxGeometry args={[panelLength - 0.1, ribHeight, ribWidth]} />
+            <primitive object={ribMaterial} attach="material" />
+          </mesh>
+        );
+      }
+    }
+    
+    return ribs;
+  };
+
   const skylightMaterial = new THREE.MeshPhysicalMaterial({
     color: '#FFFFFF',
     metalness: 0.1,
@@ -402,6 +450,9 @@ const Roof: React.FC<RoofProps> = ({ width, length, height, pitch, color, skylig
           <primitive object={leftRoofMaterial} attach="material" />
         </mesh>
         
+        {/* 🎯 PHYSICAL RIBS for left panel */}
+        {createRoofRibs(true)}
+        
         {/* Skylights positioned in the cutouts for left panel */}
         {skylights
           .filter(s => s.panel === 'left')
@@ -419,6 +470,9 @@ const Roof: React.FC<RoofProps> = ({ width, length, height, pitch, color, skylig
           <primitive object={rightRoofGeometry} />
           <primitive object={rightRoofMaterial} attach="material" />
         </mesh>
+        
+        {/* 🎯 PHYSICAL RIBS for right panel */}
+        {createRoofRibs(false)}
         
         {/* Skylights positioned in the cutouts for right panel */}
         {skylights
