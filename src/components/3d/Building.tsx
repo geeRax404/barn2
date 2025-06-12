@@ -4,7 +4,6 @@ import { useBuildingStore } from '../../store/buildingStore';
 import Wall from './Wall';
 import Roof from './Roof';
 import WallFeature from './WallFeature';
-import Gutter from './Gutter';
 
 const Building: React.FC = () => {
   const { dimensions, features, color, roofColor, skylights } = useBuildingStore((state) => state.currentProject.building);
@@ -89,23 +88,6 @@ const Building: React.FC = () => {
         pitch={dimensions.roofPitch}
         color={roofColor}
         skylights={skylights}
-      />
-      
-      {/* Gutters on both sides */}
-      <Gutter
-        width={dimensions.width}
-        length={dimensions.length}
-        height={dimensions.height}
-        pitch={dimensions.roofPitch}
-        side="left"
-      />
-      
-      <Gutter
-        width={dimensions.width}
-        length={dimensions.length}
-        height={dimensions.height}
-        pitch={dimensions.roofPitch}
-        side="right"
       />
       
       {/* Wall Features (doors, windows, etc.) */}
