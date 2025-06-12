@@ -19,10 +19,10 @@ const Roof: React.FC<RoofProps> = ({ width, length, height, pitch, color, skylig
   const pitchAngle = Math.atan2(roofHeight, width / 2);
   const panelLength = Math.sqrt(Math.pow(width/2, 2) + Math.pow(roofHeight, 2));
 
-  // Create roof materials and geometries with MATTE, NON-REFLECTIVE finish
+  // Create roof materials and geometries with enhanced textures similar to shed builder
   const { leftRoofGeometry, rightRoofGeometry, leftRoofMaterial, rightRoofMaterial } = useMemo(() => {
-    // 🎯 MATTE CORRUGATED METAL TEXTURE - NO SHINE/REFLECTION
-    const createMatteCorrugatedTexture = (panelSide: 'left' | 'right') => {
+    // 🎯 ENHANCED CORRUGATED METAL TEXTURE - Similar to shed builder
+    const createEnhancedCorrugatedTexture = (panelSide: 'left' | 'right') => {
       const textureWidth = 1024;
       const textureHeight = 1024;
       const canvas = document.createElement('canvas');
@@ -35,73 +35,73 @@ const Roof: React.FC<RoofProps> = ({ width, length, height, pitch, color, skylig
         ctx.fillStyle = color;
         ctx.fillRect(0, 0, textureWidth, textureHeight);
         
-        // 🔧 MATTE CORRUGATED PATTERN - Reduced contrast for matte appearance
+        // 🔧 ENHANCED CORRUGATED PATTERN - More defined with stronger contrast
         const corrugationWidth = textureWidth / 16; // Wider corrugations for better definition
         const corrugationSpacing = corrugationWidth * 1.05; // Tight spacing
         
-        // Special handling for different colors with MATTE finish
+        // Special handling for different colors
         const isWhite = color === '#FFFFFF';
         const isDark = ['#1F2937', '#374151', '#4B5563', '#9CA3AF'].includes(color);
         const isRed = color === '#9B2226' || color === '#B91C1C';
         const isGreen = color === '#2D6A4F' || color === '#059669';
         
-        // 🎯 MATTE CONTRAST VALUES - Much more subtle for non-reflective appearance
+        // 🎯 ENHANCED CONTRAST VALUES - Much stronger definition
         let deepShadowOpacity, lightShadowOpacity, highlightOpacity, brightHighlightOpacity;
         
         if (isWhite) {
-          deepShadowOpacity = 0.08;  // Reduced from 0.2
-          lightShadowOpacity = 0.05; // Reduced from 0.12
-          highlightOpacity = 0.06;   // Reduced from 0.15
-          brightHighlightOpacity = 0.1; // Reduced from 0.25
+          deepShadowOpacity = 0.2;
+          lightShadowOpacity = 0.12;
+          highlightOpacity = 0.15;
+          brightHighlightOpacity = 0.25;
         } else if (isDark) {
-          deepShadowOpacity = 0.15;  // Reduced from 0.5
-          lightShadowOpacity = 0.1;  // Reduced from 0.3
-          highlightOpacity = 0.12;   // Reduced from 0.4
-          brightHighlightOpacity = 0.18; // Reduced from 0.6
+          deepShadowOpacity = 0.5;
+          lightShadowOpacity = 0.3;
+          highlightOpacity = 0.4;
+          brightHighlightOpacity = 0.6;
         } else if (isRed || isGreen) {
-          deepShadowOpacity = 0.12;  // Reduced from 0.35
-          lightShadowOpacity = 0.08; // Reduced from 0.2
-          highlightOpacity = 0.1;    // Reduced from 0.25
-          brightHighlightOpacity = 0.15; // Reduced from 0.4
+          deepShadowOpacity = 0.35;
+          lightShadowOpacity = 0.2;
+          highlightOpacity = 0.25;
+          brightHighlightOpacity = 0.4;
         } else {
-          deepShadowOpacity = 0.1;   // Reduced from 0.3
-          lightShadowOpacity = 0.06; // Reduced from 0.18
-          highlightOpacity = 0.08;   // Reduced from 0.2
-          brightHighlightOpacity = 0.12; // Reduced from 0.35
+          deepShadowOpacity = 0.3;
+          lightShadowOpacity = 0.18;
+          highlightOpacity = 0.2;
+          brightHighlightOpacity = 0.35;
         }
         
-        // 🎯 MATTE CORRUGATED PATTERN - Subtle definition without shine
+        // 🎯 ENHANCED CORRUGATED PATTERN - Create more defined metal roofing corrugations
         for (let x = 0; x < textureWidth; x += corrugationSpacing) {
-          // Create a more subtle corrugation profile for matte appearance
+          // Create a more complex corrugation profile with multiple gradients
           
-          // 1. Subtle valley shadow
+          // 1. Deep valley shadow
           const valleyGradient = ctx.createLinearGradient(x, 0, x + corrugationWidth * 0.2, 0);
           valleyGradient.addColorStop(0, `rgba(0,0,0,${deepShadowOpacity})`);
           valleyGradient.addColorStop(1, `rgba(0,0,0,${lightShadowOpacity})`);
           ctx.fillStyle = valleyGradient;
           ctx.fillRect(x, 0, corrugationWidth * 0.2, textureHeight);
           
-          // 2. Gentle rising slope
+          // 2. Rising slope with gradient from shadow to highlight
           const riseGradient = ctx.createLinearGradient(x + corrugationWidth * 0.2, 0, x + corrugationWidth * 0.45, 0);
           riseGradient.addColorStop(0, `rgba(0,0,0,${lightShadowOpacity})`);
           riseGradient.addColorStop(0.3, `rgba(0,0,0,0)`); // Neutral
-          riseGradient.addColorStop(0.7, `rgba(255,255,255,${highlightOpacity * 0.3})`);
-          riseGradient.addColorStop(1, `rgba(255,255,255,${highlightOpacity * 0.6})`);
+          riseGradient.addColorStop(0.7, `rgba(255,255,255,${highlightOpacity * 0.4})`);
+          riseGradient.addColorStop(1, `rgba(255,255,255,${highlightOpacity})`);
           ctx.fillStyle = riseGradient;
           ctx.fillRect(x + corrugationWidth * 0.2, 0, corrugationWidth * 0.25, textureHeight);
           
-          // 3. Subtle peak with minimal highlight
+          // 3. Peak plateau with bright highlight
           const peakGradient = ctx.createLinearGradient(x + corrugationWidth * 0.45, 0, x + corrugationWidth * 0.55, 0);
-          peakGradient.addColorStop(0, `rgba(255,255,255,${highlightOpacity * 0.6})`);
-          peakGradient.addColorStop(0.5, `rgba(255,255,255,${brightHighlightOpacity * 0.7})`); // Subtle peak
-          peakGradient.addColorStop(1, `rgba(255,255,255,${highlightOpacity * 0.6})`);
+          peakGradient.addColorStop(0, `rgba(255,255,255,${highlightOpacity})`);
+          peakGradient.addColorStop(0.5, `rgba(255,255,255,${brightHighlightOpacity})`); // Peak highlight
+          peakGradient.addColorStop(1, `rgba(255,255,255,${highlightOpacity})`);
           ctx.fillStyle = peakGradient;
           ctx.fillRect(x + corrugationWidth * 0.45, 0, corrugationWidth * 0.1, textureHeight);
           
-          // 4. Gentle falling slope
+          // 4. Falling slope back to shadow
           const fallGradient = ctx.createLinearGradient(x + corrugationWidth * 0.55, 0, x + corrugationWidth * 0.8, 0);
-          fallGradient.addColorStop(0, `rgba(255,255,255,${highlightOpacity * 0.6})`);
-          fallGradient.addColorStop(0.3, `rgba(255,255,255,${highlightOpacity * 0.3})`);
+          fallGradient.addColorStop(0, `rgba(255,255,255,${highlightOpacity})`);
+          fallGradient.addColorStop(0.3, `rgba(255,255,255,${highlightOpacity * 0.4})`);
           fallGradient.addColorStop(0.7, `rgba(0,0,0,0)`); // Neutral
           fallGradient.addColorStop(1, `rgba(0,0,0,${lightShadowOpacity})`);
           ctx.fillStyle = fallGradient;
@@ -114,55 +114,55 @@ const Roof: React.FC<RoofProps> = ({ width, length, height, pitch, color, skylig
           ctx.fillStyle = finalGradient;
           ctx.fillRect(x + corrugationWidth * 0.8, 0, corrugationWidth * 0.2, textureHeight);
           
-          // 6. Very subtle definition lines for matte finish
+          // 6. Add sharp definition lines for more realism
           if (corrugationWidth > 20) { // Only for larger corrugations
-            // Very thin, subtle line at the peak
-            ctx.fillStyle = `rgba(255,255,255,${brightHighlightOpacity * 0.8})`;
-            ctx.fillRect(x + corrugationWidth * 0.49, 0, 1, textureHeight);
+            // Thin bright line at the very peak
+            ctx.fillStyle = `rgba(255,255,255,${brightHighlightOpacity * 1.3})`;
+            ctx.fillRect(x + corrugationWidth * 0.49, 0, 2, textureHeight);
             
-            // Very thin shadow line in the valley
-            ctx.fillStyle = `rgba(0,0,0,${deepShadowOpacity * 0.8})`;
+            // Thin shadow line in the valley
+            ctx.fillStyle = `rgba(0,0,0,${deepShadowOpacity * 1.2})`;
             ctx.fillRect(x + corrugationWidth * 0.05, 0, 1, textureHeight);
             ctx.fillRect(x + corrugationWidth * 0.95, 0, 1, textureHeight);
           }
         }
         
-        // Add subtle horizontal panel seams
+        // Add horizontal panel seams every 8 feet equivalent
         const seamSpacing = textureHeight / 4;
-        ctx.strokeStyle = `rgba(0,0,0,${lightShadowOpacity * 0.6})`;
-        ctx.lineWidth = 1;
+        ctx.strokeStyle = `rgba(0,0,0,${lightShadowOpacity * 0.8})`;
+        ctx.lineWidth = 2;
         for (let y = seamSpacing; y < textureHeight; y += seamSpacing) {
           ctx.beginPath();
           ctx.moveTo(0, y);
           ctx.lineTo(textureWidth, y);
           ctx.stroke();
           
-          // Add very subtle highlight above seam
-          ctx.strokeStyle = `rgba(255,255,255,${highlightOpacity * 0.2})`;
+          // Add slight highlight above seam
+          ctx.strokeStyle = `rgba(255,255,255,${highlightOpacity * 0.3})`;
           ctx.lineWidth = 1;
           ctx.beginPath();
           ctx.moveTo(0, y - 1);
           ctx.lineTo(textureWidth, y - 1);
           ctx.stroke();
-          ctx.strokeStyle = `rgba(0,0,0,${lightShadowOpacity * 0.6})`;
-          ctx.lineWidth = 1;
+          ctx.strokeStyle = `rgba(0,0,0,${lightShadowOpacity * 0.8})`;
+          ctx.lineWidth = 2;
         }
         
-        // 🎯 ADD VERY SUBTLE WEATHERING for matte realism
+        // 🎯 ADD SUBTLE WEATHERING PATTERN for more realism
         if (!isWhite) {
           // Add very subtle random weathering marks
-          ctx.globalAlpha = 0.02; // Very subtle
-          for (let i = 0; i < 30; i++) {
+          ctx.globalAlpha = 0.04;
+          for (let i = 0; i < 40; i++) {
             const wx = Math.random() * textureWidth;
             const wy = Math.random() * textureHeight;
-            const wsize = Math.random() * 2 + 1;
-            ctx.fillStyle = Math.random() > 0.5 ? 'rgba(255,255,255,0.3)' : 'rgba(0,0,0,0.3)';
+            const wsize = Math.random() * 3 + 1;
+            ctx.fillStyle = Math.random() > 0.5 ? 'rgba(255,255,255,0.4)' : 'rgba(0,0,0,0.4)';
             ctx.fillRect(wx, wy, wsize, wsize * 0.4);
           }
           ctx.globalAlpha = 1.0;
         }
         
-        console.log(`✅ MATTE CORRUGATED TEXTURE CREATED for ${panelSide} panel - NO SHINE/REFLECTION`);
+        console.log(`✅ ENHANCED CORRUGATED TEXTURE CREATED for ${panelSide} panel - HIGHLY DEFINED corrugations`);
       }
       
       const texture = new THREE.CanvasTexture(canvas);
@@ -173,30 +173,30 @@ const Roof: React.FC<RoofProps> = ({ width, length, height, pitch, color, skylig
       return texture;
     };
 
-    // 🎯 ALWAYS CREATE MATTE CORRUGATED TEXTURES - NO REFLECTIVE FINISH
-    console.log(`🎯 CREATING MATTE CORRUGATED TEXTURES for both roof panels - NO SHINE`);
-    const leftTexture = createMatteCorrugatedTexture('left');
-    const rightTexture = createMatteCorrugatedTexture('right');
+    // 🎯 ALWAYS CREATE ENHANCED CORRUGATED TEXTURES - regardless of skylights
+    console.log(`🎯 CREATING ENHANCED CORRUGATED TEXTURES for both roof panels - HIGHLY DEFINED`);
+    const leftTexture = createEnhancedCorrugatedTexture('left');
+    const rightTexture = createEnhancedCorrugatedTexture('right');
     
-    // 🎯 MATTE MATERIAL PROPERTIES - NO METALNESS, HIGH ROUGHNESS
+    // 🎯 ENHANCED MATERIAL PROPERTIES for better corrugation definition
     const isWhite = color === '#FFFFFF';
     const isDark = ['#1F2937', '#374151', '#4B5563', '#9CA3AF'].includes(color);
     
     const materialProps = isWhite ? {
-      metalness: 0.0,    // NO METALNESS for matte finish
-      roughness: 0.95,   // VERY HIGH ROUGHNESS for no reflection
-      envMapIntensity: 0.1, // MINIMAL environment reflection
+      metalness: 0.6, // Increased metalness for better reflection
+      roughness: 0.3, // Reduced roughness for more defined highlights
+      envMapIntensity: 1.2, // Increased environment reflection
     } : isDark ? {
-      metalness: 0.05,   // MINIMAL metalness
-      roughness: 0.9,    // HIGH roughness for matte finish
-      envMapIntensity: 0.15, // MINIMAL environment reflection
+      metalness: 0.9, // High metalness for dark metal roofing
+      roughness: 0.15, // Very low roughness for sharp highlights
+      envMapIntensity: 1.4, // Strong environment reflection
     } : {
-      metalness: 0.02,   // ALMOST NO metalness
-      roughness: 0.92,   // VERY HIGH roughness for matte finish
-      envMapIntensity: 0.12, // MINIMAL environment reflection
+      metalness: 0.8, // High metalness for metal roofing
+      roughness: 0.2, // Low roughness for sharp highlights
+      envMapIntensity: 1.0, // Good environment reflection
     };
     
-    // 🎯 ALWAYS CREATE MATERIALS WITH MATTE CORRUGATED TEXTURES
+    // 🎯 ALWAYS CREATE MATERIALS WITH ENHANCED CORRUGATED TEXTURES
     const leftMaterial = new THREE.MeshStandardMaterial({
       map: leftTexture,
       ...materialProps,
@@ -209,7 +209,7 @@ const Roof: React.FC<RoofProps> = ({ width, length, height, pitch, color, skylig
       side: THREE.DoubleSide,
     });
     
-    console.log(`🎯 MATTE ROOF MATERIALS CREATED: Both panels have NO SHINE/REFLECTION`);
+    console.log(`🎯 ENHANCED ROOF MATERIALS CREATED: Both panels have HIGHLY DEFINED CORRUGATED TEXTURES`);
 
     // Create roof geometries with skylight cutouts ONLY where needed
     const createRoofGeometryWithCutouts = (isLeftPanel: boolean) => {
@@ -221,17 +221,17 @@ const Roof: React.FC<RoofProps> = ({ width, length, height, pitch, color, skylig
       console.log(`${isLeftPanel ? 'Left' : 'Right'} panel has ${panelSkylights.length} skylights`);
 
       if (panelSkylights.length === 0) {
-        // 🎯 NO SKYLIGHTS: Use simple box geometry - MATTE CORRUGATIONS ALWAYS VISIBLE
-        console.log(`${isLeftPanel ? 'Left' : 'Right'} panel: Using simple BoxGeometry - MATTE CORRUGATIONS ALWAYS VISIBLE`);
+        // 🎯 NO SKYLIGHTS: Use simple box geometry - ENHANCED CORRUGATIONS ALWAYS VISIBLE
+        console.log(`${isLeftPanel ? 'Left' : 'Right'} panel: Using simple BoxGeometry - ENHANCED CORRUGATIONS ALWAYS VISIBLE`);
         const geometry = new THREE.BoxGeometry(panelLength, 0.2, length);
         
-        // 🔧 CRITICAL: Apply proper UV mapping for matte corrugated texture on simple geometry
+        // 🔧 CRITICAL: Apply proper UV mapping for enhanced corrugated texture on simple geometry
         const uvAttribute = geometry.attributes.uv;
         const positionAttribute = geometry.attributes.position;
         const uvArray = uvAttribute.array;
         const positionArray = positionAttribute.array;
         
-        // Map UVs to show matte corrugations running along the panel length
+        // Map UVs to show enhanced corrugations running along the panel length
         for (let i = 0; i < positionArray.length; i += 3) {
           const x = positionArray[i];
           const y = positionArray[i + 1];
@@ -239,19 +239,19 @@ const Roof: React.FC<RoofProps> = ({ width, length, height, pitch, color, skylig
           
           const uvIndex = (i / 3) * 2;
           
-          // Calculate UV coordinates for matte corrugated pattern
+          // Calculate UV coordinates for enhanced corrugated pattern
           // Corrugations run along the length (Z direction), so use Z for the corrugated axis
           uvArray[uvIndex] = (z + length/2) / length * 8; // U coordinate - more corrugations along length
           uvArray[uvIndex + 1] = (x + panelLength/2) / panelLength * (length/3); // V coordinate - across width
         }
         
         uvAttribute.needsUpdate = true;
-        console.log(`${isLeftPanel ? 'Left' : 'Right'} panel: Applied matte corrugated UV mapping to BoxGeometry - MATTE CORRUGATIONS ALWAYS VISIBLE`);
+        console.log(`${isLeftPanel ? 'Left' : 'Right'} panel: Applied enhanced corrugated UV mapping to BoxGeometry - ENHANCED CORRUGATIONS ALWAYS VISIBLE`);
         return geometry;
       }
 
-      // 🎯 HAS SKYLIGHTS: Use extruded geometry with SELECTIVE cutouts - MATTE CORRUGATIONS PRESERVED
-      console.log(`${isLeftPanel ? 'Left' : 'Right'} panel: Using ExtrudeGeometry with ${panelSkylights.length} skylight cutouts - MATTE CORRUGATIONS PRESERVED EXCEPT IN CUTOUTS`);
+      // 🎯 HAS SKYLIGHTS: Use extruded geometry with SELECTIVE cutouts - ENHANCED CORRUGATIONS PRESERVED
+      console.log(`${isLeftPanel ? 'Left' : 'Right'} panel: Using ExtrudeGeometry with ${panelSkylights.length} skylight cutouts - ENHANCED CORRUGATIONS PRESERVED EXCEPT IN CUTOUTS`);
       
       // Create the roof panel shape in the XY plane (will be rotated later)
       const roofShape = new THREE.Shape();
@@ -289,7 +289,7 @@ const Roof: React.FC<RoofProps> = ({ width, length, height, pitch, color, skylig
         skylightHole.closePath();
         
         roofShape.holes.push(skylightHole);
-        console.log(`  ✂️ Added SELECTIVE hole for skylight - matte corrugations preserved everywhere else`);
+        console.log(`  ✂️ Added SELECTIVE hole for skylight - enhanced corrugations preserved everywhere else`);
       });
 
       const extrudeSettings = {
@@ -300,15 +300,15 @@ const Roof: React.FC<RoofProps> = ({ width, length, height, pitch, color, skylig
 
       const geometry = new THREE.ExtrudeGeometry(roofShape, extrudeSettings);
       
-      // 🔧 CRITICAL: Apply proper UV mapping to extruded geometry for PRESERVED matte corrugated texture
+      // 🔧 CRITICAL: Apply proper UV mapping to extruded geometry for PRESERVED enhanced corrugated texture
       const uvAttribute = geometry.attributes.uv;
       const positionAttribute = geometry.attributes.position;
       const uvArray = uvAttribute.array;
       const positionArray = positionAttribute.array;
       
-      console.log(`${isLeftPanel ? 'Left' : 'Right'} panel: Applying matte corrugated UV mapping to ExtrudeGeometry with selective cutouts`);
+      console.log(`${isLeftPanel ? 'Left' : 'Right'} panel: Applying enhanced corrugated UV mapping to ExtrudeGeometry with selective cutouts`);
       
-      // Apply UV mapping that preserves the matte corrugated pattern EVERYWHERE except in the holes
+      // Apply UV mapping that preserves the enhanced corrugated pattern EVERYWHERE except in the holes
       for (let i = 0; i < positionArray.length; i += 3) {
         const x = positionArray[i];
         const y = positionArray[i + 1];
@@ -316,11 +316,11 @@ const Roof: React.FC<RoofProps> = ({ width, length, height, pitch, color, skylig
         
         const uvIndex = (i / 3) * 2;
         
-        // 🎯 PRESERVE MATTE CORRUGATIONS: Map UV coordinates to show matte corrugations running along the panel length
+        // 🎯 PRESERVE ENHANCED CORRUGATIONS: Map UV coordinates to show enhanced corrugations running along the panel length
         // The extruded geometry is in XY plane, so:
         // - X corresponds to the panel length direction (where corrugations run)
         // - Y corresponds to the panel width direction (across corrugations)
-        uvArray[uvIndex] = (x + panelLength/2) / panelLength * 8; // U coordinate - more matte corrugations along length
+        uvArray[uvIndex] = (x + panelLength/2) / panelLength * 8; // U coordinate - more enhanced corrugations along length
         uvArray[uvIndex + 1] = (y + length/2) / length * (length/3); // V coordinate - across width
       }
       
@@ -329,11 +329,11 @@ const Roof: React.FC<RoofProps> = ({ width, length, height, pitch, color, skylig
       geometry.rotateX(-Math.PI / 2); // Rotate to lie flat in XZ plane
       
       uvAttribute.needsUpdate = true;
-      console.log(`${isLeftPanel ? 'Left' : 'Right'} panel: Matte corrugated texture applied to ExtrudeGeometry - MATTE CORRUGATIONS PRESERVED with selective skylight cutouts`);
+      console.log(`${isLeftPanel ? 'Left' : 'Right'} panel: Enhanced corrugated texture applied to ExtrudeGeometry - ENHANCED CORRUGATIONS PRESERVED with selective skylight cutouts`);
       return geometry;
     };
     
-    // Create geometries with SELECTIVE cutouts and PRESERVED matte corrugations
+    // Create geometries with SELECTIVE cutouts and PRESERVED enhanced corrugations
     const leftGeometry = createRoofGeometryWithCutouts(true);
     const rightGeometry = createRoofGeometryWithCutouts(false);
     
@@ -392,7 +392,7 @@ const Roof: React.FC<RoofProps> = ({ width, length, height, pitch, color, skylig
   
   return (
     <group position={[0, height, 0]}>
-      {/* Left roof panel with MATTE CORRUGATED TEXTURE - NO SHINE */}
+      {/* Left roof panel with ENHANCED CORRUGATED TEXTURE ALWAYS VISIBLE */}
       <group 
         position={[-width / 4, roofHeight / 2, 0]}
         rotation={[0, 0, pitchAngle]}
@@ -410,7 +410,7 @@ const Roof: React.FC<RoofProps> = ({ width, length, height, pitch, color, skylig
         }
       </group>
       
-      {/* Right roof panel with MATTE CORRUGATED TEXTURE - NO SHINE */}
+      {/* Right roof panel with ENHANCED CORRUGATED TEXTURE ALWAYS VISIBLE */}
       <group
         position={[width / 4, roofHeight / 2, 0]}
         rotation={[0, 0, -pitchAngle]}
@@ -428,7 +428,7 @@ const Roof: React.FC<RoofProps> = ({ width, length, height, pitch, color, skylig
         }
       </group>
       
-      {/* Ridge cap with matte finish */}
+      {/* Ridge cap with enhanced corrugated texture */}
       <mesh 
         position={[0, roofHeight, 0]} 
         castShadow 
@@ -437,9 +437,9 @@ const Roof: React.FC<RoofProps> = ({ width, length, height, pitch, color, skylig
         <boxGeometry args={[0.4, 0.3, length]} />
         <meshStandardMaterial 
           color={color} 
-          metalness={0.0}     // NO METALNESS for matte finish
-          roughness={0.95}    // VERY HIGH ROUGHNESS for no reflection
-          envMapIntensity={0.1} // MINIMAL environment reflection
+          metalness={color === '#FFFFFF' ? 0.5 : 0.9} 
+          roughness={color === '#FFFFFF' ? 0.4 : 0.1}
+          envMapIntensity={color === '#FFFFFF' ? 1.0 : 1.4}
         />
       </mesh>
     </group>
