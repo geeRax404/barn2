@@ -19,7 +19,7 @@ const Roof: React.FC<RoofProps> = ({ width, length, height, pitch, color, skylig
   const pitchAngle = Math.atan2(roofHeight, width / 2);
   const panelLength = Math.sqrt(Math.pow(width/2, 2) + Math.pow(roofHeight, 2));
 
-  // Create roof materials and geometries with SAME TEXTURE AS WALLS
+  // Create roof materials and geometries with MATTE FINISH - NO METALLIC SHINE
   const { leftRoofGeometry, rightRoofGeometry, leftRoofMaterial, rightRoofMaterial } = useMemo(() => {
     // 🎯 IDENTICAL WALL TEXTURE - Same ribbed pattern as walls
     const createWallStyleRibbedTexture = (panelSide: 'left' | 'right') => {
@@ -166,25 +166,25 @@ const Roof: React.FC<RoofProps> = ({ width, length, height, pitch, color, skylig
     const leftTexture = createWallStyleRibbedTexture('left');
     const rightTexture = createWallStyleRibbedTexture('right');
     
-    // 🎯 IDENTICAL MATERIAL PROPERTIES - SAME AS WALLS
+    // 🎯 MATTE FINISH MATERIAL PROPERTIES - NO METALLIC SHINE
     const isWhite = color === '#FFFFFF';
     const isDark = ['#1F2937', '#374151', '#4B5563'].includes(color);
     
     const materialProps = isWhite ? {
-      metalness: 0.4, // IDENTICAL to walls
-      roughness: 0.5, // IDENTICAL to walls
-      envMapIntensity: 1.2, // IDENTICAL to walls
+      metalness: 0.1, // VERY LOW metalness - almost no shine
+      roughness: 0.8, // HIGH roughness - matte finish
+      envMapIntensity: 0.3, // LOW environment reflection
     } : isDark ? {
-      metalness: 0.8, // IDENTICAL to walls
-      roughness: 0.2, // IDENTICAL to walls
-      envMapIntensity: 1.5, // IDENTICAL to walls
+      metalness: 0.2, // LOW metalness - minimal shine
+      roughness: 0.7, // HIGH roughness - matte finish
+      envMapIntensity: 0.4, // LOW environment reflection
     } : {
-      metalness: 0.6, // IDENTICAL to walls
-      roughness: 0.3, // IDENTICAL to walls
-      envMapIntensity: 1.0, // IDENTICAL to walls
+      metalness: 0.15, // VERY LOW metalness - almost no shine
+      roughness: 0.75, // HIGH roughness - matte finish
+      envMapIntensity: 0.35, // LOW environment reflection
     };
     
-    // 🎯 CREATE MATERIALS WITH IDENTICAL WALL-STYLE TEXTURES
+    // 🎯 CREATE MATERIALS WITH MATTE FINISH - NO METALLIC SHINE
     const leftMaterial = new THREE.MeshStandardMaterial({
       map: leftTexture,
       ...materialProps,
@@ -197,7 +197,7 @@ const Roof: React.FC<RoofProps> = ({ width, length, height, pitch, color, skylig
       side: THREE.DoubleSide,
     });
     
-    console.log(`🎯 ROOF MATERIALS CREATED: IDENTICAL TO WALL MATERIALS`);
+    console.log(`🎯 ROOF MATERIALS CREATED: MATTE FINISH - NO METALLIC SHINE`);
 
     // Create roof geometries with skylight cutouts ONLY where needed
     const createRoofGeometryWithCutouts = (isLeftPanel: boolean) => {
@@ -373,7 +373,7 @@ const Roof: React.FC<RoofProps> = ({ width, length, height, pitch, color, skylig
   
   return (
     <group position={[0, height, 0]}>
-      {/* Left roof panel with IDENTICAL WALL-STYLE TEXTURE */}
+      {/* Left roof panel with MATTE FINISH - NO METALLIC SHINE */}
       <group 
         position={[-width / 4, roofHeight / 2, 0]}
         rotation={[0, 0, pitchAngle]}
@@ -391,7 +391,7 @@ const Roof: React.FC<RoofProps> = ({ width, length, height, pitch, color, skylig
         }
       </group>
       
-      {/* Right roof panel with IDENTICAL WALL-STYLE TEXTURE */}
+      {/* Right roof panel with MATTE FINISH - NO METALLIC SHINE */}
       <group
         position={[width / 4, roofHeight / 2, 0]}
         rotation={[0, 0, -pitchAngle]}
@@ -409,7 +409,7 @@ const Roof: React.FC<RoofProps> = ({ width, length, height, pitch, color, skylig
         }
       </group>
       
-      {/* Ridge cap with IDENTICAL WALL-STYLE MATERIAL PROPERTIES */}
+      {/* Ridge cap with MATTE FINISH - NO METALLIC SHINE */}
       <mesh 
         position={[0, roofHeight, 0]} 
         castShadow 
@@ -418,9 +418,9 @@ const Roof: React.FC<RoofProps> = ({ width, length, height, pitch, color, skylig
         <boxGeometry args={[0.4, 0.3, length]} />
         <meshStandardMaterial 
           color={color} 
-          metalness={color === '#FFFFFF' ? 0.4 : ['#1F2937', '#374151', '#4B5563'].includes(color) ? 0.8 : 0.6}
-          roughness={color === '#FFFFFF' ? 0.5 : ['#1F2937', '#374151', '#4B5563'].includes(color) ? 0.2 : 0.3}
-          envMapIntensity={color === '#FFFFFF' ? 1.2 : ['#1F2937', '#374151', '#4B5563'].includes(color) ? 1.5 : 1.0}
+          metalness={color === '#FFFFFF' ? 0.1 : ['#1F2937', '#374151', '#4B5563'].includes(color) ? 0.2 : 0.15}
+          roughness={color === '#FFFFFF' ? 0.8 : ['#1F2937', '#374151', '#4B5563'].includes(color) ? 0.7 : 0.75}
+          envMapIntensity={color === '#FFFFFF' ? 0.3 : ['#1F2937', '#374151', '#4B5563'].includes(color) ? 0.4 : 0.35}
         />
       </mesh>
     </group>
