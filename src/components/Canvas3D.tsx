@@ -1,10 +1,62 @@
 import React, { useRef, useEffect } from 'react';
 import { Canvas, useFrame, useThree } from '@react-three/fiber';
 import { OrbitControls, PerspectiveCamera, Grid, Text, Line } from '@react-three/drei';
+import * as THREE from 'three';
 import { useBuildingStore } from '../store/buildingStore';
 import Building from './3d/Building';
 import FloorPlan from './FloorPlan';
 import type { ViewMode } from '../types';
+
+const GrassGround: React.FC = () => {
+  const meshRef = useRef<THREE.Mesh>(null);
+
+  useEffect(() => {
+    const loader = new THREE.TextureLoader();
+    
+    loader.load(
+      '/image.png', // Your uploaded grass texture
+      (texture) => {
+        // Configure texture for realistic grass appearance
+        texture.wrapS = THREE.RepeatWrapping;
+        texture.wrapT = THREE.RepeatWrapping;
+        texture.repeat.set(20, 20); // Repeat 20x20 for natural scale
+        texture.minFilter = THREE.LinearMipmapLinearFilter;
+        texture.magFilter = THREE.LinearFilter;
+        
+        // Apply texture to the mesh
+        if (meshRef.current) {
+          (meshRef.current.material as THREE.MeshStandardMaterial).map = texture;
+          (meshRef.current.material as THREE.MeshStandardMaterial).needsUpdate = true;
+        }
+        
+        console.log('✅ Grass texture loaded successfully!');
+      },
+      (progress) => {
+        console.log('Loading grass texture...', (progress.loaded / progress.total * 100) + '%');
+      },
+      (error) => {
+        console.error('❌ Failed to load grass texture:', error);
+        console.log('Using fallback green color instead');
+      }
+    );
+  }, []);
+
+  return (
+    <mesh 
+      ref={meshRef}
+      rotation={[-Math.PI / 2, 0, 0]} 
+      receiveShadow 
+      position={[0, 0, 0]}
+    >
+      <planeGeometry args={[200, 200]} />
+      <meshStandardMaterial 
+        color="#4A7C59" // Fallback grass green color
+        roughness={0.8}
+        metalness={0.1}
+      />
+    </mesh>
+  );
+};
 
 const DimensionLine: React.FC<{
   start: [number, number, number];
@@ -211,9 +263,9 @@ const Canvas3D: React.FC<Canvas3DProps> = ({ view }) => {
       camera={{ position: [60, 45, 60], fov: 50 }}
       gl={{ preserveDrawingBuffer: true }}
     >
-      {/* Enhanced lighting setup optimized for white materials */}
+      {/* Enhanced lighting setup optimized for grass texture */}
       
-      {/* Main sun light - positioned high and slightly south with increased intensity for white */}
+      {/* Main sun light - positioned high and slightly south with increased intensity */}
       <directionalLight
         position={[20, 50, 30]}
         intensity={1.8}
@@ -229,22 +281,22 @@ const Canvas3D: React.FC<Canvas3DProps> = ({ view }) => {
         color="#ffffff"
       />
       
-      {/* Secondary light from opposite direction for roof variation */}
+      {/* Secondary light from opposite direction for variation */}
       <directionalLight
         position={[-15, 40, -20]}
         intensity={0.6}
         color="#f8f9fa"
       />
       
-      {/* Ambient light increased for better white visibility */}
+      {/* Ambient light for overall illumination */}
       <ambientLight intensity={0.5} color="#ffffff" />
       
-      {/* Hemisphere light for sky/ground color variation */}
+      {/* Hemisphere light for natural sky/ground color variation - optimized for grass */}
       <hemisphereLight
-        args={["#ffffff", "#f0f0f0", 0.6]}
+        args={["#87CEEB", "#4A7C59", 0.6]} // Sky blue to grass green
       />
       
-      {/* Fill light to reduce harsh shadows and brighten whites */}
+      {/* Fill light to reduce harsh shadows */}
       <pointLight
         position={[0, 30, 0]}
         intensity={0.5}
@@ -256,24 +308,18 @@ const Canvas3D: React.FC<Canvas3DProps> = ({ view }) => {
       <PerspectiveCamera makeDefault position={[60, 45, 60]} fov={50} />
       <CameraController view={view} />
       
-      {/* Ground plane with improved material */}
-      <mesh rotation={[-Math.PI / 2, 0, 0]} receiveShadow position={[0, 0, 0]}>
-        <planeGeometry args={[200, 200]} />
-        <meshStandardMaterial 
-          color="#F5F5F5"
-          roughness={0.8}
-          metalness={0.1}
-        />
-      </mesh>
+      {/* 🌱 GRASS TEXTURED GROUND PLANE */}
+      <GrassGround />
       
+      {/* White grid for better visibility over grass */}
       <Grid 
         args={[200, 200]} 
         cellSize={1}
         cellThickness={0.5}
-        cellColor="#D0D0D0" 
+        cellColor="#FFFFFF" 
         sectionSize={10}
         sectionThickness={1}
-        sectionColor="#B0B0B0"
+        sectionColor="#E0E0E0"
         fadeDistance={100}
         fadeStrength={1}
         infiniteGrid
