@@ -1,6 +1,6 @@
 import React from 'react';
 import { motion } from 'framer-motion';
-import { Car, Barn, ArrowRight, Star, DollarSign } from 'lucide-react';
+import { Car, Barcode as Barn, ArrowRight, Star, DollarSign } from 'lucide-react';
 import type { BuildingTemplate } from '../../types/templates';
 
 interface TemplateCardProps {
