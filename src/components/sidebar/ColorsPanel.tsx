@@ -180,7 +180,7 @@ const ColorsPanel: React.FC = () => {
         <p className="text-xs text-gray-600 mb-3">Popular COLORBOND® colors in New Zealand & Australia</p>
         <div className="grid grid-cols-4 gap-3">
           {colorOptions.map((option) => (
-            <div key={option.value} className="relative">
+            <div key={option.value} className="relative group">
               <button
                 className={`w-full h-14 rounded-lg overflow-hidden border-2 transition-all duration-200 hover:scale-105 hover:shadow-md ${
                   color === option.value 
@@ -189,6 +189,7 @@ const ColorsPanel: React.FC = () => {
                 }`}
                 style={{ backgroundColor: option.value }}
                 onClick={() => setColor(option.value)}
+                title={option.name}
               >
                 {color === option.value && (
                   <div className="absolute inset-0 flex items-center justify-center">
@@ -211,7 +212,7 @@ const ColorsPanel: React.FC = () => {
         <p className="text-xs text-gray-600 mb-3">Popular roofing colors for rural buildings</p>
         <div className="grid grid-cols-4 gap-3">
           {roofColorOptions.map((option) => (
-            <div key={option.value} className="relative">
+            <div key={option.value} className="relative group">
               <button
                 className={`w-full h-14 rounded-lg overflow-hidden border-2 transition-all duration-200 hover:scale-105 hover:shadow-md ${
                   roofColor === option.value 
@@ -220,6 +221,7 @@ const ColorsPanel: React.FC = () => {
                 }`}
                 style={{ backgroundColor: option.value }}
                 onClick={() => setRoofColor(option.value)}
+                title={option.name}
               >
                 {roofColor === option.value && (
                   <div className="absolute inset-0 flex items-center justify-center">
