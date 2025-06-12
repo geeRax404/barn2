@@ -24,7 +24,7 @@ const Wall: React.FC<WallProps> = ({
   roofPitch = 0,
   wallFeatures = []
 }) => {
-  // Create enhanced ribbed texture similar to shed builder
+  // Create MUCH MORE NOTICEABLE ribbed texture
   const wallMaterial = useMemo(() => {
     const textureWidth = 1024;
     const textureHeight = 1024;
@@ -38,107 +38,145 @@ const Wall: React.FC<WallProps> = ({
       ctx.fillStyle = color;
       ctx.fillRect(0, 0, textureWidth, textureHeight);
       
-      // Enhanced vertical ribbed pattern similar to shed builder
-      const ribWidth = textureWidth / 12; // More defined ribs
-      const ribSpacing = ribWidth * 1.1;
+      // 🎯 DRAMATICALLY ENHANCED RIBBED PATTERN - MUCH MORE NOTICEABLE
+      const ribWidth = textureWidth / 6; // MUCH WIDER ribs (was /12, now /6)
+      const ribSpacing = ribWidth * 1.05; // Tight spacing for continuous pattern
       
       // Special handling for different colors
       const isWhite = color === '#FFFFFF';
       const isDark = ['#1F2937', '#374151', '#4B5563'].includes(color);
       
-      // Enhanced contrast values for better definition
-      const shadowOpacity = isWhite ? 0.12 : isDark ? 0.25 : 0.18;
-      const highlightOpacity = isWhite ? 0.08 : isDark ? 0.35 : 0.15;
-      const deepShadowOpacity = isWhite ? 0.18 : isDark ? 0.4 : 0.25;
+      // 🔥 DRAMATICALLY INCREASED CONTRAST VALUES - SUPER NOTICEABLE
+      const shadowOpacity = isWhite ? 0.35 : isDark ? 0.6 : 0.45; // MUCH STRONGER (was 0.12/0.25/0.18)
+      const highlightOpacity = isWhite ? 0.25 : isDark ? 0.8 : 0.4; // MUCH STRONGER (was 0.08/0.35/0.15)
+      const deepShadowOpacity = isWhite ? 0.5 : isDark ? 0.9 : 0.65; // MUCH STRONGER (was 0.18/0.4/0.25)
+      const brightHighlightOpacity = isWhite ? 0.4 : isDark ? 1.0 : 0.6; // NEW - SUPER BRIGHT HIGHLIGHTS
       
-      // Create vertical ribs with enhanced depth
+      console.log(`🎯 CREATING SUPER NOTICEABLE RIBS: ${ribWidth}px wide, contrast: ${shadowOpacity}/${highlightOpacity}`);
+      
+      // Create DRAMATICALLY enhanced vertical ribs with EXTREME depth
       for (let x = 0; x < textureWidth; x += ribSpacing) {
-        // Deep shadow valley
-        const valleyGradient = ctx.createLinearGradient(x, 0, x + ribWidth * 0.15, 0);
+        // 🔥 SUPER DEEP shadow valley - MUCH MORE DRAMATIC
+        const valleyGradient = ctx.createLinearGradient(x, 0, x + ribWidth * 0.2, 0);
         valleyGradient.addColorStop(0, `rgba(0,0,0,${deepShadowOpacity})`);
+        valleyGradient.addColorStop(0.5, `rgba(0,0,0,${deepShadowOpacity * 0.8})`);
         valleyGradient.addColorStop(1, `rgba(0,0,0,${shadowOpacity})`);
         ctx.fillStyle = valleyGradient;
-        ctx.fillRect(x, 0, ribWidth * 0.15, textureHeight);
+        ctx.fillRect(x, 0, ribWidth * 0.2, textureHeight);
         
-        // Rising slope
-        const riseGradient = ctx.createLinearGradient(x + ribWidth * 0.15, 0, x + ribWidth * 0.5, 0);
+        // 🔥 DRAMATIC rising slope with EXTREME contrast
+        const riseGradient = ctx.createLinearGradient(x + ribWidth * 0.2, 0, x + ribWidth * 0.45, 0);
         riseGradient.addColorStop(0, `rgba(0,0,0,${shadowOpacity})`);
-        riseGradient.addColorStop(0.5, `rgba(0,0,0,0)`);
-        riseGradient.addColorStop(1, `rgba(255,255,255,${highlightOpacity * 0.5})`);
+        riseGradient.addColorStop(0.3, `rgba(0,0,0,${shadowOpacity * 0.5})`);
+        riseGradient.addColorStop(0.7, `rgba(255,255,255,${highlightOpacity * 0.3})`);
+        riseGradient.addColorStop(1, `rgba(255,255,255,${highlightOpacity})`);
         ctx.fillStyle = riseGradient;
-        ctx.fillRect(x + ribWidth * 0.15, 0, ribWidth * 0.35, textureHeight);
+        ctx.fillRect(x + ribWidth * 0.2, 0, ribWidth * 0.25, textureHeight);
         
-        // Peak highlight
-        const peakGradient = ctx.createLinearGradient(x + ribWidth * 0.5, 0, x + ribWidth * 0.7, 0);
-        peakGradient.addColorStop(0, `rgba(255,255,255,${highlightOpacity * 0.5})`);
-        peakGradient.addColorStop(0.5, `rgba(255,255,255,${highlightOpacity})`);
-        peakGradient.addColorStop(1, `rgba(255,255,255,${highlightOpacity * 0.5})`);
+        // 🔥 SUPER BRIGHT peak highlight - EXTREMELY NOTICEABLE
+        const peakGradient = ctx.createLinearGradient(x + ribWidth * 0.45, 0, x + ribWidth * 0.55, 0);
+        peakGradient.addColorStop(0, `rgba(255,255,255,${highlightOpacity})`);
+        peakGradient.addColorStop(0.5, `rgba(255,255,255,${brightHighlightOpacity})`); // SUPER BRIGHT CENTER
+        peakGradient.addColorStop(1, `rgba(255,255,255,${highlightOpacity})`);
         ctx.fillStyle = peakGradient;
-        ctx.fillRect(x + ribWidth * 0.5, 0, ribWidth * 0.2, textureHeight);
+        ctx.fillRect(x + ribWidth * 0.45, 0, ribWidth * 0.1, textureHeight);
         
-        // Falling slope
-        const fallGradient = ctx.createLinearGradient(x + ribWidth * 0.7, 0, x + ribWidth, 0);
-        fallGradient.addColorStop(0, `rgba(255,255,255,${highlightOpacity * 0.5})`);
-        fallGradient.addColorStop(0.5, `rgba(0,0,0,0)`);
+        // 🔥 DRAMATIC falling slope back to shadow
+        const fallGradient = ctx.createLinearGradient(x + ribWidth * 0.55, 0, x + ribWidth * 0.8, 0);
+        fallGradient.addColorStop(0, `rgba(255,255,255,${highlightOpacity})`);
+        fallGradient.addColorStop(0.3, `rgba(255,255,255,${highlightOpacity * 0.3})`);
+        fallGradient.addColorStop(0.7, `rgba(0,0,0,${shadowOpacity * 0.5})`);
         fallGradient.addColorStop(1, `rgba(0,0,0,${shadowOpacity})`);
         ctx.fillStyle = fallGradient;
-        ctx.fillRect(x + ribWidth * 0.7, 0, ribWidth * 0.3, textureHeight);
+        ctx.fillRect(x + ribWidth * 0.55, 0, ribWidth * 0.25, textureHeight);
         
-        // Sharp highlight line at peak
-        ctx.fillStyle = `rgba(255,255,255,${highlightOpacity * 1.2})`;
-        ctx.fillRect(x + ribWidth * 0.58, 0, 2, textureHeight);
+        // 🔥 FINAL valley approach with DEEP shadows
+        const finalGradient = ctx.createLinearGradient(x + ribWidth * 0.8, 0, x + ribWidth, 0);
+        finalGradient.addColorStop(0, `rgba(0,0,0,${shadowOpacity})`);
+        finalGradient.addColorStop(0.5, `rgba(0,0,0,${shadowOpacity * 1.2})`);
+        finalGradient.addColorStop(1, `rgba(0,0,0,${deepShadowOpacity})`);
+        ctx.fillStyle = finalGradient;
+        ctx.fillRect(x + ribWidth * 0.8, 0, ribWidth * 0.2, textureHeight);
         
-        // Sharp shadow line in valley
-        ctx.fillStyle = `rgba(0,0,0,${deepShadowOpacity * 1.1})`;
-        ctx.fillRect(x + ribWidth * 0.05, 0, 1, textureHeight);
+        // 🔥 SUPER SHARP definition lines for MAXIMUM visibility
+        // ULTRA BRIGHT highlight line at the very peak
+        ctx.fillStyle = `rgba(255,255,255,${brightHighlightOpacity * 1.5})`; // SUPER BRIGHT
+        ctx.fillRect(x + ribWidth * 0.49, 0, 4, textureHeight); // WIDER line (was 2px, now 4px)
+        
+        // ULTRA DARK shadow lines in the valleys
+        ctx.fillStyle = `rgba(0,0,0,${deepShadowOpacity * 1.3})`; // SUPER DARK
+        ctx.fillRect(x + ribWidth * 0.02, 0, 3, textureHeight); // WIDER line
+        ctx.fillRect(x + ribWidth * 0.98, 0, 3, textureHeight); // WIDER line
+        
+        // 🔥 ADDITIONAL DEFINITION - Secondary highlight lines
+        ctx.fillStyle = `rgba(255,255,255,${highlightOpacity * 0.8})`;
+        ctx.fillRect(x + ribWidth * 0.46, 0, 2, textureHeight);
+        ctx.fillRect(x + ribWidth * 0.52, 0, 2, textureHeight);
+        
+        // 🔥 ADDITIONAL DEFINITION - Secondary shadow lines
+        ctx.fillStyle = `rgba(0,0,0,${shadowOpacity * 1.1})`;
+        ctx.fillRect(x + ribWidth * 0.1, 0, 2, textureHeight);
+        ctx.fillRect(x + ribWidth * 0.9, 0, 2, textureHeight);
       }
       
-      // Add subtle horizontal panel lines every 4 feet equivalent
+      // 🔥 ENHANCED horizontal panel lines - MORE NOTICEABLE
       const panelHeight = textureHeight / 3;
-      ctx.strokeStyle = `rgba(0,0,0,${shadowOpacity * 0.6})`;
-      ctx.lineWidth = 1;
+      ctx.strokeStyle = `rgba(0,0,0,${shadowOpacity * 1.2})`; // STRONGER panel lines
+      ctx.lineWidth = 3; // THICKER lines (was 1, now 3)
       for (let y = panelHeight; y < textureHeight; y += panelHeight) {
         ctx.beginPath();
         ctx.moveTo(0, y);
         ctx.lineTo(textureWidth, y);
         ctx.stroke();
+        
+        // Add BRIGHT highlight above each panel line
+        ctx.strokeStyle = `rgba(255,255,255,${highlightOpacity * 0.6})`;
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.moveTo(0, y - 2);
+        ctx.lineTo(textureWidth, y - 2);
+        ctx.stroke();
+        ctx.strokeStyle = `rgba(0,0,0,${shadowOpacity * 1.2})`;
+        ctx.lineWidth = 3;
       }
       
-      // Add subtle weathering for realism (except pure white)
+      // 🔥 ENHANCED weathering for MORE texture variation (except pure white)
       if (!isWhite) {
-        ctx.globalAlpha = 0.03;
-        for (let i = 0; i < 30; i++) {
+        ctx.globalAlpha = 0.08; // STRONGER weathering (was 0.03)
+        for (let i = 0; i < 50; i++) { // MORE weathering marks (was 30)
           const wx = Math.random() * textureWidth;
           const wy = Math.random() * textureHeight;
-          const wsize = Math.random() * 4 + 1;
-          ctx.fillStyle = Math.random() > 0.5 ? 'rgba(255,255,255,0.4)' : 'rgba(0,0,0,0.4)';
+          const wsize = Math.random() * 6 + 2; // LARGER weathering marks
+          ctx.fillStyle = Math.random() > 0.5 ? 'rgba(255,255,255,0.6)' : 'rgba(0,0,0,0.6)';
           ctx.fillRect(wx, wy, wsize, wsize * 0.5);
         }
         ctx.globalAlpha = 1.0;
       }
+      
+      console.log(`✅ SUPER NOTICEABLE RIBBED TEXTURE CREATED - EXTREME CONTRAST AND DEFINITION`);
     }
     
     const texture = new THREE.CanvasTexture(canvas);
     texture.wrapS = THREE.RepeatWrapping;
     texture.wrapT = THREE.RepeatWrapping;
-    texture.repeat.set(width/4, height/4); // Scale based on wall size
+    texture.repeat.set(width/3, height/3); // LARGER scale for MORE NOTICEABLE ribs (was /4, now /3)
     
-    // Enhanced material properties similar to shed builder
+    // Enhanced material properties for MAXIMUM rib visibility
     const isWhite = color === '#FFFFFF';
     const isDark = ['#1F2937', '#374151', '#4B5563'].includes(color);
     
     const materialProps = isWhite ? {
-      metalness: 0.3,
-      roughness: 0.6,
-      envMapIntensity: 0.8,
+      metalness: 0.4, // INCREASED for better reflection
+      roughness: 0.5, // REDUCED for sharper highlights
+      envMapIntensity: 1.2, // INCREASED for more dramatic lighting
     } : isDark ? {
-      metalness: 0.7,
-      roughness: 0.3,
-      envMapIntensity: 1.0,
+      metalness: 0.8, // HIGH metalness for dramatic contrast
+      roughness: 0.2, // LOW roughness for sharp highlights
+      envMapIntensity: 1.5, // HIGH environment reflection
     } : {
-      metalness: 0.5,
-      roughness: 0.4,
-      envMapIntensity: 0.6,
+      metalness: 0.6, // INCREASED metalness
+      roughness: 0.3, // REDUCED roughness for sharper definition
+      envMapIntensity: 1.0,
     };
     
     return new THREE.MeshStandardMaterial({
