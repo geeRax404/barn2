@@ -1,9 +1,11 @@
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
-import { Save, Upload, Download, Share2, Settings, HelpCircle, RotateCcw, ClipboardCheck } from 'lucide-react';
+import { Save, Upload, Download, Share2, Settings, HelpCircle, RotateCcw, ClipboardCheck, Grid3X3 } from 'lucide-react';
 import { useBuildingStore } from '../store/buildingStore';
+import { useTemplateStore } from '../store/templateStore';
 import { exportTechnicalDrawings } from './TechnicalDrawings';
 import RightWallInspectionReport from './inspection/RightWallInspectionReport';
+import TemplateSelector from './templates/TemplateSelector';
 
 const Toolbar: React.FC = () => {
   const [showInspectionReport, setShowInspectionReport] = useState(false);
@@ -14,6 +16,8 @@ const Toolbar: React.FC = () => {
     dimensions: state.currentProject.building.dimensions,
     features: state.currentProject.building.features
   }));
+
+  const { isTemplateModalOpen, openTemplateModal, closeTemplateModal, applyTemplate } = useTemplateStore();
   
   const handleNewProject = () => {
     if (window.confirm('Create a new project? Any unsaved changes will be lost.')) {
@@ -27,6 +31,10 @@ const Toolbar: React.FC = () => {
 
   const handleInspectionReport = () => {
     setShowInspectionReport(true);
+  };
+
+  const handleTemplateSelect = (template: any) => {
+    applyTemplate(template);
   };
   
   return (
@@ -44,6 +52,14 @@ const Toolbar: React.FC = () => {
           >
             <RotateCcw className="w-4 h-4 mr-1" />
             New
+          </button>
+
+          <button 
+            onClick={openTemplateModal}
+            className="btn"
+          >
+            <Grid3X3 className="w-4 h-4 mr-1" />
+            Templates
           </button>
           
           <button className="btn-secondary btn">
@@ -91,6 +107,14 @@ const Toolbar: React.FC = () => {
           </button>
         </div>
       </motion.div>
+
+      {/* Template Selector Modal */}
+      {isTemplateModalOpen && (
+        <TemplateSelector
+          onTemplateSelect={handleTemplateSelect}
+          onClose={closeTemplateModal}
+        />
+      )}
 
       {/* Inspection Report Modal */}
       {showInspectionReport && (
