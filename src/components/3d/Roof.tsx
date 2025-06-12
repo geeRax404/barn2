@@ -19,7 +19,7 @@ const Roof: React.FC<RoofProps> = ({ width, length, height, pitch, color, skylig
   const pitchAngle = Math.atan2(roofHeight, width / 2);
   const panelLength = Math.sqrt(Math.pow(width/2, 2) + Math.pow(roofHeight, 2));
 
-  // Create roof materials and geometries with enhanced textures similar to shed builder
+  // Create roof materials and geometries with REDUCED SHININESS
   const { leftRoofGeometry, rightRoofGeometry, leftRoofMaterial, rightRoofMaterial } = useMemo(() => {
     // 🎯 ENHANCED CORRUGATED METAL TEXTURE - Similar to shed builder
     const createEnhancedCorrugatedTexture = (panelSide: 'left' | 'right') => {
@@ -178,25 +178,25 @@ const Roof: React.FC<RoofProps> = ({ width, length, height, pitch, color, skylig
     const leftTexture = createEnhancedCorrugatedTexture('left');
     const rightTexture = createEnhancedCorrugatedTexture('right');
     
-    // 🎯 ENHANCED MATERIAL PROPERTIES for better corrugation definition
+    // 🎯 REDUCED SHININESS MATERIAL PROPERTIES - Much less reflective
     const isWhite = color === '#FFFFFF';
     const isDark = ['#1F2937', '#374151', '#4B5563', '#9CA3AF'].includes(color);
     
     const materialProps = isWhite ? {
-      metalness: 0.6, // Increased metalness for better reflection
-      roughness: 0.3, // Reduced roughness for more defined highlights
-      envMapIntensity: 1.2, // Increased environment reflection
+      metalness: 0.2, // REDUCED from 0.6 - much less metallic
+      roughness: 0.8, // INCREASED from 0.3 - much more matte
+      envMapIntensity: 0.3, // REDUCED from 1.2 - much less reflection
     } : isDark ? {
-      metalness: 0.9, // High metalness for dark metal roofing
-      roughness: 0.15, // Very low roughness for sharp highlights
-      envMapIntensity: 1.4, // Strong environment reflection
+      metalness: 0.3, // REDUCED from 0.9 - much less metallic
+      roughness: 0.7, // INCREASED from 0.15 - much more matte
+      envMapIntensity: 0.4, // REDUCED from 1.4 - much less reflection
     } : {
-      metalness: 0.8, // High metalness for metal roofing
-      roughness: 0.2, // Low roughness for sharp highlights
-      envMapIntensity: 1.0, // Good environment reflection
+      metalness: 0.25, // REDUCED from 0.8 - much less metallic
+      roughness: 0.75, // INCREASED from 0.2 - much more matte
+      envMapIntensity: 0.35, // REDUCED from 1.0 - much less reflection
     };
     
-    // 🎯 ALWAYS CREATE MATERIALS WITH ENHANCED CORRUGATED TEXTURES
+    // 🎯 ALWAYS CREATE MATERIALS WITH REDUCED SHININESS
     const leftMaterial = new THREE.MeshStandardMaterial({
       map: leftTexture,
       ...materialProps,
@@ -209,7 +209,7 @@ const Roof: React.FC<RoofProps> = ({ width, length, height, pitch, color, skylig
       side: THREE.DoubleSide,
     });
     
-    console.log(`🎯 ENHANCED ROOF MATERIALS CREATED: Both panels have HIGHLY DEFINED CORRUGATED TEXTURES`);
+    console.log(`🎯 MATTE ROOF MATERIALS CREATED: Both panels have REDUCED SHININESS`);
 
     // Create roof geometries with skylight cutouts ONLY where needed
     const createRoofGeometryWithCutouts = (isLeftPanel: boolean) => {
@@ -392,7 +392,7 @@ const Roof: React.FC<RoofProps> = ({ width, length, height, pitch, color, skylig
   
   return (
     <group position={[0, height, 0]}>
-      {/* Left roof panel with ENHANCED CORRUGATED TEXTURE ALWAYS VISIBLE */}
+      {/* Left roof panel with REDUCED SHININESS */}
       <group 
         position={[-width / 4, roofHeight / 2, 0]}
         rotation={[0, 0, pitchAngle]}
@@ -410,7 +410,7 @@ const Roof: React.FC<RoofProps> = ({ width, length, height, pitch, color, skylig
         }
       </group>
       
-      {/* Right roof panel with ENHANCED CORRUGATED TEXTURE ALWAYS VISIBLE */}
+      {/* Right roof panel with REDUCED SHININESS */}
       <group
         position={[width / 4, roofHeight / 2, 0]}
         rotation={[0, 0, -pitchAngle]}
@@ -428,7 +428,7 @@ const Roof: React.FC<RoofProps> = ({ width, length, height, pitch, color, skylig
         }
       </group>
       
-      {/* Ridge cap with enhanced corrugated texture */}
+      {/* Ridge cap with REDUCED SHININESS */}
       <mesh 
         position={[0, roofHeight, 0]} 
         castShadow 
@@ -437,9 +437,9 @@ const Roof: React.FC<RoofProps> = ({ width, length, height, pitch, color, skylig
         <boxGeometry args={[0.4, 0.3, length]} />
         <meshStandardMaterial 
           color={color} 
-          metalness={color === '#FFFFFF' ? 0.5 : 0.9} 
-          roughness={color === '#FFFFFF' ? 0.4 : 0.1}
-          envMapIntensity={color === '#FFFFFF' ? 1.0 : 1.4}
+          metalness={color === '#FFFFFF' ? 0.2 : 0.3} // REDUCED from 0.5/0.9
+          roughness={color === '#FFFFFF' ? 0.8 : 0.7} // INCREASED from 0.4/0.1
+          envMapIntensity={color === '#FFFFFF' ? 0.3 : 0.4} // REDUCED from 1.0/1.4
         />
       </mesh>
     </group>
