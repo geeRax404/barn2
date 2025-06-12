@@ -65,12 +65,46 @@ const roofColorOptions = [
   { name: 'Pewter', value: '#96A8A1' },
 ];
 
+// 🏗️ LYSAGHT WALL PROFILES - Based on https://lysaght.com/profiles
+const wallProfileOptions = [
+  {
+    name: 'Multiclad',
+    value: 'multiclad',
+    description: 'Traditional ribbed profile with deep corrugations',
+    ribWidth: 76, // 76mm rib spacing
+    ribDepth: 'deep'
+  },
+  {
+    name: 'Trimdek',
+    value: 'trimdek',
+    description: 'Contemporary trapezoidal profile with clean lines',
+    ribWidth: 65, // 65mm rib spacing
+    ribDepth: 'medium'
+  },
+  {
+    name: 'CustomOrb',
+    value: 'customorb',
+    description: 'Curved profile with rounded ribs',
+    ribWidth: 32, // 32mm rib spacing
+    ribDepth: 'shallow'
+  },
+  {
+    name: 'Horizontal CustomOrb',
+    value: 'horizontal-customorb',
+    description: 'Horizontal installation of CustomOrb profile',
+    ribWidth: 32,
+    ribDepth: 'shallow'
+  }
+];
+
 const ColorsPanel: React.FC = () => {
-  const { color, roofColor, setColor, setRoofColor } = useBuildingStore((state) => ({
+  const { color, roofColor, wallProfile, setColor, setRoofColor, setWallProfile } = useBuildingStore((state) => ({
     color: state.currentProject.building.color,
     roofColor: state.currentProject.building.roofColor,
+    wallProfile: state.currentProject.building.wallProfile || 'trimdek',
     setColor: state.setColor,
-    setRoofColor: state.setRoofColor
+    setRoofColor: state.setRoofColor,
+    setWallProfile: state.setWallProfile
   }));
 
   return (
@@ -79,6 +113,61 @@ const ColorsPanel: React.FC = () => {
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
     >
+      {/* Wall Profile Selection */}
+      <div className="mb-6">
+        <label className="form-label text-base font-semibold">Wall Profile</label>
+        <p className="text-xs text-gray-600 mb-3">Choose from Lysaght's premium profile collection</p>
+        
+        <div className="space-y-3">
+          {wallProfileOptions.map((profile) => (
+            <div key={profile.value} className="relative">
+              <button
+                className={`w-full p-3 text-left rounded-lg border-2 transition-all duration-200 hover:shadow-md ${
+                  wallProfile === profile.value 
+                    ? 'border-blue-500 bg-blue-50 ring-2 ring-blue-200' 
+                    : 'border-gray-300 hover:border-gray-400 bg-white'
+                }`}
+                onClick={() => setWallProfile(profile.value)}
+              >
+                <div className="flex items-center justify-between">
+                  <div className="flex-1">
+                    <div className="font-medium text-gray-900">{profile.name}</div>
+                    <div className="text-xs text-gray-600 mt-1">{profile.description}</div>
+                    <div className="text-xs text-gray-500 mt-1">
+                      {profile.ribWidth}mm spacing • {profile.ribDepth} profile
+                    </div>
+                  </div>
+                  {wallProfile === profile.value && (
+                    <div className="w-5 h-5 bg-blue-500 rounded-full flex items-center justify-center ml-3">
+                      <div className="w-2 h-2 bg-white rounded-full"></div>
+                    </div>
+                  )}
+                </div>
+                
+                {/* Profile Preview Pattern */}
+                <div className="mt-2 h-8 bg-gray-100 rounded overflow-hidden relative">
+                  <div 
+                    className="absolute inset-0 opacity-30"
+                    style={{
+                      background: profile.value === 'horizontal-customorb' 
+                        ? `repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(0,0,0,0.1) 2px, rgba(0,0,0,0.1) 4px)`
+                        : profile.value === 'customorb'
+                          ? `repeating-linear-gradient(90deg, transparent, transparent 3px, rgba(0,0,0,0.1) 3px, rgba(0,0,0,0.1) 6px)`
+                          : profile.value === 'trimdek'
+                            ? `repeating-linear-gradient(90deg, transparent, transparent 8px, rgba(0,0,0,0.15) 8px, rgba(0,0,0,0.15) 10px, transparent 10px, transparent 18px)`
+                            : `repeating-linear-gradient(90deg, transparent, transparent 6px, rgba(0,0,0,0.2) 6px, rgba(0,0,0,0.2) 8px, transparent 8px, transparent 14px)`
+                    }}
+                  />
+                  <div className="absolute bottom-1 right-2 text-xs text-gray-500 font-medium">
+                    {profile.name}
+                  </div>
+                </div>
+              </button>
+            </div>
+          ))}
+        </div>
+      </div>
+
       <div className="mb-6">
         <label className="form-label text-base font-semibold">Wall Color</label>
         <p className="text-xs text-gray-600 mb-3">Choose from our premium color collection</p>
@@ -145,26 +234,40 @@ const ColorsPanel: React.FC = () => {
       
       {/* Color Combination Preview */}
       <div className="mb-4 p-4 bg-gray-50 rounded-lg border border-gray-200">
-        <h3 className="text-sm font-semibold text-gray-700 mb-3">Color Preview</h3>
-        <div className="flex items-center space-x-3">
-          <div className="flex-1">
-            <div className="text-xs text-gray-600 mb-1">Wall Color</div>
-            <div 
-              className="h-8 rounded border border-gray-300 shadow-sm"
-              style={{ backgroundColor: color }}
-            ></div>
-            <div className="text-xs text-gray-700 mt-1 font-medium">
-              {colorOptions.find(c => c.value === color)?.name || 'Custom'}
+        <h3 className="text-sm font-semibold text-gray-700 mb-3">Preview</h3>
+        <div className="space-y-3">
+          {/* Profile Preview */}
+          <div>
+            <div className="text-xs text-gray-600 mb-1">Wall Profile</div>
+            <div className="text-sm font-medium text-gray-700">
+              {wallProfileOptions.find(p => p.value === wallProfile)?.name || 'Trimdek'}
+            </div>
+            <div className="text-xs text-gray-500">
+              {wallProfileOptions.find(p => p.value === wallProfile)?.description}
             </div>
           </div>
-          <div className="flex-1">
-            <div className="text-xs text-gray-600 mb-1">Roof Color</div>
-            <div 
-              className="h-8 rounded border border-gray-300 shadow-sm"
-              style={{ backgroundColor: roofColor }}
-            ></div>
-            <div className="text-xs text-gray-700 mt-1 font-medium">
-              {roofColorOptions.find(c => c.value === roofColor)?.name || 'Custom'}
+          
+          {/* Color Preview */}
+          <div className="flex items-center space-x-3">
+            <div className="flex-1">
+              <div className="text-xs text-gray-600 mb-1">Wall Color</div>
+              <div 
+                className="h-8 rounded border border-gray-300 shadow-sm"
+                style={{ backgroundColor: color }}
+              ></div>
+              <div className="text-xs text-gray-700 mt-1 font-medium">
+                {colorOptions.find(c => c.value === color)?.name || 'Custom'}
+              </div>
+            </div>
+            <div className="flex-1">
+              <div className="text-xs text-gray-600 mb-1">Roof Color</div>
+              <div 
+                className="h-8 rounded border border-gray-300 shadow-sm"
+                style={{ backgroundColor: roofColor }}
+              ></div>
+              <div className="text-xs text-gray-700 mt-1 font-medium">
+                {roofColorOptions.find(c => c.value === roofColor)?.name || 'Custom'}
+              </div>
             </div>
           </div>
         </div>

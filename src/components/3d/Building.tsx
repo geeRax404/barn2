@@ -6,7 +6,14 @@ import Roof from './Roof';
 import WallFeature from './WallFeature';
 
 const Building: React.FC = () => {
-  const { dimensions, features, color, roofColor, skylights } = useBuildingStore((state) => state.currentProject.building);
+  const { dimensions, features, color, roofColor, skylights, wallProfile } = useBuildingStore((state) => ({
+    dimensions: state.currentProject.building.dimensions,
+    features: state.currentProject.building.features,
+    color: state.currentProject.building.color,
+    roofColor: state.currentProject.building.roofColor,
+    skylights: state.currentProject.building.skylights,
+    wallProfile: state.currentProject.building.wallProfile || 'trimdek'
+  }));
   
   const halfWidth = dimensions.width / 2;
   const halfLength = dimensions.length / 2;
@@ -44,6 +51,7 @@ const Building: React.FC = () => {
         wallPosition="front"
         roofPitch={dimensions.roofPitch}
         wallFeatures={getWallFeatures('front')}
+        wallProfile={wallProfile}
       />
       
       {/* Back wall */}
@@ -56,6 +64,7 @@ const Building: React.FC = () => {
         roofPitch={dimensions.roofPitch}
         rotation={[0, Math.PI, 0]}
         wallFeatures={getWallFeatures('back')}
+        wallProfile={wallProfile}
       />
       
       {/* Left wall */}
@@ -67,6 +76,7 @@ const Building: React.FC = () => {
         wallPosition="left"
         rotation={[0, Math.PI / 2, 0]}
         wallFeatures={getWallFeatures('left')}
+        wallProfile={wallProfile}
       />
       
       {/* Right wall */}
@@ -78,6 +88,7 @@ const Building: React.FC = () => {
         wallPosition="right"
         rotation={[0, -Math.PI / 2, 0]}
         wallFeatures={getWallFeatures('right')}
+        wallProfile={wallProfile}
       />
       
       {/* Roof */}

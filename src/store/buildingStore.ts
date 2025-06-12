@@ -3,7 +3,7 @@ import { v4 as uuidv4 } from 'uuid';
 import { validateWallHeights } from '../utils/wallHeightValidation';
 import { isValidFeaturePosition } from '../utils/wallBoundsValidation';
 import { isValidSkylightPosition } from '../utils/skylightValidation';
-import type { BuildingStore, Project, ViewMode, BuildingDimensions, WallFeature, Skylight } from '../types';
+import type { BuildingStore, Project, ViewMode, BuildingDimensions, WallFeature, Skylight, WallProfile } from '../types';
 
 // Default initial building
 const defaultBuilding = {
@@ -17,6 +17,7 @@ const defaultBuilding = {
   skylights: [],
   color: '#E5E7EB', // Light gray
   roofColor: '#9CA3AF', // Medium gray
+  wallProfile: 'trimdek' as WallProfile, // Default to Trimdek profile
 };
 
 // Create a default project
@@ -262,6 +263,19 @@ export const useBuildingStore = create<BuildingStore>((set, get) => ({
         building: {
           ...state.currentProject.building,
           roofColor: color,
+        },
+      },
+    })),
+
+  // Set wall profile
+  setWallProfile: (profile: WallProfile) => 
+    set((state) => ({
+      currentProject: {
+        ...state.currentProject,
+        lastModified: new Date(),
+        building: {
+          ...state.currentProject.building,
+          wallProfile: profile,
         },
       },
     })),

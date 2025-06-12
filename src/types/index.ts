@@ -12,6 +12,9 @@ export type FeatureType = 'door' | 'window' | 'rollupDoor' | 'walkDoor';
 // Wall positions
 export type WallPosition = 'front' | 'back' | 'left' | 'right';
 
+// Wall profile types - Lysaght profiles
+export type WallProfile = 'multiclad' | 'trimdek' | 'customorb' | 'horizontal-customorb';
+
 // Feature positioning
 export interface FeaturePosition {
   wallPosition: WallPosition;
@@ -52,6 +55,7 @@ export interface Building {
   skylights: Skylight[];
   color: string;
   roofColor: string;
+  wallProfile: WallProfile;
 }
 
 // Project info
@@ -102,6 +106,7 @@ export interface BuildingStore {
   updateSkylight: (index: number, updates: Partial<Skylight>) => void;
   setColor: (color: string) => void;
   setRoofColor: (color: string) => void;
+  setWallProfile: (profile: WallProfile) => void;
   setCurrentView: (view: ViewMode) => void;
   saveProject: () => void;
   loadProject: (id: string) => void;
