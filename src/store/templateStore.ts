@@ -1,5 +1,7 @@
 import { create } from 'zustand';
+import { v4 as uuidv4 } from 'uuid';
 import type { BuildingTemplate } from '../types/templates';
+import type { Building } from '../types';
 import { useBuildingStore } from './buildingStore';
 
 interface TemplateStore {
@@ -26,47 +28,26 @@ export const useTemplateStore = create<TemplateStore>((set, get) => ({
   applyTemplate: (template) => {
     const buildingStore = useBuildingStore.getState();
     
-    // Apply template dimensions
-    buildingStore.updateDimensions({
-      width: template.defaultDimensions.width,
-      length: template.defaultDimensions.length,
-      height: template.defaultDimensions.height,
-      roofPitch: template.defaultDimensions.roofPitch
-    });
+    // Construct the complete building object from the template
+    const newBuilding: Building = {
+      dimensions: {
+        width: template.defaultDimensions.width,
+        length: template.defaultDimensions.length,
+        height: template.defaultDimensions.height,
+        roofPitch: template.defaultDimensions.roofPitch
+      },
+      color: template.defaultColor,
+      roofColor: template.defaultRoofColor,
+      wallProfile: template.wallProfile,
+      features: template.features.map(feature => ({
+        ...feature,
+        id: uuidv4() // Ensure each feature has a unique ID
+      })),
+      skylights: template.skylights || []
+    };
     
-    // Apply template colors
-    buildingStore.setColor(template.defaultColor);
-    buildingStore.setRoofColor(template.defaultRoofColor);
-    buildingStore.setWallProfile(template.wallProfile);
-    
-    // Clear existing features and add template features
-    const currentFeatures = buildingStore.currentProject.building.features;
-    currentFeatures.forEach(feature => {
-      buildingStore.removeFeature(feature.id);
-    });
-    
-    // Add template features
-    template.features.forEach(feature => {
-      buildingStore.addFeature({
-        type: feature.type,
-        width: feature.width,
-        height: feature.height,
-        position: feature.position
-      });
-    });
-    
-    // Clear existing skylights and add template skylights
-    const currentSkylights = buildingStore.currentProject.building.skylights;
-    for (let i = currentSkylights.length - 1; i >= 0; i--) {
-      buildingStore.removeSkylight(i);
-    }
-    
-    // Add template skylights
-    if (template.skylights) {
-      template.skylights.forEach(skylight => {
-        buildingStore.addSkylight(skylight);
-      });
-    }
+    // Apply the complete building state atomically
+    buildingStore.setBuilding(newBuilding);
     
     // Update project name to reflect template
     buildingStore.currentProject.name = template.name;

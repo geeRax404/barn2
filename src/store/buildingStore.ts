@@ -3,7 +3,7 @@ import { v4 as uuidv4 } from 'uuid';
 import { validateWallHeights } from '../utils/wallHeightValidation';
 import { isValidFeaturePosition } from '../utils/wallBoundsValidation';
 import { isValidSkylightPosition } from '../utils/skylightValidation';
-import type { BuildingStore, Project, ViewMode, BuildingDimensions, WallFeature, Skylight, WallProfile } from '../types';
+import type { BuildingStore, Project, ViewMode, BuildingDimensions, WallFeature, Skylight, WallProfile, Building } from '../types';
 
 // Default initial building
 const defaultBuilding = {
@@ -34,6 +34,46 @@ export const useBuildingStore = create<BuildingStore>((set, get) => ({
   currentProject: createDefaultProject(),
   savedProjects: [],
   currentView: '3d' as ViewMode,
+
+  // Set complete building state atomically
+  setBuilding: (building: Building) =>
+    set((state) => {
+      // Validate height constraints for all features
+      const heightValidation = validateWallHeights(building.dimensions, building.features);
+      
+      if (!heightValidation.valid) {
+        console.error('Building height validation failed:', heightValidation.errors);
+        return state;
+      }
+
+      // Validate wall bounds for all features
+      const invalidFeatures = building.features.filter(feature => {
+        return !isValidFeaturePosition(feature, building.dimensions);
+      });
+
+      if (invalidFeatures.length > 0) {
+        console.error('Building wall bounds validation failed for features:', invalidFeatures.map(f => f.id));
+        return state;
+      }
+
+      // Validate skylight bounds for all skylights
+      const invalidSkylights = building.skylights.filter(skylight => {
+        return !isValidSkylightPosition(skylight, building.dimensions);
+      });
+
+      if (invalidSkylights.length > 0) {
+        console.error('Building skylight bounds validation failed for skylights:', invalidSkylights.length);
+        return state;
+      }
+
+      return {
+        currentProject: {
+          ...state.currentProject,
+          lastModified: new Date(),
+          building,
+        },
+      };
+    }),
 
   // Update building dimensions with comprehensive validation
   updateDimensions: (dimensions: Partial<BuildingDimensions>) => 

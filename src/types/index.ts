@@ -97,6 +97,7 @@ export interface BuildingStore {
   currentView: ViewMode;
   
   // Actions
+  setBuilding: (building: Building) => void;
   updateDimensions: (dimensions: Partial<BuildingDimensions>) => void;
   addFeature: (feature: Omit<WallFeature, 'id'>) => void;
   removeFeature: (id: string) => void;
