@@ -30,12 +30,16 @@ export interface WallFeature {
   color?: string;
 }
 
-// Skylight feature
+// Roof panel types
+export type RoofPanel = 'left' | 'right';
+
+// Skylight feature with panel selection
 export interface Skylight {
   width: number;
   length: number;
-  xOffset: number; // Distance from center
+  xOffset: number; // Distance from panel center (not roof center)
   yOffset: number; // Distance from ridge
+  panel: RoofPanel; // Which roof panel the skylight is on
 }
 
 // View modes
@@ -95,6 +99,7 @@ export interface BuildingStore {
   updateFeature: (id: string, updates: Partial<Omit<WallFeature, 'id'>>) => void;
   addSkylight: (skylight: Skylight) => void;
   removeSkylight: (index: number) => void;
+  updateSkylight: (index: number, updates: Partial<Skylight>) => void;
   setColor: (color: string) => void;
   setRoofColor: (color: string) => void;
   setCurrentView: (view: ViewMode) => void;
