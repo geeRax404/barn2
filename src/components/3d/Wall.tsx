@@ -24,56 +24,121 @@ const Wall: React.FC<WallProps> = ({
   roofPitch = 0,
   wallFeatures = []
 }) => {
-  // Create ribbed texture with special handling for white
+  // Create enhanced ribbed texture similar to shed builder
   const wallMaterial = useMemo(() => {
-    const textureWidth = 512;
-    const textureHeight = 512;
+    const textureWidth = 1024;
+    const textureHeight = 1024;
     const canvas = document.createElement('canvas');
     canvas.width = textureWidth;
     canvas.height = textureHeight;
     const ctx = canvas.getContext('2d');
     
     if (ctx) {
+      // Base color fill
       ctx.fillStyle = color;
       ctx.fillRect(0, 0, textureWidth, textureHeight);
       
-      // Create ribbed pattern with special handling for pure white
-      const ribWidth = textureWidth / 16;
-      const gradient = ctx.createLinearGradient(0, 0, ribWidth, 0);
+      // Enhanced vertical ribbed pattern similar to shed builder
+      const ribWidth = textureWidth / 12; // More defined ribs
+      const ribSpacing = ribWidth * 1.1;
       
-      // Special handling for pure white to maintain brightness
+      // Special handling for different colors
       const isWhite = color === '#FFFFFF';
-      const shadowOpacity = isWhite ? 0.06 : 0.15;
-      const highlightOpacity = isWhite ? 0.04 : 0.12;
+      const isDark = ['#1F2937', '#374151', '#4B5563'].includes(color);
       
-      gradient.addColorStop(0, `rgba(255,255,255,${highlightOpacity})`);
-      gradient.addColorStop(0.3, `rgba(255,255,255,${highlightOpacity * 0.5})`);
-      gradient.addColorStop(0.5, `rgba(0,0,0,${shadowOpacity})`);
-      gradient.addColorStop(0.7, `rgba(255,255,255,${highlightOpacity * 0.5})`);
-      gradient.addColorStop(1, `rgba(255,255,255,${highlightOpacity})`);
+      // Enhanced contrast values for better definition
+      const shadowOpacity = isWhite ? 0.12 : isDark ? 0.25 : 0.18;
+      const highlightOpacity = isWhite ? 0.08 : isDark ? 0.35 : 0.15;
+      const deepShadowOpacity = isWhite ? 0.18 : isDark ? 0.4 : 0.25;
       
-      ctx.fillStyle = gradient;
+      // Create vertical ribs with enhanced depth
+      for (let x = 0; x < textureWidth; x += ribSpacing) {
+        // Deep shadow valley
+        const valleyGradient = ctx.createLinearGradient(x, 0, x + ribWidth * 0.15, 0);
+        valleyGradient.addColorStop(0, `rgba(0,0,0,${deepShadowOpacity})`);
+        valleyGradient.addColorStop(1, `rgba(0,0,0,${shadowOpacity})`);
+        ctx.fillStyle = valleyGradient;
+        ctx.fillRect(x, 0, ribWidth * 0.15, textureHeight);
+        
+        // Rising slope
+        const riseGradient = ctx.createLinearGradient(x + ribWidth * 0.15, 0, x + ribWidth * 0.5, 0);
+        riseGradient.addColorStop(0, `rgba(0,0,0,${shadowOpacity})`);
+        riseGradient.addColorStop(0.5, `rgba(0,0,0,0)`);
+        riseGradient.addColorStop(1, `rgba(255,255,255,${highlightOpacity * 0.5})`);
+        ctx.fillStyle = riseGradient;
+        ctx.fillRect(x + ribWidth * 0.15, 0, ribWidth * 0.35, textureHeight);
+        
+        // Peak highlight
+        const peakGradient = ctx.createLinearGradient(x + ribWidth * 0.5, 0, x + ribWidth * 0.7, 0);
+        peakGradient.addColorStop(0, `rgba(255,255,255,${highlightOpacity * 0.5})`);
+        peakGradient.addColorStop(0.5, `rgba(255,255,255,${highlightOpacity})`);
+        peakGradient.addColorStop(1, `rgba(255,255,255,${highlightOpacity * 0.5})`);
+        ctx.fillStyle = peakGradient;
+        ctx.fillRect(x + ribWidth * 0.5, 0, ribWidth * 0.2, textureHeight);
+        
+        // Falling slope
+        const fallGradient = ctx.createLinearGradient(x + ribWidth * 0.7, 0, x + ribWidth, 0);
+        fallGradient.addColorStop(0, `rgba(255,255,255,${highlightOpacity * 0.5})`);
+        fallGradient.addColorStop(0.5, `rgba(0,0,0,0)`);
+        fallGradient.addColorStop(1, `rgba(0,0,0,${shadowOpacity})`);
+        ctx.fillStyle = fallGradient;
+        ctx.fillRect(x + ribWidth * 0.7, 0, ribWidth * 0.3, textureHeight);
+        
+        // Sharp highlight line at peak
+        ctx.fillStyle = `rgba(255,255,255,${highlightOpacity * 1.2})`;
+        ctx.fillRect(x + ribWidth * 0.58, 0, 2, textureHeight);
+        
+        // Sharp shadow line in valley
+        ctx.fillStyle = `rgba(0,0,0,${deepShadowOpacity * 1.1})`;
+        ctx.fillRect(x + ribWidth * 0.05, 0, 1, textureHeight);
+      }
       
-      for (let x = 0; x < textureWidth; x += ribWidth) {
-        ctx.fillRect(x, 0, ribWidth, textureHeight);
+      // Add subtle horizontal panel lines every 4 feet equivalent
+      const panelHeight = textureHeight / 3;
+      ctx.strokeStyle = `rgba(0,0,0,${shadowOpacity * 0.6})`;
+      ctx.lineWidth = 1;
+      for (let y = panelHeight; y < textureHeight; y += panelHeight) {
+        ctx.beginPath();
+        ctx.moveTo(0, y);
+        ctx.lineTo(textureWidth, y);
+        ctx.stroke();
+      }
+      
+      // Add subtle weathering for realism (except pure white)
+      if (!isWhite) {
+        ctx.globalAlpha = 0.03;
+        for (let i = 0; i < 30; i++) {
+          const wx = Math.random() * textureWidth;
+          const wy = Math.random() * textureHeight;
+          const wsize = Math.random() * 4 + 1;
+          ctx.fillStyle = Math.random() > 0.5 ? 'rgba(255,255,255,0.4)' : 'rgba(0,0,0,0.4)';
+          ctx.fillRect(wx, wy, wsize, wsize * 0.5);
+        }
+        ctx.globalAlpha = 1.0;
       }
     }
     
     const texture = new THREE.CanvasTexture(canvas);
     texture.wrapS = THREE.RepeatWrapping;
     texture.wrapT = THREE.RepeatWrapping;
-    texture.repeat.set(width/2, height/2);
+    texture.repeat.set(width/4, height/4); // Scale based on wall size
     
-    // Special material properties for white vs other colors
+    // Enhanced material properties similar to shed builder
     const isWhite = color === '#FFFFFF';
+    const isDark = ['#1F2937', '#374151', '#4B5563'].includes(color);
+    
     const materialProps = isWhite ? {
-      metalness: 0.2,
-      roughness: 0.7,
-      envMapIntensity: 0.4,
+      metalness: 0.3,
+      roughness: 0.6,
+      envMapIntensity: 0.8,
+    } : isDark ? {
+      metalness: 0.7,
+      roughness: 0.3,
+      envMapIntensity: 1.0,
     } : {
-      metalness: 0.6,
+      metalness: 0.5,
       roughness: 0.4,
-      envMapIntensity: 0.3,
+      envMapIntensity: 0.6,
     };
     
     return new THREE.MeshStandardMaterial({
