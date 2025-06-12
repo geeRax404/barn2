@@ -35,7 +35,7 @@ const Roof: React.FC<RoofProps> = ({ width, length, height, pitch, color, skylig
         ctx.fillStyle = color;
         ctx.fillRect(0, 0, textureWidth, textureHeight);
         
-        // 🔥 IDENTICAL WALL RIBBED PATTERN - EXACT SAME AS WALLS
+        // 🔥 IDENTICAL WALL RIBBED PATTERN - EXACT SAME SIZE AS WALLS
         const ribWidth = textureWidth / 6; // SAME as walls - MUCH WIDER ribs
         const ribSpacing = ribWidth * 1.05; // SAME as walls - Tight spacing
         
@@ -49,9 +49,9 @@ const Roof: React.FC<RoofProps> = ({ width, length, height, pitch, color, skylig
         const deepShadowOpacity = isWhite ? 0.5 : isDark ? 0.9 : 0.65;
         const brightHighlightOpacity = isWhite ? 0.4 : isDark ? 1.0 : 0.6;
         
-        console.log(`🎯 CREATING IDENTICAL WALL-STYLE RIBS for roof ${panelSide} panel`);
+        console.log(`🎯 CREATING IDENTICAL WALL-SIZE RIBS for roof ${panelSide} panel`);
         
-        // 🎯 IDENTICAL RIBBED PATTERN - Create SAME ribs as walls
+        // 🎯 IDENTICAL RIBBED PATTERN - Create SAME SIZE ribs as walls
         for (let x = 0; x < textureWidth; x += ribSpacing) {
           // 🔥 IDENTICAL to walls - SUPER DEEP shadow valley
           const valleyGradient = ctx.createLinearGradient(x, 0, x + ribWidth * 0.2, 0);
@@ -149,20 +149,20 @@ const Roof: React.FC<RoofProps> = ({ width, length, height, pitch, color, skylig
           ctx.globalAlpha = 1.0;
         }
         
-        console.log(`✅ IDENTICAL WALL-STYLE TEXTURE CREATED for roof ${panelSide} panel`);
+        console.log(`✅ IDENTICAL WALL-SIZE TEXTURE CREATED for roof ${panelSide} panel`);
       }
       
       const texture = new THREE.CanvasTexture(canvas);
       texture.wrapS = THREE.RepeatWrapping;
       texture.wrapT = THREE.RepeatWrapping;
-      // 🎯 IDENTICAL to walls - SAME scale for consistent appearance
-      texture.repeat.set(length/3, panelLength/3); // Same scaling as walls
+      // 🎯 IDENTICAL to walls - SAME scale for consistent rib size
+      texture.repeat.set(width/3, length/3); // Same scaling as walls for identical rib size
       
       return texture;
     };
 
-    // 🎯 CREATE IDENTICAL WALL-STYLE TEXTURES for both roof panels
-    console.log(`🎯 CREATING IDENTICAL WALL-STYLE TEXTURES for both roof panels`);
+    // 🎯 CREATE IDENTICAL WALL-SIZE TEXTURES for both roof panels
+    console.log(`🎯 CREATING IDENTICAL WALL-SIZE TEXTURES for both roof panels`);
     const leftTexture = createWallStyleRibbedTexture('left');
     const rightTexture = createWallStyleRibbedTexture('right');
     
@@ -209,17 +209,17 @@ const Roof: React.FC<RoofProps> = ({ width, length, height, pitch, color, skylig
       console.log(`${isLeftPanel ? 'Left' : 'Right'} panel has ${panelSkylights.length} skylights`);
 
       if (panelSkylights.length === 0) {
-        // 🎯 NO SKYLIGHTS: Use simple box geometry - WALL-STYLE TEXTURE ALWAYS VISIBLE
-        console.log(`${isLeftPanel ? 'Left' : 'Right'} panel: Using simple BoxGeometry - WALL-STYLE TEXTURE ALWAYS VISIBLE`);
+        // 🎯 NO SKYLIGHTS: Use simple box geometry - WALL-SIZE TEXTURE ALWAYS VISIBLE
+        console.log(`${isLeftPanel ? 'Left' : 'Right'} panel: Using simple BoxGeometry - WALL-SIZE TEXTURE ALWAYS VISIBLE`);
         const geometry = new THREE.BoxGeometry(panelLength, 0.2, length);
         
-        // 🔧 CRITICAL: Apply proper UV mapping for wall-style texture on simple geometry
+        // 🔧 CRITICAL: Apply proper UV mapping for wall-size texture on simple geometry
         const uvAttribute = geometry.attributes.uv;
         const positionAttribute = geometry.attributes.position;
         const uvArray = uvAttribute.array;
         const positionArray = positionAttribute.array;
         
-        // Map UVs to show wall-style ribbed texture
+        // Map UVs to show wall-size ribbed texture
         for (let i = 0; i < positionArray.length; i += 3) {
           const x = positionArray[i];
           const y = positionArray[i + 1];
@@ -227,18 +227,18 @@ const Roof: React.FC<RoofProps> = ({ width, length, height, pitch, color, skylig
           
           const uvIndex = (i / 3) * 2;
           
-          // 🎯 WALL-STYLE TEXTURE: Map UV coordinates same as walls
-          uvArray[uvIndex] = (z + length/2) / length * (length/3);
-          uvArray[uvIndex + 1] = (x + panelLength/2) / panelLength * (panelLength/3);
+          // 🎯 WALL-SIZE TEXTURE: Map UV coordinates same as walls
+          uvArray[uvIndex] = (z + length/2) / length * (width/3);
+          uvArray[uvIndex + 1] = (x + panelLength/2) / panelLength * (length/3);
         }
         
         uvAttribute.needsUpdate = true;
-        console.log(`${isLeftPanel ? 'Left' : 'Right'} panel: Applied wall-style UV mapping to BoxGeometry`);
+        console.log(`${isLeftPanel ? 'Left' : 'Right'} panel: Applied wall-size UV mapping to BoxGeometry`);
         return geometry;
       }
 
-      // 🎯 HAS SKYLIGHTS: Use extruded geometry with SELECTIVE cutouts - WALL-STYLE TEXTURE PRESERVED
-      console.log(`${isLeftPanel ? 'Left' : 'Right'} panel: Using ExtrudeGeometry with ${panelSkylights.length} skylight cutouts - WALL-STYLE TEXTURE PRESERVED EXCEPT IN CUTOUTS`);
+      // 🎯 HAS SKYLIGHTS: Use extruded geometry with SELECTIVE cutouts - WALL-SIZE TEXTURE PRESERVED
+      console.log(`${isLeftPanel ? 'Left' : 'Right'} panel: Using ExtrudeGeometry with ${panelSkylights.length} skylight cutouts - WALL-SIZE TEXTURE PRESERVED EXCEPT IN CUTOUTS`);
       
       // Create the roof panel shape in the XY plane (will be rotated later)
       const roofShape = new THREE.Shape();
@@ -275,7 +275,7 @@ const Roof: React.FC<RoofProps> = ({ width, length, height, pitch, color, skylig
         skylightHole.closePath();
         
         roofShape.holes.push(skylightHole);
-        console.log(`  ✂️ Added SELECTIVE hole for skylight - wall-style texture preserved everywhere else`);
+        console.log(`  ✂️ Added SELECTIVE hole for skylight - wall-size texture preserved everywhere else`);
       });
 
       const extrudeSettings = {
@@ -286,15 +286,15 @@ const Roof: React.FC<RoofProps> = ({ width, length, height, pitch, color, skylig
 
       const geometry = new THREE.ExtrudeGeometry(roofShape, extrudeSettings);
       
-      // 🔧 CRITICAL: Apply proper UV mapping to extruded geometry for PRESERVED wall-style texture
+      // 🔧 CRITICAL: Apply proper UV mapping to extruded geometry for PRESERVED wall-size texture
       const uvAttribute = geometry.attributes.uv;
       const positionAttribute = geometry.attributes.position;
       const uvArray = uvAttribute.array;
       const positionArray = positionAttribute.array;
       
-      console.log(`${isLeftPanel ? 'Left' : 'Right'} panel: Applying wall-style UV mapping to ExtrudeGeometry with selective cutouts`);
+      console.log(`${isLeftPanel ? 'Left' : 'Right'} panel: Applying wall-size UV mapping to ExtrudeGeometry with selective cutouts`);
       
-      // Apply UV mapping that preserves the wall-style texture EVERYWHERE except in the holes
+      // Apply UV mapping that preserves the wall-size texture EVERYWHERE except in the holes
       for (let i = 0; i < positionArray.length; i += 3) {
         const x = positionArray[i];
         const y = positionArray[i + 1];
@@ -302,20 +302,20 @@ const Roof: React.FC<RoofProps> = ({ width, length, height, pitch, color, skylig
         
         const uvIndex = (i / 3) * 2;
         
-        // 🎯 PRESERVE WALL-STYLE TEXTURE: Map UV coordinates same as walls
-        uvArray[uvIndex] = (y + length/2) / length * (length/3);
-        uvArray[uvIndex + 1] = (x + panelLength/2) / panelLength * (panelLength/3);
+        // 🎯 PRESERVE WALL-SIZE TEXTURE: Map UV coordinates same as walls
+        uvArray[uvIndex] = (y + length/2) / length * (width/3);
+        uvArray[uvIndex + 1] = (x + panelLength/2) / panelLength * (length/3);
       }
       
       // Rotate the geometry to align with the roof pitch
       geometry.rotateX(-Math.PI / 2);
       
       uvAttribute.needsUpdate = true;
-      console.log(`${isLeftPanel ? 'Left' : 'Right'} panel: Wall-style texture applied to ExtrudeGeometry with selective skylight cutouts`);
+      console.log(`${isLeftPanel ? 'Left' : 'Right'} panel: Wall-size texture applied to ExtrudeGeometry with selective skylight cutouts`);
       return geometry;
     };
     
-    // Create geometries with SELECTIVE cutouts and PRESERVED wall-style texture
+    // Create geometries with SELECTIVE cutouts and PRESERVED wall-size texture
     const leftGeometry = createRoofGeometryWithCutouts(true);
     const rightGeometry = createRoofGeometryWithCutouts(false);
     
