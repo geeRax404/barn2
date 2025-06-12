@@ -91,7 +91,7 @@ const Building: React.FC = () => {
         wallProfile={wallProfile}
       />
       
-      {/* Roof */}
+      {/* Roof with profile-specific textures */}
       <Roof
         width={dimensions.width}
         length={dimensions.length}
@@ -99,6 +99,7 @@ const Building: React.FC = () => {
         pitch={dimensions.roofPitch}
         color={roofColor}
         skylights={skylights}
+        wallProfile={wallProfile}
       />
       
       {/* Wall Features (doors, windows, etc.) */}

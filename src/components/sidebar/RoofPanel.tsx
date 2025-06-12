@@ -10,16 +10,38 @@ import {
   getSkylightBounds,
   isValidSkylightPosition
 } from '../../utils/skylightValidation';
-import type { Skylight, RoofPanel } from '../../types';
+import type { Skylight, RoofPanel as RoofPanelType, WallProfile } from '../../types';
+
+// 🏗️ ROOF PROFILE OPTIONS - Based on Lysaght profiles
+const roofProfileOptions = [
+  {
+    name: 'Trimdek',
+    value: 'trimdek' as WallProfile,
+    description: 'Contemporary trapezoidal profile with clean lines',
+    ribWidth: 65, // 65mm rib spacing
+    ribDepth: 'medium',
+    suitability: 'Excellent for roofing applications'
+  },
+  {
+    name: 'CustomOrb',
+    value: 'customorb' as WallProfile,
+    description: 'Curved profile with rounded ribs for premium appearance',
+    ribWidth: 32, // 32mm rib spacing
+    ribDepth: 'shallow',
+    suitability: 'Premium roofing with superior aesthetics'
+  }
+];
 
 const RoofPanel: React.FC = () => {
-  const { dimensions, skylights, updateDimensions, addSkylight, removeSkylight, updateSkylight } = useBuildingStore((state) => ({
+  const { dimensions, skylights, wallProfile, updateDimensions, addSkylight, removeSkylight, updateSkylight, setWallProfile } = useBuildingStore((state) => ({
     dimensions: state.currentProject.building.dimensions,
     skylights: state.currentProject.building.skylights,
+    wallProfile: state.currentProject.building.wallProfile || 'trimdek',
     updateDimensions: state.updateDimensions,
     addSkylight: state.addSkylight,
     removeSkylight: state.removeSkylight,
-    updateSkylight: state.updateSkylight
+    updateSkylight: state.updateSkylight,
+    setWallProfile: state.setWallProfile
   }));
 
   const [newSkylight, setNewSkylight] = useState<Skylight>({
@@ -27,7 +49,7 @@ const RoofPanel: React.FC = () => {
     length: 4,
     xOffset: 0,
     yOffset: 0,
-    panel: 'left' as RoofPanel
+    panel: 'left' as RoofPanelType
   });
 
   const [editingSkylight, setEditingSkylight] = useState<number | null>(null);
@@ -140,12 +162,66 @@ const RoofPanel: React.FC = () => {
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
     >
+      {/* Roof Profile Selection */}
+      <div className="mb-6">
+        <label className="form-label text-base font-semibold">Roof Profile</label>
+        <p className="text-xs text-gray-600 mb-3">Choose from Lysaght's premium roofing profiles</p>
+        
+        <div className="space-y-3">
+          {roofProfileOptions.map((profile) => (
+            <div key={profile.value} className="relative">
+              <button
+                className={`w-full p-3 text-left rounded-lg border-2 transition-all duration-200 hover:shadow-md ${
+                  wallProfile === profile.value 
+                    ? 'border-blue-500 bg-blue-50 ring-2 ring-blue-200' 
+                    : 'border-gray-300 hover:border-gray-400 bg-white'
+                }`}
+                onClick={() => setWallProfile(profile.value)}
+              >
+                <div className="flex items-center justify-between">
+                  <div className="flex-1">
+                    <div className="font-medium text-gray-900">{profile.name}</div>
+                    <div className="text-xs text-gray-600 mt-1">{profile.description}</div>
+                    <div className="text-xs text-gray-500 mt-1">
+                      {profile.ribWidth}mm spacing • {profile.ribDepth} profile
+                    </div>
+                    <div className="text-xs text-blue-600 mt-1 font-medium">
+                      {profile.suitability}
+                    </div>
+                  </div>
+                  {wallProfile === profile.value && (
+                    <div className="w-5 h-5 bg-blue-500 rounded-full flex items-center justify-center ml-3">
+                      <div className="w-2 h-2 bg-white rounded-full"></div>
+                    </div>
+                  )}
+                </div>
+                
+                {/* Profile Preview Pattern */}
+                <div className="mt-2 h-8 bg-gray-100 rounded overflow-hidden relative">
+                  <div 
+                    className="absolute inset-0 opacity-30"
+                    style={{
+                      background: profile.value === 'customorb'
+                        ? `repeating-linear-gradient(90deg, transparent, transparent 3px, rgba(0,0,0,0.1) 3px, rgba(0,0,0,0.1) 6px)`
+                        : `repeating-linear-gradient(90deg, transparent, transparent 8px, rgba(0,0,0,0.15) 8px, rgba(0,0,0,0.15) 10px, transparent 10px, transparent 18px)`
+                    }}
+                  />
+                  <div className="absolute bottom-1 right-2 text-xs text-gray-500 font-medium">
+                    {profile.name} Roofing
+                  </div>
+                </div>
+              </button>
+            </div>
+          ))}
+        </div>
+      </div>
+
       {/* Roof Panel Information */}
       <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 mb-4">
         <div className="flex items-center space-x-2 mb-2">
           <Info className="w-4 h-4 text-blue-600" />
           <span className="text-sm font-medium text-blue-800">
-            {newSkylight.panel.charAt(0).toUpperCase() + newSkylight.panel.slice(1)} Roof Panel
+            {newSkylight.panel.charAt(0).toUpperCase() + newSkylight.panel.slice(1)} Roof Panel - {roofProfileOptions.find(p => p.value === wallProfile)?.name || 'Trimdek'} Profile
           </span>
         </div>
         <div className="text-xs text-blue-700 space-y-1">
@@ -153,6 +229,7 @@ const RoofPanel: React.FC = () => {
           <div>Valid X range: {skylightBounds.minXOffset.toFixed(1)}ft to {skylightBounds.maxXOffset.toFixed(1)}ft</div>
           <div>Valid Y range: {skylightBounds.minYOffset.toFixed(1)}ft to {skylightBounds.maxYOffset.toFixed(1)}ft</div>
           <div>Max skylight size: {skylightBounds.maxWidth.toFixed(1)}ft × {skylightBounds.maxLength.toFixed(1)}ft</div>
+          <div>Profile: {roofProfileOptions.find(p => p.value === wallProfile)?.description}</div>
         </div>
       </div>
 
@@ -236,7 +313,7 @@ const RoofPanel: React.FC = () => {
               className="form-input"
               value={newSkylight.panel}
               onChange={(e) => {
-                const newPanel = e.target.value as RoofPanel;
+                const newPanel = e.target.value as RoofPanelType;
                 setNewSkylight({ 
                   ...newSkylight, 
                   panel: newPanel,

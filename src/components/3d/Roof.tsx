@@ -9,9 +9,10 @@ interface RoofProps {
   pitch: number;
   color: string;
   skylights?: Skylight[];
+  wallProfile?: string; // Add wall profile prop for roof texture
 }
 
-const Roof: React.FC<RoofProps> = ({ width, length, height, pitch, color, skylights = [] }) => {
+const Roof: React.FC<RoofProps> = ({ width, length, height, pitch, color, skylights = [], wallProfile = 'trimdek' }) => {
   const roofHeight = useMemo(() => {
     return (width / 2) * (pitch / 12);
   }, [width, pitch]);
@@ -19,10 +20,10 @@ const Roof: React.FC<RoofProps> = ({ width, length, height, pitch, color, skylig
   const pitchAngle = Math.atan2(roofHeight, width / 2);
   const panelLength = Math.sqrt(Math.pow(width/2, 2) + Math.pow(roofHeight, 2));
 
-  // Create roof materials and geometries with MATTE FINISH - NO METALLIC SHINE
+  // Create roof materials and geometries with PROFILE-SPECIFIC TEXTURES
   const { leftRoofGeometry, rightRoofGeometry, leftRoofMaterial, rightRoofMaterial } = useMemo(() => {
-    // 🎯 IDENTICAL WALL TEXTURE - Same ribbed pattern as walls
-    const createWallStyleRibbedTexture = (panelSide: 'left' | 'right') => {
+    // 🎯 ROOF PROFILE-SPECIFIC TEXTURE GENERATION
+    const createRoofProfileTexture = (panelSide: 'left' | 'right') => {
       const textureWidth = 1024;
       const textureHeight = 1024;
       const canvas = document.createElement('canvas');
@@ -35,88 +36,103 @@ const Roof: React.FC<RoofProps> = ({ width, length, height, pitch, color, skylig
         ctx.fillStyle = color;
         ctx.fillRect(0, 0, textureWidth, textureHeight);
         
-        // 🔥 IDENTICAL WALL RIBBED PATTERN - EXACT SAME SIZE AS WALLS
-        const ribWidth = textureWidth / 6; // SAME as walls - MUCH WIDER ribs
-        const ribSpacing = ribWidth * 1.05; // SAME as walls - Tight spacing
+        // 🏗️ ROOF PROFILE-SPECIFIC PATTERNS
+        let ribWidth: number;
+        let ribSpacing: number;
+        let profileType: string;
         
-        // Special handling for different colors - IDENTICAL TO WALLS
+        switch (wallProfile) {
+          case 'trimdek':
+            // Contemporary trapezoidal profile - 65mm spacing
+            ribWidth = textureWidth / 6; // Medium width ribs
+            ribSpacing = ribWidth * 1.05;
+            profileType = 'trapezoidal';
+            break;
+            
+          case 'customorb':
+            // Curved profile with rounded ribs - 32mm spacing
+            ribWidth = textureWidth / 12; // Narrow ribs for fine detail
+            ribSpacing = ribWidth * 1.1;
+            profileType = 'curved';
+            break;
+            
+          default:
+            // Default to Trimdek
+            ribWidth = textureWidth / 6;
+            ribSpacing = ribWidth * 1.05;
+            profileType = 'trapezoidal';
+        }
+        
+        // Special handling for different colors
         const isWhite = color === '#FFFFFF';
         const isDark = ['#1F2937', '#374151', '#4B5563'].includes(color);
         
-        // 🔥 IDENTICAL CONTRAST VALUES - SAME AS WALLS
+        // Profile-specific contrast values
         const shadowOpacity = isWhite ? 0.35 : isDark ? 0.6 : 0.45;
         const highlightOpacity = isWhite ? 0.25 : isDark ? 0.8 : 0.4;
         const deepShadowOpacity = isWhite ? 0.5 : isDark ? 0.9 : 0.65;
         const brightHighlightOpacity = isWhite ? 0.4 : isDark ? 1.0 : 0.6;
         
-        console.log(`🎯 CREATING IDENTICAL WALL-SIZE RIBS for roof ${panelSide} panel`);
+        console.log(`🏗️ CREATING ROOF ${wallProfile.toUpperCase()} PROFILE: ${profileType} for ${panelSide} panel`);
         
-        // 🎯 IDENTICAL RIBBED PATTERN - Create SAME SIZE ribs as walls
+        // Create profile-specific patterns
         for (let x = 0; x < textureWidth; x += ribSpacing) {
-          // 🔥 IDENTICAL to walls - SUPER DEEP shadow valley
-          const valleyGradient = ctx.createLinearGradient(x, 0, x + ribWidth * 0.2, 0);
-          valleyGradient.addColorStop(0, `rgba(0,0,0,${deepShadowOpacity})`);
-          valleyGradient.addColorStop(0.5, `rgba(0,0,0,${deepShadowOpacity * 0.8})`);
-          valleyGradient.addColorStop(1, `rgba(0,0,0,${shadowOpacity})`);
-          ctx.fillStyle = valleyGradient;
-          ctx.fillRect(x, 0, ribWidth * 0.2, textureHeight);
+          if (profileType === 'curved') {
+            // CUSTOMORB - Curved profile with rounded ribs
+            const curveGradient = ctx.createLinearGradient(x, 0, x + ribWidth, 0);
+            curveGradient.addColorStop(0, `rgba(0,0,0,${deepShadowOpacity})`);
+            curveGradient.addColorStop(0.2, `rgba(0,0,0,${shadowOpacity})`);
+            curveGradient.addColorStop(0.4, `rgba(255,255,255,${highlightOpacity * 0.5})`);
+            curveGradient.addColorStop(0.5, `rgba(255,255,255,${brightHighlightOpacity})`);
+            curveGradient.addColorStop(0.6, `rgba(255,255,255,${highlightOpacity * 0.5})`);
+            curveGradient.addColorStop(0.8, `rgba(0,0,0,${shadowOpacity})`);
+            curveGradient.addColorStop(1, `rgba(0,0,0,${deepShadowOpacity})`);
+            
+            ctx.fillStyle = curveGradient;
+            ctx.fillRect(x, 0, ribWidth, textureHeight);
+            
+          } else if (profileType === 'trapezoidal') {
+            // TRIMDEK - Trapezoidal profile with clean lines
+            // Valley
+            ctx.fillStyle = `rgba(0,0,0,${deepShadowOpacity})`;
+            ctx.fillRect(x, 0, ribWidth * 0.15, textureHeight);
+            
+            // Rising slope
+            const riseGradient = ctx.createLinearGradient(x + ribWidth * 0.15, 0, x + ribWidth * 0.4, 0);
+            riseGradient.addColorStop(0, `rgba(0,0,0,${shadowOpacity})`);
+            riseGradient.addColorStop(1, `rgba(255,255,255,${highlightOpacity})`);
+            ctx.fillStyle = riseGradient;
+            ctx.fillRect(x + ribWidth * 0.15, 0, ribWidth * 0.25, textureHeight);
+            
+            // Flat top (trapezoidal characteristic)
+            ctx.fillStyle = `rgba(255,255,255,${brightHighlightOpacity})`;
+            ctx.fillRect(x + ribWidth * 0.4, 0, ribWidth * 0.2, textureHeight);
+            
+            // Falling slope
+            const fallGradient = ctx.createLinearGradient(x + ribWidth * 0.6, 0, x + ribWidth * 0.85, 0);
+            fallGradient.addColorStop(0, `rgba(255,255,255,${highlightOpacity})`);
+            fallGradient.addColorStop(1, `rgba(0,0,0,${shadowOpacity})`);
+            ctx.fillStyle = fallGradient;
+            ctx.fillRect(x + ribWidth * 0.6, 0, ribWidth * 0.25, textureHeight);
+            
+            // Final valley
+            ctx.fillStyle = `rgba(0,0,0,${deepShadowOpacity})`;
+            ctx.fillRect(x + ribWidth * 0.85, 0, ribWidth * 0.15, textureHeight);
+          }
           
-          // 🔥 IDENTICAL to walls - DRAMATIC rising slope
-          const riseGradient = ctx.createLinearGradient(x + ribWidth * 0.2, 0, x + ribWidth * 0.45, 0);
-          riseGradient.addColorStop(0, `rgba(0,0,0,${shadowOpacity})`);
-          riseGradient.addColorStop(0.3, `rgba(0,0,0,${shadowOpacity * 0.5})`);
-          riseGradient.addColorStop(0.7, `rgba(255,255,255,${highlightOpacity * 0.3})`);
-          riseGradient.addColorStop(1, `rgba(255,255,255,${highlightOpacity})`);
-          ctx.fillStyle = riseGradient;
-          ctx.fillRect(x + ribWidth * 0.2, 0, ribWidth * 0.25, textureHeight);
-          
-          // 🔥 IDENTICAL to walls - SUPER BRIGHT peak highlight
-          const peakGradient = ctx.createLinearGradient(x + ribWidth * 0.45, 0, x + ribWidth * 0.55, 0);
-          peakGradient.addColorStop(0, `rgba(255,255,255,${highlightOpacity})`);
-          peakGradient.addColorStop(0.5, `rgba(255,255,255,${brightHighlightOpacity})`);
-          peakGradient.addColorStop(1, `rgba(255,255,255,${highlightOpacity})`);
-          ctx.fillStyle = peakGradient;
-          ctx.fillRect(x + ribWidth * 0.45, 0, ribWidth * 0.1, textureHeight);
-          
-          // 🔥 IDENTICAL to walls - DRAMATIC falling slope
-          const fallGradient = ctx.createLinearGradient(x + ribWidth * 0.55, 0, x + ribWidth * 0.8, 0);
-          fallGradient.addColorStop(0, `rgba(255,255,255,${highlightOpacity})`);
-          fallGradient.addColorStop(0.3, `rgba(255,255,255,${highlightOpacity * 0.3})`);
-          fallGradient.addColorStop(0.7, `rgba(0,0,0,${shadowOpacity * 0.5})`);
-          fallGradient.addColorStop(1, `rgba(0,0,0,${shadowOpacity})`);
-          ctx.fillStyle = fallGradient;
-          ctx.fillRect(x + ribWidth * 0.55, 0, ribWidth * 0.25, textureHeight);
-          
-          // 🔥 IDENTICAL to walls - FINAL valley approach
-          const finalGradient = ctx.createLinearGradient(x + ribWidth * 0.8, 0, x + ribWidth, 0);
-          finalGradient.addColorStop(0, `rgba(0,0,0,${shadowOpacity})`);
-          finalGradient.addColorStop(0.5, `rgba(0,0,0,${shadowOpacity * 1.2})`);
-          finalGradient.addColorStop(1, `rgba(0,0,0,${deepShadowOpacity})`);
-          ctx.fillStyle = finalGradient;
-          ctx.fillRect(x + ribWidth * 0.8, 0, ribWidth * 0.2, textureHeight);
-          
-          // 🔥 IDENTICAL to walls - SUPER SHARP definition lines
-          // ULTRA BRIGHT highlight line at the very peak
+          // Add sharp definition lines for all profiles
+          // Ultra bright peak line
           ctx.fillStyle = `rgba(255,255,255,${brightHighlightOpacity * 1.5})`;
-          ctx.fillRect(x + ribWidth * 0.49, 0, 4, textureHeight);
+          ctx.fillRect(x + ribWidth * 0.49, 0, 2, textureHeight);
           
-          // ULTRA DARK shadow lines in the valleys
+          // Ultra dark valley lines
           ctx.fillStyle = `rgba(0,0,0,${deepShadowOpacity * 1.3})`;
-          ctx.fillRect(x + ribWidth * 0.02, 0, 3, textureHeight);
-          ctx.fillRect(x + ribWidth * 0.98, 0, 3, textureHeight);
-          
-          // 🔥 IDENTICAL to walls - ADDITIONAL DEFINITION
-          ctx.fillStyle = `rgba(255,255,255,${highlightOpacity * 0.8})`;
-          ctx.fillRect(x + ribWidth * 0.46, 0, 2, textureHeight);
-          ctx.fillRect(x + ribWidth * 0.52, 0, 2, textureHeight);
-          
-          ctx.fillStyle = `rgba(0,0,0,${shadowOpacity * 1.1})`;
-          ctx.fillRect(x + ribWidth * 0.1, 0, 2, textureHeight);
-          ctx.fillRect(x + ribWidth * 0.9, 0, 2, textureHeight);
+          ctx.fillRect(x + ribWidth * 0.02, 0, 2, textureHeight);
+          ctx.fillRect(x + ribWidth * 0.98, 0, 2, textureHeight);
         }
         
-        // 🔥 IDENTICAL to walls - ENHANCED horizontal panel lines
-        const panelHeight = textureHeight / 3;
+        // Add horizontal panel lines for roofing sheets
+        const panelHeight = textureHeight / 4; // Longer roof sheets
         ctx.strokeStyle = `rgba(0,0,0,${shadowOpacity * 1.2})`;
         ctx.lineWidth = 3;
         for (let y = panelHeight; y < textureHeight; y += panelHeight) {
@@ -125,7 +141,7 @@ const Roof: React.FC<RoofProps> = ({ width, length, height, pitch, color, skylig
           ctx.lineTo(textureWidth, y);
           ctx.stroke();
           
-          // Add BRIGHT highlight above each panel line
+          // Add highlight above each panel line
           ctx.strokeStyle = `rgba(255,255,255,${highlightOpacity * 0.6})`;
           ctx.lineWidth = 2;
           ctx.beginPath();
@@ -136,7 +152,7 @@ const Roof: React.FC<RoofProps> = ({ width, length, height, pitch, color, skylig
           ctx.lineWidth = 3;
         }
         
-        // 🔥 IDENTICAL to walls - ENHANCED weathering
+        // Enhanced weathering for non-white colors
         if (!isWhite) {
           ctx.globalAlpha = 0.08;
           for (let i = 0; i < 50; i++) {
@@ -149,22 +165,32 @@ const Roof: React.FC<RoofProps> = ({ width, length, height, pitch, color, skylig
           ctx.globalAlpha = 1.0;
         }
         
-        console.log(`✅ IDENTICAL WALL-SIZE TEXTURE CREATED for roof ${panelSide} panel`);
+        console.log(`✅ ${wallProfile.toUpperCase()} ROOF PROFILE TEXTURE CREATED for ${panelSide} panel`);
       }
       
       const texture = new THREE.CanvasTexture(canvas);
       texture.wrapS = THREE.RepeatWrapping;
       texture.wrapT = THREE.RepeatWrapping;
-      // 🎯 IDENTICAL to walls - SAME scale for consistent rib size
-      texture.repeat.set(width/3, length/3); // Same scaling as walls for identical rib size
+      
+      // Adjust texture scale based on profile type
+      let scaleX = width/3;
+      let scaleY = length/3;
+      
+      if (wallProfile === 'customorb') {
+        // Finer scale for CustomOrb's smaller ribs
+        scaleX = width / 2;
+        scaleY = length / 2;
+      }
+      
+      texture.repeat.set(scaleX, scaleY);
       
       return texture;
     };
 
-    // 🎯 CREATE IDENTICAL WALL-SIZE TEXTURES for both roof panels
-    console.log(`🎯 CREATING IDENTICAL WALL-SIZE TEXTURES for both roof panels`);
-    const leftTexture = createWallStyleRibbedTexture('left');
-    const rightTexture = createWallStyleRibbedTexture('right');
+    // 🎯 CREATE PROFILE-SPECIFIC TEXTURES for both roof panels
+    console.log(`🎯 CREATING ${wallProfile.toUpperCase()} ROOF TEXTURES for both panels`);
+    const leftTexture = createRoofProfileTexture('left');
+    const rightTexture = createRoofProfileTexture('right');
     
     // 🎯 MATTE FINISH MATERIAL PROPERTIES - NO METALLIC SHINE
     const isWhite = color === '#FFFFFF';
@@ -197,7 +223,7 @@ const Roof: React.FC<RoofProps> = ({ width, length, height, pitch, color, skylig
       side: THREE.DoubleSide,
     });
     
-    console.log(`🎯 ROOF MATERIALS CREATED: MATTE FINISH - NO METALLIC SHINE`);
+    console.log(`🎯 ROOF MATERIALS CREATED: ${wallProfile.toUpperCase()} PROFILE WITH MATTE FINISH`);
 
     // Create roof geometries with skylight cutouts ONLY where needed
     const createRoofGeometryWithCutouts = (isLeftPanel: boolean) => {
@@ -209,17 +235,17 @@ const Roof: React.FC<RoofProps> = ({ width, length, height, pitch, color, skylig
       console.log(`${isLeftPanel ? 'Left' : 'Right'} panel has ${panelSkylights.length} skylights`);
 
       if (panelSkylights.length === 0) {
-        // 🎯 NO SKYLIGHTS: Use simple box geometry - WALL-SIZE TEXTURE ALWAYS VISIBLE
-        console.log(`${isLeftPanel ? 'Left' : 'Right'} panel: Using simple BoxGeometry - WALL-SIZE TEXTURE ALWAYS VISIBLE`);
+        // 🎯 NO SKYLIGHTS: Use simple box geometry - PROFILE TEXTURE ALWAYS VISIBLE
+        console.log(`${isLeftPanel ? 'Left' : 'Right'} panel: Using simple BoxGeometry - ${wallProfile.toUpperCase()} PROFILE TEXTURE ALWAYS VISIBLE`);
         const geometry = new THREE.BoxGeometry(panelLength, 0.2, length);
         
-        // 🔧 CRITICAL: Apply proper UV mapping for wall-size texture on simple geometry
+        // 🔧 CRITICAL: Apply proper UV mapping for profile texture on simple geometry
         const uvAttribute = geometry.attributes.uv;
         const positionAttribute = geometry.attributes.position;
         const uvArray = uvAttribute.array;
         const positionArray = positionAttribute.array;
         
-        // Map UVs to show wall-size ribbed texture
+        // Map UVs to show profile texture
         for (let i = 0; i < positionArray.length; i += 3) {
           const x = positionArray[i];
           const y = positionArray[i + 1];
@@ -227,18 +253,18 @@ const Roof: React.FC<RoofProps> = ({ width, length, height, pitch, color, skylig
           
           const uvIndex = (i / 3) * 2;
           
-          // 🎯 WALL-SIZE TEXTURE: Map UV coordinates same as walls
+          // 🎯 PROFILE TEXTURE: Map UV coordinates for roof profile
           uvArray[uvIndex] = (z + length/2) / length * (width/3);
           uvArray[uvIndex + 1] = (x + panelLength/2) / panelLength * (length/3);
         }
         
         uvAttribute.needsUpdate = true;
-        console.log(`${isLeftPanel ? 'Left' : 'Right'} panel: Applied wall-size UV mapping to BoxGeometry`);
+        console.log(`${isLeftPanel ? 'Left' : 'Right'} panel: Applied ${wallProfile} profile UV mapping to BoxGeometry`);
         return geometry;
       }
 
-      // 🎯 HAS SKYLIGHTS: Use extruded geometry with SELECTIVE cutouts - WALL-SIZE TEXTURE PRESERVED
-      console.log(`${isLeftPanel ? 'Left' : 'Right'} panel: Using ExtrudeGeometry with ${panelSkylights.length} skylight cutouts - WALL-SIZE TEXTURE PRESERVED EXCEPT IN CUTOUTS`);
+      // 🎯 HAS SKYLIGHTS: Use extruded geometry with SELECTIVE cutouts - PROFILE TEXTURE PRESERVED
+      console.log(`${isLeftPanel ? 'Left' : 'Right'} panel: Using ExtrudeGeometry with ${panelSkylights.length} skylight cutouts - ${wallProfile.toUpperCase()} PROFILE TEXTURE PRESERVED EXCEPT IN CUTOUTS`);
       
       // Create the roof panel shape in the XY plane (will be rotated later)
       const roofShape = new THREE.Shape();
@@ -275,7 +301,7 @@ const Roof: React.FC<RoofProps> = ({ width, length, height, pitch, color, skylig
         skylightHole.closePath();
         
         roofShape.holes.push(skylightHole);
-        console.log(`  ✂️ Added SELECTIVE hole for skylight - wall-size texture preserved everywhere else`);
+        console.log(`  ✂️ Added SELECTIVE hole for skylight - ${wallProfile} profile texture preserved everywhere else`);
       });
 
       const extrudeSettings = {
@@ -286,15 +312,15 @@ const Roof: React.FC<RoofProps> = ({ width, length, height, pitch, color, skylig
 
       const geometry = new THREE.ExtrudeGeometry(roofShape, extrudeSettings);
       
-      // 🔧 CRITICAL: Apply proper UV mapping to extruded geometry for PRESERVED wall-size texture
+      // 🔧 CRITICAL: Apply proper UV mapping to extruded geometry for PRESERVED profile texture
       const uvAttribute = geometry.attributes.uv;
       const positionAttribute = geometry.attributes.position;
       const uvArray = uvAttribute.array;
       const positionArray = positionAttribute.array;
       
-      console.log(`${isLeftPanel ? 'Left' : 'Right'} panel: Applying wall-size UV mapping to ExtrudeGeometry with selective cutouts`);
+      console.log(`${isLeftPanel ? 'Left' : 'Right'} panel: Applying ${wallProfile} profile UV mapping to ExtrudeGeometry with selective cutouts`);
       
-      // Apply UV mapping that preserves the wall-size texture EVERYWHERE except in the holes
+      // Apply UV mapping that preserves the profile texture EVERYWHERE except in the holes
       for (let i = 0; i < positionArray.length; i += 3) {
         const x = positionArray[i];
         const y = positionArray[i + 1];
@@ -302,7 +328,7 @@ const Roof: React.FC<RoofProps> = ({ width, length, height, pitch, color, skylig
         
         const uvIndex = (i / 3) * 2;
         
-        // 🎯 PRESERVE WALL-SIZE TEXTURE: Map UV coordinates same as walls
+        // 🎯 PRESERVE PROFILE TEXTURE: Map UV coordinates for roof profile
         uvArray[uvIndex] = (y + length/2) / length * (width/3);
         uvArray[uvIndex + 1] = (x + panelLength/2) / panelLength * (length/3);
       }
@@ -311,11 +337,11 @@ const Roof: React.FC<RoofProps> = ({ width, length, height, pitch, color, skylig
       geometry.rotateX(-Math.PI / 2);
       
       uvAttribute.needsUpdate = true;
-      console.log(`${isLeftPanel ? 'Left' : 'Right'} panel: Wall-size texture applied to ExtrudeGeometry with selective skylight cutouts`);
+      console.log(`${isLeftPanel ? 'Left' : 'Right'} panel: ${wallProfile} profile texture applied to ExtrudeGeometry with selective skylight cutouts`);
       return geometry;
     };
     
-    // Create geometries with SELECTIVE cutouts and PRESERVED wall-size texture
+    // Create geometries with SELECTIVE cutouts and PRESERVED profile texture
     const leftGeometry = createRoofGeometryWithCutouts(true);
     const rightGeometry = createRoofGeometryWithCutouts(false);
     
@@ -325,7 +351,7 @@ const Roof: React.FC<RoofProps> = ({ width, length, height, pitch, color, skylig
       leftRoofMaterial: leftMaterial, 
       rightRoofMaterial: rightMaterial 
     };
-  }, [color, length, width, panelLength, skylights]);
+  }, [color, length, width, panelLength, skylights, wallProfile]);
 
   const skylightMaterial = new THREE.MeshPhysicalMaterial({
     color: '#FFFFFF',
@@ -373,7 +399,7 @@ const Roof: React.FC<RoofProps> = ({ width, length, height, pitch, color, skylig
   
   return (
     <group position={[0, height, 0]}>
-      {/* Left roof panel with MATTE FINISH - NO METALLIC SHINE */}
+      {/* Left roof panel with PROFILE-SPECIFIC MATTE FINISH */}
       <group 
         position={[-width / 4, roofHeight / 2, 0]}
         rotation={[0, 0, pitchAngle]}
@@ -391,7 +417,7 @@ const Roof: React.FC<RoofProps> = ({ width, length, height, pitch, color, skylig
         }
       </group>
       
-      {/* Right roof panel with MATTE FINISH - NO METALLIC SHINE */}
+      {/* Right roof panel with PROFILE-SPECIFIC MATTE FINISH */}
       <group
         position={[width / 4, roofHeight / 2, 0]}
         rotation={[0, 0, -pitchAngle]}
@@ -409,7 +435,7 @@ const Roof: React.FC<RoofProps> = ({ width, length, height, pitch, color, skylig
         }
       </group>
       
-      {/* Ridge cap with MATTE FINISH - NO METALLIC SHINE */}
+      {/* Ridge cap with PROFILE-SPECIFIC MATTE FINISH */}
       <mesh 
         position={[0, roofHeight, 0]} 
         castShadow 
