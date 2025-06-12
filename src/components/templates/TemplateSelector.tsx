@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Building, Car, Barn, Home, ArrowRight, Check, Star } from 'lucide-react';
+import { Building, Car, Barcode as Barn, Home, ArrowRight, Check, Star } from 'lucide-react';
 import { buildingTemplates, getTemplatesByCategory } from '../../data/buildingTemplates';
 import { useBuildingStore } from '../../store/buildingStore';
 import type { BuildingTemplate, TemplateCategory } from '../../types/templates';
