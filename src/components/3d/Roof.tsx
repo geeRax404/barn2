@@ -19,10 +19,10 @@ const Roof: React.FC<RoofProps> = ({ width, length, height, pitch, color, skylig
   const pitchAngle = Math.atan2(roofHeight, width / 2);
   const panelLength = Math.sqrt(Math.pow(width/2, 2) + Math.pow(roofHeight, 2));
 
-  // Create roof materials and geometries with VERTICAL RIBS running down the slope
+  // Create roof materials and geometries with SAME TEXTURE AS WALLS
   const { leftRoofGeometry, rightRoofGeometry, leftRoofMaterial, rightRoofMaterial } = useMemo(() => {
-    // 🎯 VERTICAL CORRUGATED TEXTURE - Ribs run DOWN the roof slope
-    const createVerticalCorrugatedTexture = (panelSide: 'left' | 'right') => {
+    // 🎯 IDENTICAL WALL TEXTURE - Same ribbed pattern as walls
+    const createWallStyleRibbedTexture = (panelSide: 'left' | 'right') => {
       const textureWidth = 1024;
       const textureHeight = 1024;
       const canvas = document.createElement('canvas');
@@ -35,171 +35,156 @@ const Roof: React.FC<RoofProps> = ({ width, length, height, pitch, color, skylig
         ctx.fillStyle = color;
         ctx.fillRect(0, 0, textureWidth, textureHeight);
         
-        // 🔥 VERTICAL CORRUGATED PATTERN - Ribs run DOWN the slope (Y direction)
-        const ribWidth = textureHeight / 8; // Ribs along the Y-axis (down the slope)
-        const ribSpacing = ribWidth * 1.05; // Tight spacing
+        // 🔥 IDENTICAL WALL RIBBED PATTERN - EXACT SAME AS WALLS
+        const ribWidth = textureWidth / 6; // SAME as walls - MUCH WIDER ribs
+        const ribSpacing = ribWidth * 1.05; // SAME as walls - Tight spacing
         
-        // Special handling for different colors
+        // Special handling for different colors - IDENTICAL TO WALLS
         const isWhite = color === '#FFFFFF';
-        const isDark = ['#1F2937', '#374151', '#4B5563', '#9CA3AF'].includes(color);
-        const isRed = color === '#9B2226' || color === '#B91C1C';
-        const isGreen = color === '#2D6A4F' || color === '#059669';
+        const isDark = ['#1F2937', '#374151', '#4B5563'].includes(color);
         
-        // 🎯 ENHANCED CONTRAST VALUES - Much stronger definition
-        let deepShadowOpacity, lightShadowOpacity, highlightOpacity, brightHighlightOpacity;
+        // 🔥 IDENTICAL CONTRAST VALUES - SAME AS WALLS
+        const shadowOpacity = isWhite ? 0.35 : isDark ? 0.6 : 0.45;
+        const highlightOpacity = isWhite ? 0.25 : isDark ? 0.8 : 0.4;
+        const deepShadowOpacity = isWhite ? 0.5 : isDark ? 0.9 : 0.65;
+        const brightHighlightOpacity = isWhite ? 0.4 : isDark ? 1.0 : 0.6;
         
-        if (isWhite) {
-          deepShadowOpacity = 0.2;
-          lightShadowOpacity = 0.12;
-          highlightOpacity = 0.15;
-          brightHighlightOpacity = 0.25;
-        } else if (isDark) {
-          deepShadowOpacity = 0.5;
-          lightShadowOpacity = 0.3;
-          highlightOpacity = 0.4;
-          brightHighlightOpacity = 0.6;
-        } else if (isRed || isGreen) {
-          deepShadowOpacity = 0.35;
-          lightShadowOpacity = 0.2;
-          highlightOpacity = 0.25;
-          brightHighlightOpacity = 0.4;
-        } else {
-          deepShadowOpacity = 0.3;
-          lightShadowOpacity = 0.18;
-          highlightOpacity = 0.2;
-          brightHighlightOpacity = 0.35;
-        }
+        console.log(`🎯 CREATING IDENTICAL WALL-STYLE RIBS for roof ${panelSide} panel`);
         
-        console.log(`🎯 CREATING VERTICAL CORRUGATED RIBS running DOWN the slope - ${panelSide} panel`);
-        
-        // 🎯 VERTICAL CORRUGATED PATTERN - Create ribs that run DOWN the roof slope
-        for (let y = 0; y < textureHeight; y += ribSpacing) {
-          // Create a corrugation profile running vertically (down the slope)
-          
-          // 1. Deep valley shadow
-          const valleyGradient = ctx.createLinearGradient(0, y, 0, y + ribWidth * 0.2);
+        // 🎯 IDENTICAL RIBBED PATTERN - Create SAME ribs as walls
+        for (let x = 0; x < textureWidth; x += ribSpacing) {
+          // 🔥 IDENTICAL to walls - SUPER DEEP shadow valley
+          const valleyGradient = ctx.createLinearGradient(x, 0, x + ribWidth * 0.2, 0);
           valleyGradient.addColorStop(0, `rgba(0,0,0,${deepShadowOpacity})`);
-          valleyGradient.addColorStop(1, `rgba(0,0,0,${lightShadowOpacity})`);
+          valleyGradient.addColorStop(0.5, `rgba(0,0,0,${deepShadowOpacity * 0.8})`);
+          valleyGradient.addColorStop(1, `rgba(0,0,0,${shadowOpacity})`);
           ctx.fillStyle = valleyGradient;
-          ctx.fillRect(0, y, textureWidth, ribWidth * 0.2);
+          ctx.fillRect(x, 0, ribWidth * 0.2, textureHeight);
           
-          // 2. Rising slope with gradient from shadow to highlight
-          const riseGradient = ctx.createLinearGradient(0, y + ribWidth * 0.2, 0, y + ribWidth * 0.45);
-          riseGradient.addColorStop(0, `rgba(0,0,0,${lightShadowOpacity})`);
-          riseGradient.addColorStop(0.3, `rgba(0,0,0,0)`); // Neutral
-          riseGradient.addColorStop(0.7, `rgba(255,255,255,${highlightOpacity * 0.4})`);
+          // 🔥 IDENTICAL to walls - DRAMATIC rising slope
+          const riseGradient = ctx.createLinearGradient(x + ribWidth * 0.2, 0, x + ribWidth * 0.45, 0);
+          riseGradient.addColorStop(0, `rgba(0,0,0,${shadowOpacity})`);
+          riseGradient.addColorStop(0.3, `rgba(0,0,0,${shadowOpacity * 0.5})`);
+          riseGradient.addColorStop(0.7, `rgba(255,255,255,${highlightOpacity * 0.3})`);
           riseGradient.addColorStop(1, `rgba(255,255,255,${highlightOpacity})`);
           ctx.fillStyle = riseGradient;
-          ctx.fillRect(0, y + ribWidth * 0.2, textureWidth, ribWidth * 0.25);
+          ctx.fillRect(x + ribWidth * 0.2, 0, ribWidth * 0.25, textureHeight);
           
-          // 3. Peak plateau with bright highlight
-          const peakGradient = ctx.createLinearGradient(0, y + ribWidth * 0.45, 0, y + ribWidth * 0.55);
+          // 🔥 IDENTICAL to walls - SUPER BRIGHT peak highlight
+          const peakGradient = ctx.createLinearGradient(x + ribWidth * 0.45, 0, x + ribWidth * 0.55, 0);
           peakGradient.addColorStop(0, `rgba(255,255,255,${highlightOpacity})`);
-          peakGradient.addColorStop(0.5, `rgba(255,255,255,${brightHighlightOpacity})`); // Peak highlight
+          peakGradient.addColorStop(0.5, `rgba(255,255,255,${brightHighlightOpacity})`);
           peakGradient.addColorStop(1, `rgba(255,255,255,${highlightOpacity})`);
           ctx.fillStyle = peakGradient;
-          ctx.fillRect(0, y + ribWidth * 0.45, textureWidth, ribWidth * 0.1);
+          ctx.fillRect(x + ribWidth * 0.45, 0, ribWidth * 0.1, textureHeight);
           
-          // 4. Falling slope back to shadow
-          const fallGradient = ctx.createLinearGradient(0, y + ribWidth * 0.55, 0, y + ribWidth * 0.8);
+          // 🔥 IDENTICAL to walls - DRAMATIC falling slope
+          const fallGradient = ctx.createLinearGradient(x + ribWidth * 0.55, 0, x + ribWidth * 0.8, 0);
           fallGradient.addColorStop(0, `rgba(255,255,255,${highlightOpacity})`);
-          fallGradient.addColorStop(0.3, `rgba(255,255,255,${highlightOpacity * 0.4})`);
-          fallGradient.addColorStop(0.7, `rgba(0,0,0,0)`); // Neutral
-          fallGradient.addColorStop(1, `rgba(0,0,0,${lightShadowOpacity})`);
+          fallGradient.addColorStop(0.3, `rgba(255,255,255,${highlightOpacity * 0.3})`);
+          fallGradient.addColorStop(0.7, `rgba(0,0,0,${shadowOpacity * 0.5})`);
+          fallGradient.addColorStop(1, `rgba(0,0,0,${shadowOpacity})`);
           ctx.fillStyle = fallGradient;
-          ctx.fillRect(0, y + ribWidth * 0.55, textureWidth, ribWidth * 0.25);
+          ctx.fillRect(x + ribWidth * 0.55, 0, ribWidth * 0.25, textureHeight);
           
-          // 5. Final valley approach
-          const finalGradient = ctx.createLinearGradient(0, y + ribWidth * 0.8, 0, y + ribWidth);
-          finalGradient.addColorStop(0, `rgba(0,0,0,${lightShadowOpacity})`);
+          // 🔥 IDENTICAL to walls - FINAL valley approach
+          const finalGradient = ctx.createLinearGradient(x + ribWidth * 0.8, 0, x + ribWidth, 0);
+          finalGradient.addColorStop(0, `rgba(0,0,0,${shadowOpacity})`);
+          finalGradient.addColorStop(0.5, `rgba(0,0,0,${shadowOpacity * 1.2})`);
           finalGradient.addColorStop(1, `rgba(0,0,0,${deepShadowOpacity})`);
           ctx.fillStyle = finalGradient;
-          ctx.fillRect(0, y + ribWidth * 0.8, textureWidth, ribWidth * 0.2);
+          ctx.fillRect(x + ribWidth * 0.8, 0, ribWidth * 0.2, textureHeight);
           
-          // 6. Add sharp definition lines for more realism
-          if (ribWidth > 20) { // Only for larger corrugations
-            // Thin bright line at the very peak
-            ctx.fillStyle = `rgba(255,255,255,${brightHighlightOpacity * 1.3})`;
-            ctx.fillRect(0, y + ribWidth * 0.49, textureWidth, 2);
-            
-            // Thin shadow line in the valley
-            ctx.fillStyle = `rgba(0,0,0,${deepShadowOpacity * 1.2})`;
-            ctx.fillRect(0, y + ribWidth * 0.05, textureWidth, 1);
-            ctx.fillRect(0, y + ribWidth * 0.95, textureWidth, 1);
-          }
+          // 🔥 IDENTICAL to walls - SUPER SHARP definition lines
+          // ULTRA BRIGHT highlight line at the very peak
+          ctx.fillStyle = `rgba(255,255,255,${brightHighlightOpacity * 1.5})`;
+          ctx.fillRect(x + ribWidth * 0.49, 0, 4, textureHeight);
+          
+          // ULTRA DARK shadow lines in the valleys
+          ctx.fillStyle = `rgba(0,0,0,${deepShadowOpacity * 1.3})`;
+          ctx.fillRect(x + ribWidth * 0.02, 0, 3, textureHeight);
+          ctx.fillRect(x + ribWidth * 0.98, 0, 3, textureHeight);
+          
+          // 🔥 IDENTICAL to walls - ADDITIONAL DEFINITION
+          ctx.fillStyle = `rgba(255,255,255,${highlightOpacity * 0.8})`;
+          ctx.fillRect(x + ribWidth * 0.46, 0, 2, textureHeight);
+          ctx.fillRect(x + ribWidth * 0.52, 0, 2, textureHeight);
+          
+          ctx.fillStyle = `rgba(0,0,0,${shadowOpacity * 1.1})`;
+          ctx.fillRect(x + ribWidth * 0.1, 0, 2, textureHeight);
+          ctx.fillRect(x + ribWidth * 0.9, 0, 2, textureHeight);
         }
         
-        // Add horizontal panel seams every 8 feet equivalent (across the ribs)
-        const seamSpacing = textureWidth / 4;
-        ctx.strokeStyle = `rgba(0,0,0,${lightShadowOpacity * 0.8})`;
-        ctx.lineWidth = 2;
-        for (let x = seamSpacing; x < textureWidth; x += seamSpacing) {
+        // 🔥 IDENTICAL to walls - ENHANCED horizontal panel lines
+        const panelHeight = textureHeight / 3;
+        ctx.strokeStyle = `rgba(0,0,0,${shadowOpacity * 1.2})`;
+        ctx.lineWidth = 3;
+        for (let y = panelHeight; y < textureHeight; y += panelHeight) {
           ctx.beginPath();
-          ctx.moveTo(x, 0);
-          ctx.lineTo(x, textureHeight);
+          ctx.moveTo(0, y);
+          ctx.lineTo(textureWidth, y);
           ctx.stroke();
           
-          // Add slight highlight beside seam
-          ctx.strokeStyle = `rgba(255,255,255,${highlightOpacity * 0.3})`;
-          ctx.lineWidth = 1;
-          ctx.beginPath();
-          ctx.moveTo(x - 1, 0);
-          ctx.lineTo(x - 1, textureHeight);
-          ctx.stroke();
-          ctx.strokeStyle = `rgba(0,0,0,${lightShadowOpacity * 0.8})`;
+          // Add BRIGHT highlight above each panel line
+          ctx.strokeStyle = `rgba(255,255,255,${highlightOpacity * 0.6})`;
           ctx.lineWidth = 2;
+          ctx.beginPath();
+          ctx.moveTo(0, y - 2);
+          ctx.lineTo(textureWidth, y - 2);
+          ctx.stroke();
+          ctx.strokeStyle = `rgba(0,0,0,${shadowOpacity * 1.2})`;
+          ctx.lineWidth = 3;
         }
         
-        // 🎯 ADD SUBTLE WEATHERING PATTERN for more realism
+        // 🔥 IDENTICAL to walls - ENHANCED weathering
         if (!isWhite) {
-          // Add very subtle random weathering marks
-          ctx.globalAlpha = 0.04;
-          for (let i = 0; i < 40; i++) {
+          ctx.globalAlpha = 0.08;
+          for (let i = 0; i < 50; i++) {
             const wx = Math.random() * textureWidth;
             const wy = Math.random() * textureHeight;
-            const wsize = Math.random() * 3 + 1;
-            ctx.fillStyle = Math.random() > 0.5 ? 'rgba(255,255,255,0.4)' : 'rgba(0,0,0,0.4)';
-            ctx.fillRect(wx, wy, wsize * 0.4, wsize);
+            const wsize = Math.random() * 6 + 2;
+            ctx.fillStyle = Math.random() > 0.5 ? 'rgba(255,255,255,0.6)' : 'rgba(0,0,0,0.6)';
+            ctx.fillRect(wx, wy, wsize, wsize * 0.5);
           }
           ctx.globalAlpha = 1.0;
         }
         
-        console.log(`✅ VERTICAL CORRUGATED TEXTURE CREATED for ${panelSide} panel - RIBS RUN DOWN THE SLOPE`);
+        console.log(`✅ IDENTICAL WALL-STYLE TEXTURE CREATED for roof ${panelSide} panel`);
       }
       
       const texture = new THREE.CanvasTexture(canvas);
       texture.wrapS = THREE.RepeatWrapping;
       texture.wrapT = THREE.RepeatWrapping;
-      // 🎯 CRITICAL: Adjust repeat to make ribs run DOWN the slope
-      texture.repeat.set(length/3, 8); // X = panels along length, Y = ribs down the slope
+      // 🎯 IDENTICAL to walls - SAME scale for consistent appearance
+      texture.repeat.set(length/3, panelLength/3); // Same scaling as walls
       
       return texture;
     };
 
-    // 🎯 ALWAYS CREATE VERTICAL CORRUGATED TEXTURES - ribs run down the slope
-    console.log(`🎯 CREATING VERTICAL CORRUGATED TEXTURES for both roof panels - RIBS RUN DOWN THE SLOPE`);
-    const leftTexture = createVerticalCorrugatedTexture('left');
-    const rightTexture = createVerticalCorrugatedTexture('right');
+    // 🎯 CREATE IDENTICAL WALL-STYLE TEXTURES for both roof panels
+    console.log(`🎯 CREATING IDENTICAL WALL-STYLE TEXTURES for both roof panels`);
+    const leftTexture = createWallStyleRibbedTexture('left');
+    const rightTexture = createWallStyleRibbedTexture('right');
     
-    // 🎯 NON-METALLIC MATERIAL PROPERTIES - Like painted steel or composite
+    // 🎯 IDENTICAL MATERIAL PROPERTIES - SAME AS WALLS
     const isWhite = color === '#FFFFFF';
-    const isDark = ['#1F2937', '#374151', '#4B5563', '#9CA3AF'].includes(color);
+    const isDark = ['#1F2937', '#374151', '#4B5563'].includes(color);
     
     const materialProps = isWhite ? {
-      metalness: 0.05, // VERY LOW metalness - painted surface
-      roughness: 0.9, // VERY HIGH roughness - matte finish
-      envMapIntensity: 0.1, // MINIMAL environment reflection
+      metalness: 0.4, // IDENTICAL to walls
+      roughness: 0.5, // IDENTICAL to walls
+      envMapIntensity: 1.2, // IDENTICAL to walls
     } : isDark ? {
-      metalness: 0.08, // VERY LOW metalness - painted dark surface
-      roughness: 0.85, // HIGH roughness - matte finish
-      envMapIntensity: 0.15, // MINIMAL environment reflection
+      metalness: 0.8, // IDENTICAL to walls
+      roughness: 0.2, // IDENTICAL to walls
+      envMapIntensity: 1.5, // IDENTICAL to walls
     } : {
-      metalness: 0.06, // VERY LOW metalness - painted colored surface
-      roughness: 0.88, // VERY HIGH roughness - matte finish
-      envMapIntensity: 0.12, // MINIMAL environment reflection
+      metalness: 0.6, // IDENTICAL to walls
+      roughness: 0.3, // IDENTICAL to walls
+      envMapIntensity: 1.0, // IDENTICAL to walls
     };
     
-    // 🎯 ALWAYS CREATE MATERIALS WITH VERTICAL CORRUGATED TEXTURES
+    // 🎯 CREATE MATERIALS WITH IDENTICAL WALL-STYLE TEXTURES
     const leftMaterial = new THREE.MeshStandardMaterial({
       map: leftTexture,
       ...materialProps,
@@ -212,7 +197,7 @@ const Roof: React.FC<RoofProps> = ({ width, length, height, pitch, color, skylig
       side: THREE.DoubleSide,
     });
     
-    console.log(`🎯 VERTICAL ROOF MATERIALS CREATED: Both panels have RIBS RUNNING DOWN THE SLOPE`);
+    console.log(`🎯 ROOF MATERIALS CREATED: IDENTICAL TO WALL MATERIALS`);
 
     // Create roof geometries with skylight cutouts ONLY where needed
     const createRoofGeometryWithCutouts = (isLeftPanel: boolean) => {
@@ -224,17 +209,17 @@ const Roof: React.FC<RoofProps> = ({ width, length, height, pitch, color, skylig
       console.log(`${isLeftPanel ? 'Left' : 'Right'} panel has ${panelSkylights.length} skylights`);
 
       if (panelSkylights.length === 0) {
-        // 🎯 NO SKYLIGHTS: Use simple box geometry - VERTICAL CORRUGATIONS ALWAYS VISIBLE
-        console.log(`${isLeftPanel ? 'Left' : 'Right'} panel: Using simple BoxGeometry - VERTICAL CORRUGATIONS ALWAYS VISIBLE`);
+        // 🎯 NO SKYLIGHTS: Use simple box geometry - WALL-STYLE TEXTURE ALWAYS VISIBLE
+        console.log(`${isLeftPanel ? 'Left' : 'Right'} panel: Using simple BoxGeometry - WALL-STYLE TEXTURE ALWAYS VISIBLE`);
         const geometry = new THREE.BoxGeometry(panelLength, 0.2, length);
         
-        // 🔧 CRITICAL: Apply proper UV mapping for vertical corrugated texture on simple geometry
+        // 🔧 CRITICAL: Apply proper UV mapping for wall-style texture on simple geometry
         const uvAttribute = geometry.attributes.uv;
         const positionAttribute = geometry.attributes.position;
         const uvArray = uvAttribute.array;
         const positionArray = positionAttribute.array;
         
-        // Map UVs to show vertical corrugations running down the slope
+        // Map UVs to show wall-style ribbed texture
         for (let i = 0; i < positionArray.length; i += 3) {
           const x = positionArray[i];
           const y = positionArray[i + 1];
@@ -242,20 +227,18 @@ const Roof: React.FC<RoofProps> = ({ width, length, height, pitch, color, skylig
           
           const uvIndex = (i / 3) * 2;
           
-          // 🎯 VERTICAL CORRUGATIONS: Map UV coordinates so ribs run down the slope
-          // U coordinate - across the panel width (for panel seams)
+          // 🎯 WALL-STYLE TEXTURE: Map UV coordinates same as walls
           uvArray[uvIndex] = (z + length/2) / length * (length/3);
-          // V coordinate - down the slope (for vertical ribs)
-          uvArray[uvIndex + 1] = (x + panelLength/2) / panelLength * 8;
+          uvArray[uvIndex + 1] = (x + panelLength/2) / panelLength * (panelLength/3);
         }
         
         uvAttribute.needsUpdate = true;
-        console.log(`${isLeftPanel ? 'Left' : 'Right'} panel: Applied vertical corrugated UV mapping to BoxGeometry - RIBS RUN DOWN THE SLOPE`);
+        console.log(`${isLeftPanel ? 'Left' : 'Right'} panel: Applied wall-style UV mapping to BoxGeometry`);
         return geometry;
       }
 
-      // 🎯 HAS SKYLIGHTS: Use extruded geometry with SELECTIVE cutouts - VERTICAL CORRUGATIONS PRESERVED
-      console.log(`${isLeftPanel ? 'Left' : 'Right'} panel: Using ExtrudeGeometry with ${panelSkylights.length} skylight cutouts - VERTICAL CORRUGATIONS PRESERVED EXCEPT IN CUTOUTS`);
+      // 🎯 HAS SKYLIGHTS: Use extruded geometry with SELECTIVE cutouts - WALL-STYLE TEXTURE PRESERVED
+      console.log(`${isLeftPanel ? 'Left' : 'Right'} panel: Using ExtrudeGeometry with ${panelSkylights.length} skylight cutouts - WALL-STYLE TEXTURE PRESERVED EXCEPT IN CUTOUTS`);
       
       // Create the roof panel shape in the XY plane (will be rotated later)
       const roofShape = new THREE.Shape();
@@ -270,7 +253,6 @@ const Roof: React.FC<RoofProps> = ({ width, length, height, pitch, color, skylig
         const skylightHole = new THREE.Path();
         
         // Convert skylight position to roof panel coordinates
-        // Panel coordinates: xOffset is relative to panel center, yOffset is relative to ridge
         const localX = skylight.xOffset * (panelLength / (width/2));
         const localY = skylight.yOffset;
         
@@ -293,7 +275,7 @@ const Roof: React.FC<RoofProps> = ({ width, length, height, pitch, color, skylig
         skylightHole.closePath();
         
         roofShape.holes.push(skylightHole);
-        console.log(`  ✂️ Added SELECTIVE hole for skylight - vertical corrugations preserved everywhere else`);
+        console.log(`  ✂️ Added SELECTIVE hole for skylight - wall-style texture preserved everywhere else`);
       });
 
       const extrudeSettings = {
@@ -304,15 +286,15 @@ const Roof: React.FC<RoofProps> = ({ width, length, height, pitch, color, skylig
 
       const geometry = new THREE.ExtrudeGeometry(roofShape, extrudeSettings);
       
-      // 🔧 CRITICAL: Apply proper UV mapping to extruded geometry for PRESERVED vertical corrugated texture
+      // 🔧 CRITICAL: Apply proper UV mapping to extruded geometry for PRESERVED wall-style texture
       const uvAttribute = geometry.attributes.uv;
       const positionAttribute = geometry.attributes.position;
       const uvArray = uvAttribute.array;
       const positionArray = positionAttribute.array;
       
-      console.log(`${isLeftPanel ? 'Left' : 'Right'} panel: Applying vertical corrugated UV mapping to ExtrudeGeometry with selective cutouts`);
+      console.log(`${isLeftPanel ? 'Left' : 'Right'} panel: Applying wall-style UV mapping to ExtrudeGeometry with selective cutouts`);
       
-      // Apply UV mapping that preserves the vertical corrugated pattern EVERYWHERE except in the holes
+      // Apply UV mapping that preserves the wall-style texture EVERYWHERE except in the holes
       for (let i = 0; i < positionArray.length; i += 3) {
         const x = positionArray[i];
         const y = positionArray[i + 1];
@@ -320,24 +302,20 @@ const Roof: React.FC<RoofProps> = ({ width, length, height, pitch, color, skylig
         
         const uvIndex = (i / 3) * 2;
         
-        // 🎯 PRESERVE VERTICAL CORRUGATIONS: Map UV coordinates to show vertical corrugations running down the slope
-        // The extruded geometry is in XY plane, so:
-        // - Y corresponds to the panel length direction (across the ribs)
-        // - X corresponds to the panel width direction (down the slope - where ribs run)
-        uvArray[uvIndex] = (y + length/2) / length * (length/3); // U coordinate - across the panel
-        uvArray[uvIndex + 1] = (x + panelLength/2) / panelLength * 8; // V coordinate - down the slope (vertical ribs)
+        // 🎯 PRESERVE WALL-STYLE TEXTURE: Map UV coordinates same as walls
+        uvArray[uvIndex] = (y + length/2) / length * (length/3);
+        uvArray[uvIndex + 1] = (x + panelLength/2) / panelLength * (panelLength/3);
       }
       
       // Rotate the geometry to align with the roof pitch
-      // The extruded geometry is created in XY plane, we need to rotate it to XZ plane
-      geometry.rotateX(-Math.PI / 2); // Rotate to lie flat in XZ plane
+      geometry.rotateX(-Math.PI / 2);
       
       uvAttribute.needsUpdate = true;
-      console.log(`${isLeftPanel ? 'Left' : 'Right'} panel: Vertical corrugated texture applied to ExtrudeGeometry - RIBS RUN DOWN THE SLOPE with selective skylight cutouts`);
+      console.log(`${isLeftPanel ? 'Left' : 'Right'} panel: Wall-style texture applied to ExtrudeGeometry with selective skylight cutouts`);
       return geometry;
     };
     
-    // Create geometries with SELECTIVE cutouts and PRESERVED vertical corrugations
+    // Create geometries with SELECTIVE cutouts and PRESERVED wall-style texture
     const leftGeometry = createRoofGeometryWithCutouts(true);
     const rightGeometry = createRoofGeometryWithCutouts(false);
     
@@ -371,7 +349,6 @@ const Roof: React.FC<RoofProps> = ({ width, length, height, pitch, color, skylig
     const skylightLength = skylight.length;
     
     // Calculate position in roof panel coordinates
-    // Panel coordinates: xOffset is relative to panel center, yOffset is relative to ridge
     const localX = skylight.xOffset * (panelLength / (width/2));
     const localY = skylight.yOffset;
     
@@ -396,7 +373,7 @@ const Roof: React.FC<RoofProps> = ({ width, length, height, pitch, color, skylig
   
   return (
     <group position={[0, height, 0]}>
-      {/* Left roof panel with VERTICAL CORRUGATED TEXTURE - RIBS RUN DOWN THE SLOPE */}
+      {/* Left roof panel with IDENTICAL WALL-STYLE TEXTURE */}
       <group 
         position={[-width / 4, roofHeight / 2, 0]}
         rotation={[0, 0, pitchAngle]}
@@ -410,11 +387,11 @@ const Roof: React.FC<RoofProps> = ({ width, length, height, pitch, color, skylig
         {skylights
           .filter(s => s.panel === 'left')
           .map(s => createSkylight(s, true))
-          .filter(Boolean) // Remove null skylights
+          .filter(Boolean)
         }
       </group>
       
-      {/* Right roof panel with VERTICAL CORRUGATED TEXTURE - RIBS RUN DOWN THE SLOPE */}
+      {/* Right roof panel with IDENTICAL WALL-STYLE TEXTURE */}
       <group
         position={[width / 4, roofHeight / 2, 0]}
         rotation={[0, 0, -pitchAngle]}
@@ -428,11 +405,11 @@ const Roof: React.FC<RoofProps> = ({ width, length, height, pitch, color, skylig
         {skylights
           .filter(s => s.panel === 'right')
           .map(s => createSkylight(s, false))
-          .filter(Boolean) // Remove null skylights
+          .filter(Boolean)
         }
       </group>
       
-      {/* Ridge cap with NON-METALLIC FINISH */}
+      {/* Ridge cap with IDENTICAL WALL-STYLE MATERIAL PROPERTIES */}
       <mesh 
         position={[0, roofHeight, 0]} 
         castShadow 
@@ -441,9 +418,9 @@ const Roof: React.FC<RoofProps> = ({ width, length, height, pitch, color, skylig
         <boxGeometry args={[0.4, 0.3, length]} />
         <meshStandardMaterial 
           color={color} 
-          metalness={0.05} // VERY LOW metalness - painted finish
-          roughness={0.9} // VERY HIGH roughness - matte finish
-          envMapIntensity={0.1} // MINIMAL environment reflection
+          metalness={color === '#FFFFFF' ? 0.4 : ['#1F2937', '#374151', '#4B5563'].includes(color) ? 0.8 : 0.6}
+          roughness={color === '#FFFFFF' ? 0.5 : ['#1F2937', '#374151', '#4B5563'].includes(color) ? 0.2 : 0.3}
+          envMapIntensity={color === '#FFFFFF' ? 1.2 : ['#1F2937', '#374151', '#4B5563'].includes(color) ? 1.5 : 1.0}
         />
       </mesh>
     </group>
