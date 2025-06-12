@@ -19,12 +19,12 @@ const Roof: React.FC<RoofProps> = ({ width, length, height, pitch, color, skylig
   const pitchAngle = Math.atan2(roofHeight, width / 2);
   const panelLength = Math.sqrt(Math.pow(width/2, 2) + Math.pow(roofHeight, 2));
 
-  // Create roof materials and geometries with DRAMATICALLY ENHANCED corrugated ridges
+  // Create roof materials and geometries with ULTRA DEFINED corrugated ridges
   const { leftRoofGeometry, rightRoofGeometry, leftRoofMaterial, rightRoofMaterial } = useMemo(() => {
-    // 🎯 DRAMATICALLY ENHANCED CORRUGATED METAL TEXTURE - SUPER DEFINED RIDGES
-    const createEnhancedCorrugatedTexture = (panelSide: 'left' | 'right') => {
-      const textureWidth = 1024;
-      const textureHeight = 1024;
+    // 🔥 ULTRA DEFINED CORRUGATED METAL TEXTURE - MAXIMUM RIDGE DEFINITION
+    const createUltraDefinedCorrugatedTexture = (panelSide: 'left' | 'right') => {
+      const textureWidth = 2048; // DOUBLED resolution for ultra-sharp ridges
+      const textureHeight = 2048;
       const canvas = document.createElement('canvas');
       canvas.width = textureWidth;
       canvas.height = textureHeight;
@@ -35,9 +35,9 @@ const Roof: React.FC<RoofProps> = ({ width, length, height, pitch, color, skylig
         ctx.fillStyle = color;
         ctx.fillRect(0, 0, textureWidth, textureHeight);
         
-        // 🔥 DRAMATICALLY ENHANCED CORRUGATED PATTERN - SUPER DEFINED RIDGES
-        const corrugationWidth = textureWidth / 8; // MUCH WIDER corrugations (was /16, now /8)
-        const corrugationSpacing = corrugationWidth * 1.02; // Very tight spacing for continuous ridges
+        // 🔥 ULTRA WIDE CORRUGATIONS - MAXIMUM VISIBILITY
+        const corrugationWidth = textureWidth / 4; // MASSIVE corrugations (was /8, now /4)
+        const corrugationSpacing = corrugationWidth * 1.01; // Ultra-tight spacing
         
         // Special handling for different colors
         const isWhite = color === '#FFFFFF';
@@ -45,199 +45,219 @@ const Roof: React.FC<RoofProps> = ({ width, length, height, pitch, color, skylig
         const isRed = color === '#9B2226' || color === '#B91C1C';
         const isGreen = color === '#2D6A4F' || color === '#059669';
         
-        // 🔥 EXTREME CONTRAST VALUES - SUPER DRAMATIC RIDGES
-        let deepShadowOpacity, lightShadowOpacity, highlightOpacity, brightHighlightOpacity, ultraBrightOpacity;
+        // 🔥 MAXIMUM CONTRAST VALUES - ULTRA DRAMATIC RIDGES
+        let deepShadowOpacity, lightShadowOpacity, highlightOpacity, brightHighlightOpacity, ultraBrightOpacity, extremeHighlightOpacity;
         
         if (isWhite) {
-          deepShadowOpacity = 0.4;      // MUCH STRONGER (was 0.2)
-          lightShadowOpacity = 0.25;    // MUCH STRONGER (was 0.12)
-          highlightOpacity = 0.35;      // MUCH STRONGER (was 0.15)
-          brightHighlightOpacity = 0.5; // MUCH STRONGER (was 0.25)
-          ultraBrightOpacity = 0.7;     // NEW - ULTRA BRIGHT
+          deepShadowOpacity = 0.7;        // EXTREME (was 0.4)
+          lightShadowOpacity = 0.5;       // EXTREME (was 0.25)
+          highlightOpacity = 0.6;         // EXTREME (was 0.35)
+          brightHighlightOpacity = 0.8;   // EXTREME (was 0.5)
+          ultraBrightOpacity = 0.95;      // ULTRA BRIGHT (was 0.7)
+          extremeHighlightOpacity = 1.0;  // MAXIMUM BRIGHTNESS
         } else if (isDark) {
-          deepShadowOpacity = 0.8;      // EXTREME (was 0.5)
-          lightShadowOpacity = 0.6;     // EXTREME (was 0.3)
-          highlightOpacity = 0.7;       // EXTREME (was 0.4)
-          brightHighlightOpacity = 0.9; // EXTREME (was 0.6)
-          ultraBrightOpacity = 1.0;     // MAXIMUM
+          deepShadowOpacity = 1.0;        // MAXIMUM (was 0.8)
+          lightShadowOpacity = 0.8;       // MAXIMUM (was 0.6)
+          highlightOpacity = 0.9;         // MAXIMUM (was 0.7)
+          brightHighlightOpacity = 1.0;   // MAXIMUM (was 0.9)
+          ultraBrightOpacity = 1.0;       // MAXIMUM
+          extremeHighlightOpacity = 1.0;  // MAXIMUM
         } else if (isRed || isGreen) {
-          deepShadowOpacity = 0.6;      // MUCH STRONGER (was 0.35)
-          lightShadowOpacity = 0.4;     // MUCH STRONGER (was 0.2)
-          highlightOpacity = 0.5;       // MUCH STRONGER (was 0.25)
-          brightHighlightOpacity = 0.7; // MUCH STRONGER (was 0.4)
-          ultraBrightOpacity = 0.9;     // NEW
+          deepShadowOpacity = 0.8;        // EXTREME (was 0.6)
+          lightShadowOpacity = 0.6;       // EXTREME (was 0.4)
+          highlightOpacity = 0.7;         // EXTREME (was 0.5)
+          brightHighlightOpacity = 0.9;   // EXTREME (was 0.7)
+          ultraBrightOpacity = 1.0;       // MAXIMUM (was 0.9)
+          extremeHighlightOpacity = 1.0;  // MAXIMUM
         } else {
-          deepShadowOpacity = 0.55;     // MUCH STRONGER (was 0.3)
-          lightShadowOpacity = 0.35;    // MUCH STRONGER (was 0.18)
-          highlightOpacity = 0.45;      // MUCH STRONGER (was 0.2)
-          brightHighlightOpacity = 0.65; // MUCH STRONGER (was 0.35)
-          ultraBrightOpacity = 0.85;    // NEW
+          deepShadowOpacity = 0.75;       // EXTREME (was 0.55)
+          lightShadowOpacity = 0.55;      // EXTREME (was 0.35)
+          highlightOpacity = 0.65;        // EXTREME (was 0.45)
+          brightHighlightOpacity = 0.85;  // EXTREME (was 0.65)
+          ultraBrightOpacity = 1.0;       // MAXIMUM (was 0.85)
+          extremeHighlightOpacity = 1.0;  // MAXIMUM
         }
         
-        console.log(`🔥 CREATING SUPER DEFINED ROOF RIDGES: ${corrugationWidth}px wide, extreme contrast`);
+        console.log(`🔥 CREATING ULTRA DEFINED ROOF RIDGES: ${corrugationWidth}px wide, MAXIMUM contrast`);
         
-        // 🔥 DRAMATICALLY ENHANCED CORRUGATED PATTERN - Create SUPER DEFINED metal roofing ridges
+        // 🔥 ULTRA DEFINED CORRUGATED PATTERN - Create MAXIMUM DEFINITION metal roofing ridges
         for (let x = 0; x < textureWidth; x += corrugationSpacing) {
-          // Create an even MORE complex corrugation profile with EXTREME gradients
+          // Create the MOST complex corrugation profile with EXTREME gradients
           
-          // 1. ULTRA DEEP valley shadow - MAXIMUM DEPTH
-          const valleyGradient = ctx.createLinearGradient(x, 0, x + corrugationWidth * 0.15, 0);
-          valleyGradient.addColorStop(0, `rgba(0,0,0,${deepShadowOpacity * 1.2})`); // EVEN DEEPER
-          valleyGradient.addColorStop(0.5, `rgba(0,0,0,${deepShadowOpacity})`);
+          // 1. MAXIMUM DEPTH valley shadow - DEEPEST POSSIBLE
+          const valleyGradient = ctx.createLinearGradient(x, 0, x + corrugationWidth * 0.12, 0);
+          valleyGradient.addColorStop(0, `rgba(0,0,0,${deepShadowOpacity})`);
+          valleyGradient.addColorStop(0.3, `rgba(0,0,0,${deepShadowOpacity * 0.9})`);
+          valleyGradient.addColorStop(0.7, `rgba(0,0,0,${deepShadowOpacity * 0.7})`);
           valleyGradient.addColorStop(1, `rgba(0,0,0,${lightShadowOpacity})`);
           ctx.fillStyle = valleyGradient;
-          ctx.fillRect(x, 0, corrugationWidth * 0.15, textureHeight);
+          ctx.fillRect(x, 0, corrugationWidth * 0.12, textureHeight);
           
-          // 2. DRAMATIC rising slope with EXTREME contrast progression
-          const riseGradient = ctx.createLinearGradient(x + corrugationWidth * 0.15, 0, x + corrugationWidth * 0.4, 0);
+          // 2. EXTREME rising slope with MAXIMUM contrast progression
+          const riseGradient = ctx.createLinearGradient(x + corrugationWidth * 0.12, 0, x + corrugationWidth * 0.35, 0);
           riseGradient.addColorStop(0, `rgba(0,0,0,${lightShadowOpacity})`);
-          riseGradient.addColorStop(0.2, `rgba(0,0,0,${lightShadowOpacity * 0.6})`);
-          riseGradient.addColorStop(0.5, `rgba(0,0,0,0)`); // Neutral
-          riseGradient.addColorStop(0.7, `rgba(255,255,255,${highlightOpacity * 0.5})`);
-          riseGradient.addColorStop(0.9, `rgba(255,255,255,${highlightOpacity})`);
+          riseGradient.addColorStop(0.15, `rgba(0,0,0,${lightShadowOpacity * 0.7})`);
+          riseGradient.addColorStop(0.35, `rgba(0,0,0,${lightShadowOpacity * 0.4})`);
+          riseGradient.addColorStop(0.55, `rgba(0,0,0,0)`); // Neutral
+          riseGradient.addColorStop(0.7, `rgba(255,255,255,${highlightOpacity * 0.3})`);
+          riseGradient.addColorStop(0.85, `rgba(255,255,255,${highlightOpacity * 0.7})`);
           riseGradient.addColorStop(1, `rgba(255,255,255,${brightHighlightOpacity * 0.8})`);
           ctx.fillStyle = riseGradient;
-          ctx.fillRect(x + corrugationWidth * 0.15, 0, corrugationWidth * 0.25, textureHeight);
+          ctx.fillRect(x + corrugationWidth * 0.12, 0, corrugationWidth * 0.23, textureHeight);
           
-          // 3. ULTRA BRIGHT peak plateau with MAXIMUM highlight
-          const peakGradient = ctx.createLinearGradient(x + corrugationWidth * 0.4, 0, x + corrugationWidth * 0.6, 0);
+          // 3. MAXIMUM BRIGHTNESS peak plateau - ULTRA WIDE AND BRIGHT
+          const peakGradient = ctx.createLinearGradient(x + corrugationWidth * 0.35, 0, x + corrugationWidth * 0.65, 0);
           peakGradient.addColorStop(0, `rgba(255,255,255,${brightHighlightOpacity})`);
-          peakGradient.addColorStop(0.3, `rgba(255,255,255,${ultraBrightOpacity})`); // ULTRA BRIGHT
-          peakGradient.addColorStop(0.7, `rgba(255,255,255,${ultraBrightOpacity})`); // ULTRA BRIGHT
+          peakGradient.addColorStop(0.2, `rgba(255,255,255,${ultraBrightOpacity})`);
+          peakGradient.addColorStop(0.5, `rgba(255,255,255,${extremeHighlightOpacity})`); // MAXIMUM BRIGHTNESS
+          peakGradient.addColorStop(0.8, `rgba(255,255,255,${ultraBrightOpacity})`);
           peakGradient.addColorStop(1, `rgba(255,255,255,${brightHighlightOpacity})`);
           ctx.fillStyle = peakGradient;
-          ctx.fillRect(x + corrugationWidth * 0.4, 0, corrugationWidth * 0.2, textureHeight);
+          ctx.fillRect(x + corrugationWidth * 0.35, 0, corrugationWidth * 0.3, textureHeight);
           
-          // 4. DRAMATIC falling slope back to DEEP shadow
-          const fallGradient = ctx.createLinearGradient(x + corrugationWidth * 0.6, 0, x + corrugationWidth * 0.85, 0);
+          // 4. EXTREME falling slope back to MAXIMUM shadow
+          const fallGradient = ctx.createLinearGradient(x + corrugationWidth * 0.65, 0, x + corrugationWidth * 0.88, 0);
           fallGradient.addColorStop(0, `rgba(255,255,255,${brightHighlightOpacity})`);
-          fallGradient.addColorStop(0.2, `rgba(255,255,255,${highlightOpacity})`);
-          fallGradient.addColorStop(0.5, `rgba(0,0,0,0)`); // Neutral
-          fallGradient.addColorStop(0.8, `rgba(0,0,0,${lightShadowOpacity * 0.6})`);
+          fallGradient.addColorStop(0.15, `rgba(255,255,255,${highlightOpacity * 0.7})`);
+          fallGradient.addColorStop(0.3, `rgba(255,255,255,${highlightOpacity * 0.3})`);
+          fallGradient.addColorStop(0.45, `rgba(0,0,0,0)`); // Neutral
+          fallGradient.addColorStop(0.65, `rgba(0,0,0,${lightShadowOpacity * 0.4})`);
+          fallGradient.addColorStop(0.85, `rgba(0,0,0,${lightShadowOpacity * 0.7})`);
           fallGradient.addColorStop(1, `rgba(0,0,0,${lightShadowOpacity})`);
           ctx.fillStyle = fallGradient;
-          ctx.fillRect(x + corrugationWidth * 0.6, 0, corrugationWidth * 0.25, textureHeight);
+          ctx.fillRect(x + corrugationWidth * 0.65, 0, corrugationWidth * 0.23, textureHeight);
           
-          // 5. FINAL valley approach with MAXIMUM shadow depth
-          const finalGradient = ctx.createLinearGradient(x + corrugationWidth * 0.85, 0, x + corrugationWidth, 0);
+          // 5. FINAL MAXIMUM valley approach with DEEPEST shadow
+          const finalGradient = ctx.createLinearGradient(x + corrugationWidth * 0.88, 0, x + corrugationWidth, 0);
           finalGradient.addColorStop(0, `rgba(0,0,0,${lightShadowOpacity})`);
-          finalGradient.addColorStop(0.5, `rgba(0,0,0,${deepShadowOpacity})`);
-          finalGradient.addColorStop(1, `rgba(0,0,0,${deepShadowOpacity * 1.2})`); // MAXIMUM DEPTH
+          finalGradient.addColorStop(0.3, `rgba(0,0,0,${deepShadowOpacity * 0.7})`);
+          finalGradient.addColorStop(0.7, `rgba(0,0,0,${deepShadowOpacity * 0.9})`);
+          finalGradient.addColorStop(1, `rgba(0,0,0,${deepShadowOpacity})`); // MAXIMUM DEPTH
           ctx.fillStyle = finalGradient;
-          ctx.fillRect(x + corrugationWidth * 0.85, 0, corrugationWidth * 0.15, textureHeight);
+          ctx.fillRect(x + corrugationWidth * 0.88, 0, corrugationWidth * 0.12, textureHeight);
           
           // 6. ULTRA SHARP definition lines for MAXIMUM ridge visibility
-          if (corrugationWidth > 15) { // Only for larger corrugations
-            // ULTRA BRIGHT line at the very peak - LASER SHARP
-            ctx.fillStyle = `rgba(255,255,255,${ultraBrightOpacity * 1.5})`;
-            ctx.fillRect(x + corrugationWidth * 0.49, 0, 6, textureHeight); // WIDER line (was 2px, now 6px)
+          if (corrugationWidth > 20) {
+            // LASER BRIGHT line at the very peak - MAXIMUM WIDTH
+            ctx.fillStyle = `rgba(255,255,255,${extremeHighlightOpacity})`;
+            ctx.fillRect(x + corrugationWidth * 0.48, 0, 12, textureHeight); // ULTRA WIDE (was 6px, now 12px)
             
-            // SECONDARY bright lines for more definition
-            ctx.fillStyle = `rgba(255,255,255,${brightHighlightOpacity * 1.3})`;
-            ctx.fillRect(x + corrugationWidth * 0.46, 0, 3, textureHeight);
-            ctx.fillRect(x + corrugationWidth * 0.53, 0, 3, textureHeight);
+            // SECONDARY ultra-bright lines for extreme definition
+            ctx.fillStyle = `rgba(255,255,255,${ultraBrightOpacity})`;
+            ctx.fillRect(x + corrugationWidth * 0.44, 0, 8, textureHeight);
+            ctx.fillRect(x + corrugationWidth * 0.56, 0, 8, textureHeight);
             
-            // ULTRA DARK shadow lines in the valleys - MAXIMUM DEPTH
-            ctx.fillStyle = `rgba(0,0,0,${deepShadowOpacity * 1.5})`;
-            ctx.fillRect(x + corrugationWidth * 0.02, 0, 4, textureHeight); // WIDER shadow
-            ctx.fillRect(x + corrugationWidth * 0.98, 0, 4, textureHeight); // WIDER shadow
+            // TERTIARY bright lines for maximum definition
+            ctx.fillStyle = `rgba(255,255,255,${brightHighlightOpacity * 1.2})`;
+            ctx.fillRect(x + corrugationWidth * 0.40, 0, 6, textureHeight);
+            ctx.fillRect(x + corrugationWidth * 0.60, 0, 6, textureHeight);
             
-            // SECONDARY shadow lines for more depth
-            ctx.fillStyle = `rgba(0,0,0,${deepShadowOpacity * 1.2})`;
-            ctx.fillRect(x + corrugationWidth * 0.08, 0, 2, textureHeight);
-            ctx.fillRect(x + corrugationWidth * 0.92, 0, 2, textureHeight);
+            // MAXIMUM DEPTH shadow lines in the valleys
+            ctx.fillStyle = `rgba(0,0,0,${deepShadowOpacity})`;
+            ctx.fillRect(x + corrugationWidth * 0.01, 0, 8, textureHeight); // ULTRA WIDE shadow
+            ctx.fillRect(x + corrugationWidth * 0.99, 0, 8, textureHeight); // ULTRA WIDE shadow
             
-            // TERTIARY definition lines for ULTRA REALISM
-            ctx.fillStyle = `rgba(255,255,255,${highlightOpacity * 1.1})`;
-            ctx.fillRect(x + corrugationWidth * 0.43, 0, 1, textureHeight);
-            ctx.fillRect(x + corrugationWidth * 0.56, 0, 1, textureHeight);
+            // SECONDARY maximum shadow lines for extreme depth
+            ctx.fillStyle = `rgba(0,0,0,${deepShadowOpacity * 0.8})`;
+            ctx.fillRect(x + corrugationWidth * 0.06, 0, 6, textureHeight);
+            ctx.fillRect(x + corrugationWidth * 0.94, 0, 6, textureHeight);
             
-            ctx.fillStyle = `rgba(0,0,0,${lightShadowOpacity * 1.3})`;
-            ctx.fillRect(x + corrugationWidth * 0.12, 0, 1, textureHeight);
-            ctx.fillRect(x + corrugationWidth * 0.88, 0, 1, textureHeight);
+            // TERTIARY shadow lines for maximum depth definition
+            ctx.fillStyle = `rgba(0,0,0,${lightShadowOpacity * 1.5})`;
+            ctx.fillRect(x + corrugationWidth * 0.10, 0, 4, textureHeight);
+            ctx.fillRect(x + corrugationWidth * 0.90, 0, 4, textureHeight);
+            
+            // QUATERNARY definition lines for ULTRA REALISM
+            ctx.fillStyle = `rgba(255,255,255,${highlightOpacity * 1.3})`;
+            ctx.fillRect(x + corrugationWidth * 0.37, 0, 3, textureHeight);
+            ctx.fillRect(x + corrugationWidth * 0.63, 0, 3, textureHeight);
+            
+            ctx.fillStyle = `rgba(0,0,0,${lightShadowOpacity * 1.4})`;
+            ctx.fillRect(x + corrugationWidth * 0.14, 0, 2, textureHeight);
+            ctx.fillRect(x + corrugationWidth * 0.86, 0, 2, textureHeight);
           }
         }
         
-        // Add ENHANCED horizontal panel seams every 8 feet equivalent
-        const seamSpacing = textureHeight / 3; // Fewer, more prominent seams
-        ctx.strokeStyle = `rgba(0,0,0,${lightShadowOpacity * 1.2})`;
-        ctx.lineWidth = 4; // THICKER seams (was 2, now 4)
+        // Add ULTRA ENHANCED horizontal panel seams
+        const seamSpacing = textureHeight / 2.5; // Fewer, more prominent seams
+        ctx.strokeStyle = `rgba(0,0,0,${lightShadowOpacity * 1.5})`;
+        ctx.lineWidth = 8; // ULTRA THICK seams (was 4, now 8)
         for (let y = seamSpacing; y < textureHeight; y += seamSpacing) {
           ctx.beginPath();
           ctx.moveTo(0, y);
           ctx.lineTo(textureWidth, y);
           ctx.stroke();
           
-          // Add BRIGHT highlight above seam for more definition
-          ctx.strokeStyle = `rgba(255,255,255,${highlightOpacity * 0.6})`;
-          ctx.lineWidth = 2;
+          // Add ULTRA BRIGHT highlight above seam
+          ctx.strokeStyle = `rgba(255,255,255,${brightHighlightOpacity})`;
+          ctx.lineWidth = 4;
           ctx.beginPath();
-          ctx.moveTo(0, y - 2);
-          ctx.lineTo(textureWidth, y - 2);
+          ctx.moveTo(0, y - 4);
+          ctx.lineTo(textureWidth, y - 4);
           ctx.stroke();
           
-          // Add SHADOW below seam for more depth
-          ctx.strokeStyle = `rgba(0,0,0,${lightShadowOpacity * 0.8})`;
-          ctx.lineWidth = 2;
+          // Add ULTRA SHADOW below seam
+          ctx.strokeStyle = `rgba(0,0,0,${deepShadowOpacity})`;
+          ctx.lineWidth = 4;
           ctx.beginPath();
-          ctx.moveTo(0, y + 2);
-          ctx.lineTo(textureWidth, y + 2);
+          ctx.moveTo(0, y + 4);
+          ctx.lineTo(textureWidth, y + 4);
           ctx.stroke();
           
           // Reset for next seam
-          ctx.strokeStyle = `rgba(0,0,0,${lightShadowOpacity * 1.2})`;
-          ctx.lineWidth = 4;
+          ctx.strokeStyle = `rgba(0,0,0,${lightShadowOpacity * 1.5})`;
+          ctx.lineWidth = 8;
         }
         
-        // 🎯 ADD ENHANCED WEATHERING PATTERN for more realism
+        // 🎯 ADD MAXIMUM WEATHERING PATTERN for ultra realism
         if (!isWhite) {
-          // Add STRONGER random weathering marks
-          ctx.globalAlpha = 0.08; // STRONGER weathering (was 0.04)
-          for (let i = 0; i < 60; i++) { // MORE weathering marks (was 40)
+          // Add MAXIMUM random weathering marks
+          ctx.globalAlpha = 0.12; // MAXIMUM weathering (was 0.08)
+          for (let i = 0; i < 80; i++) { // MAXIMUM weathering marks (was 60)
             const wx = Math.random() * textureWidth;
             const wy = Math.random() * textureHeight;
-            const wsize = Math.random() * 5 + 2; // LARGER weathering marks
-            ctx.fillStyle = Math.random() > 0.5 ? 'rgba(255,255,255,0.6)' : 'rgba(0,0,0,0.6)';
-            ctx.fillRect(wx, wy, wsize, wsize * 0.3);
+            const wsize = Math.random() * 8 + 3; // MAXIMUM weathering marks
+            ctx.fillStyle = Math.random() > 0.5 ? 'rgba(255,255,255,0.8)' : 'rgba(0,0,0,0.8)';
+            ctx.fillRect(wx, wy, wsize, wsize * 0.25);
           }
           ctx.globalAlpha = 1.0;
         }
         
-        console.log(`✅ SUPER DEFINED CORRUGATED ROOF TEXTURE CREATED for ${panelSide} panel - EXTREME RIDGE DEFINITION`);
+        console.log(`✅ ULTRA DEFINED CORRUGATED ROOF TEXTURE CREATED for ${panelSide} panel - MAXIMUM RIDGE DEFINITION`);
       }
       
       const texture = new THREE.CanvasTexture(canvas);
       texture.wrapS = THREE.RepeatWrapping;
       texture.wrapT = THREE.RepeatWrapping;
-      texture.repeat.set(6, length/2.5); // LARGER corrugations (was 8, now 6) for MORE DEFINITION
+      texture.repeat.set(3, length/2); // MAXIMUM corrugation size (was 6, now 3) for ULTRA DEFINITION
       
       return texture;
     };
 
-    // 🎯 ALWAYS CREATE SUPER DEFINED CORRUGATED TEXTURES - regardless of skylights
-    console.log(`🔥 CREATING SUPER DEFINED CORRUGATED TEXTURES for both roof panels - EXTREME RIDGE DEFINITION`);
-    const leftTexture = createEnhancedCorrugatedTexture('left');
-    const rightTexture = createEnhancedCorrugatedTexture('right');
+    // 🎯 ALWAYS CREATE ULTRA DEFINED CORRUGATED TEXTURES
+    console.log(`🔥 CREATING ULTRA DEFINED CORRUGATED TEXTURES for both roof panels - MAXIMUM RIDGE DEFINITION`);
+    const leftTexture = createUltraDefinedCorrugatedTexture('left');
+    const rightTexture = createUltraDefinedCorrugatedTexture('right');
     
-    // 🎯 ENHANCED MATERIAL PROPERTIES for MAXIMUM ridge definition
+    // 🎯 MAXIMUM MATERIAL PROPERTIES for ULTRA ridge definition
     const isWhite = color === '#FFFFFF';
     const isDark = ['#1F2937', '#374151', '#4B5563', '#9CA3AF'].includes(color);
     
     const materialProps = isWhite ? {
-      metalness: 0.8, // INCREASED metalness for better reflection (was 0.6)
-      roughness: 0.15, // REDUCED roughness for sharper highlights (was 0.3)
-      envMapIntensity: 1.8, // INCREASED environment reflection (was 1.2)
+      metalness: 0.9,  // MAXIMUM metalness (was 0.8)
+      roughness: 0.05, // MINIMUM roughness (was 0.15)
+      envMapIntensity: 2.5, // MAXIMUM environment reflection (was 1.8)
     } : isDark ? {
-      metalness: 0.95, // MAXIMUM metalness for dark metal roofing (was 0.9)
-      roughness: 0.05, // MINIMUM roughness for ultra-sharp highlights (was 0.15)
-      envMapIntensity: 2.0, // MAXIMUM environment reflection (was 1.4)
+      metalness: 1.0,  // ABSOLUTE MAXIMUM (was 0.95)
+      roughness: 0.01, // ABSOLUTE MINIMUM (was 0.05)
+      envMapIntensity: 3.0, // ABSOLUTE MAXIMUM (was 2.0)
     } : {
-      metalness: 0.9, // HIGH metalness for metal roofing (was 0.8)
-      roughness: 0.1, // VERY LOW roughness for sharp highlights (was 0.2)
-      envMapIntensity: 1.5, // STRONG environment reflection (was 1.0)
+      metalness: 0.95, // MAXIMUM metalness (was 0.9)
+      roughness: 0.03, // MINIMUM roughness (was 0.1)
+      envMapIntensity: 2.0, // MAXIMUM environment reflection (was 1.5)
     };
     
-    // 🎯 ALWAYS CREATE MATERIALS WITH SUPER DEFINED CORRUGATED TEXTURES
+    // 🎯 ALWAYS CREATE MATERIALS WITH ULTRA DEFINED CORRUGATED TEXTURES
     const leftMaterial = new THREE.MeshStandardMaterial({
       map: leftTexture,
       ...materialProps,
@@ -250,7 +270,7 @@ const Roof: React.FC<RoofProps> = ({ width, length, height, pitch, color, skylig
       side: THREE.DoubleSide,
     });
     
-    console.log(`🔥 SUPER DEFINED ROOF MATERIALS CREATED: Both panels have EXTREME RIDGE DEFINITION`);
+    console.log(`🔥 ULTRA DEFINED ROOF MATERIALS CREATED: Both panels have MAXIMUM RIDGE DEFINITION`);
 
     // Create roof geometries with skylight cutouts ONLY where needed
     const createRoofGeometryWithCutouts = (isLeftPanel: boolean) => {
@@ -262,17 +282,17 @@ const Roof: React.FC<RoofProps> = ({ width, length, height, pitch, color, skylig
       console.log(`${isLeftPanel ? 'Left' : 'Right'} panel has ${panelSkylights.length} skylights`);
 
       if (panelSkylights.length === 0) {
-        // 🎯 NO SKYLIGHTS: Use simple box geometry - SUPER DEFINED RIDGES ALWAYS VISIBLE
-        console.log(`${isLeftPanel ? 'Left' : 'Right'} panel: Using simple BoxGeometry - SUPER DEFINED RIDGES ALWAYS VISIBLE`);
+        // 🎯 NO SKYLIGHTS: Use simple box geometry - ULTRA DEFINED RIDGES ALWAYS VISIBLE
+        console.log(`${isLeftPanel ? 'Left' : 'Right'} panel: Using simple BoxGeometry - ULTRA DEFINED RIDGES ALWAYS VISIBLE`);
         const geometry = new THREE.BoxGeometry(panelLength, 0.2, length);
         
-        // 🔧 CRITICAL: Apply proper UV mapping for super defined corrugated texture on simple geometry
+        // 🔧 CRITICAL: Apply proper UV mapping for ultra defined corrugated texture on simple geometry
         const uvAttribute = geometry.attributes.uv;
         const positionAttribute = geometry.attributes.position;
         const uvArray = uvAttribute.array;
         const positionArray = positionAttribute.array;
         
-        // Map UVs to show SUPER DEFINED corrugations running along the panel length
+        // Map UVs to show ULTRA DEFINED corrugations running along the panel length
         for (let i = 0; i < positionArray.length; i += 3) {
           const x = positionArray[i];
           const y = positionArray[i + 1];
@@ -280,19 +300,19 @@ const Roof: React.FC<RoofProps> = ({ width, length, height, pitch, color, skylig
           
           const uvIndex = (i / 3) * 2;
           
-          // Calculate UV coordinates for SUPER DEFINED corrugated pattern
+          // Calculate UV coordinates for ULTRA DEFINED corrugated pattern
           // Corrugations run along the length (Z direction), so use Z for the corrugated axis
-          uvArray[uvIndex] = (z + length/2) / length * 6; // U coordinate - LARGER corrugations (was 8, now 6)
-          uvArray[uvIndex + 1] = (x + panelLength/2) / panelLength * (length/2.5); // V coordinate - across width
+          uvArray[uvIndex] = (z + length/2) / length * 3; // U coordinate - MAXIMUM corrugations (was 6, now 3)
+          uvArray[uvIndex + 1] = (x + panelLength/2) / panelLength * (length/2); // V coordinate - across width
         }
         
         uvAttribute.needsUpdate = true;
-        console.log(`${isLeftPanel ? 'Left' : 'Right'} panel: Applied SUPER DEFINED corrugated UV mapping to BoxGeometry - EXTREME RIDGE DEFINITION ALWAYS VISIBLE`);
+        console.log(`${isLeftPanel ? 'Left' : 'Right'} panel: Applied ULTRA DEFINED corrugated UV mapping to BoxGeometry - MAXIMUM RIDGE DEFINITION ALWAYS VISIBLE`);
         return geometry;
       }
 
-      // 🎯 HAS SKYLIGHTS: Use extruded geometry with SELECTIVE cutouts - SUPER DEFINED RIDGES PRESERVED
-      console.log(`${isLeftPanel ? 'Left' : 'Right'} panel: Using ExtrudeGeometry with ${panelSkylights.length} skylight cutouts - SUPER DEFINED RIDGES PRESERVED EXCEPT IN CUTOUTS`);
+      // 🎯 HAS SKYLIGHTS: Use extruded geometry with SELECTIVE cutouts - ULTRA DEFINED RIDGES PRESERVED
+      console.log(`${isLeftPanel ? 'Left' : 'Right'} panel: Using ExtrudeGeometry with ${panelSkylights.length} skylight cutouts - ULTRA DEFINED RIDGES PRESERVED EXCEPT IN CUTOUTS`);
       
       // Create the roof panel shape in the XY plane (will be rotated later)
       const roofShape = new THREE.Shape();
@@ -330,7 +350,7 @@ const Roof: React.FC<RoofProps> = ({ width, length, height, pitch, color, skylig
         skylightHole.closePath();
         
         roofShape.holes.push(skylightHole);
-        console.log(`  ✂️ Added SELECTIVE hole for skylight - SUPER DEFINED ridges preserved everywhere else`);
+        console.log(`  ✂️ Added SELECTIVE hole for skylight - ULTRA DEFINED ridges preserved everywhere else`);
       });
 
       const extrudeSettings = {
@@ -341,15 +361,15 @@ const Roof: React.FC<RoofProps> = ({ width, length, height, pitch, color, skylig
 
       const geometry = new THREE.ExtrudeGeometry(roofShape, extrudeSettings);
       
-      // 🔧 CRITICAL: Apply proper UV mapping to extruded geometry for PRESERVED SUPER DEFINED corrugated texture
+      // 🔧 CRITICAL: Apply proper UV mapping to extruded geometry for PRESERVED ULTRA DEFINED corrugated texture
       const uvAttribute = geometry.attributes.uv;
       const positionAttribute = geometry.attributes.position;
       const uvArray = uvAttribute.array;
       const positionArray = positionAttribute.array;
       
-      console.log(`${isLeftPanel ? 'Left' : 'Right'} panel: Applying SUPER DEFINED corrugated UV mapping to ExtrudeGeometry with selective cutouts`);
+      console.log(`${isLeftPanel ? 'Left' : 'Right'} panel: Applying ULTRA DEFINED corrugated UV mapping to ExtrudeGeometry with selective cutouts`);
       
-      // Apply UV mapping that preserves the SUPER DEFINED corrugated pattern EVERYWHERE except in the holes
+      // Apply UV mapping that preserves the ULTRA DEFINED corrugated pattern EVERYWHERE except in the holes
       for (let i = 0; i < positionArray.length; i += 3) {
         const x = positionArray[i];
         const y = positionArray[i + 1];
@@ -357,12 +377,12 @@ const Roof: React.FC<RoofProps> = ({ width, length, height, pitch, color, skylig
         
         const uvIndex = (i / 3) * 2;
         
-        // 🎯 PRESERVE SUPER DEFINED RIDGES: Map UV coordinates to show EXTREME corrugations running along the panel length
+        // 🎯 PRESERVE ULTRA DEFINED RIDGES: Map UV coordinates to show MAXIMUM corrugations running along the panel length
         // The extruded geometry is in XY plane, so:
         // - X corresponds to the panel length direction (where corrugations run)
         // - Y corresponds to the panel width direction (across corrugations)
-        uvArray[uvIndex] = (x + panelLength/2) / panelLength * 6; // U coordinate - LARGER corrugations (was 8, now 6)
-        uvArray[uvIndex + 1] = (y + length/2) / length * (length/2.5); // V coordinate - across width
+        uvArray[uvIndex] = (x + panelLength/2) / panelLength * 3; // U coordinate - MAXIMUM corrugations (was 6, now 3)
+        uvArray[uvIndex + 1] = (y + length/2) / length * (length/2); // V coordinate - across width
       }
       
       // Rotate the geometry to align with the roof pitch
@@ -370,11 +390,11 @@ const Roof: React.FC<RoofProps> = ({ width, length, height, pitch, color, skylig
       geometry.rotateX(-Math.PI / 2); // Rotate to lie flat in XZ plane
       
       uvAttribute.needsUpdate = true;
-      console.log(`${isLeftPanel ? 'Left' : 'Right'} panel: SUPER DEFINED corrugated texture applied to ExtrudeGeometry - EXTREME RIDGE DEFINITION PRESERVED with selective skylight cutouts`);
+      console.log(`${isLeftPanel ? 'Left' : 'Right'} panel: ULTRA DEFINED corrugated texture applied to ExtrudeGeometry - MAXIMUM RIDGE DEFINITION PRESERVED with selective skylight cutouts`);
       return geometry;
     };
     
-    // Create geometries with SELECTIVE cutouts and PRESERVED SUPER DEFINED ridges
+    // Create geometries with SELECTIVE cutouts and PRESERVED ULTRA DEFINED ridges
     const leftGeometry = createRoofGeometryWithCutouts(true);
     const rightGeometry = createRoofGeometryWithCutouts(false);
     
@@ -433,7 +453,7 @@ const Roof: React.FC<RoofProps> = ({ width, length, height, pitch, color, skylig
   
   return (
     <group position={[0, height, 0]}>
-      {/* Left roof panel with SUPER DEFINED CORRUGATED TEXTURE ALWAYS VISIBLE */}
+      {/* Left roof panel with ULTRA DEFINED CORRUGATED TEXTURE ALWAYS VISIBLE */}
       <group 
         position={[-width / 4, roofHeight / 2, 0]}
         rotation={[0, 0, pitchAngle]}
@@ -451,7 +471,7 @@ const Roof: React.FC<RoofProps> = ({ width, length, height, pitch, color, skylig
         }
       </group>
       
-      {/* Right roof panel with SUPER DEFINED CORRUGATED TEXTURE ALWAYS VISIBLE */}
+      {/* Right roof panel with ULTRA DEFINED CORRUGATED TEXTURE ALWAYS VISIBLE */}
       <group
         position={[width / 4, roofHeight / 2, 0]}
         rotation={[0, 0, -pitchAngle]}
@@ -469,7 +489,7 @@ const Roof: React.FC<RoofProps> = ({ width, length, height, pitch, color, skylig
         }
       </group>
       
-      {/* Ridge cap with ENHANCED corrugated texture */}
+      {/* Ridge cap with ULTRA ENHANCED corrugated texture */}
       <mesh 
         position={[0, roofHeight, 0]} 
         castShadow 
@@ -478,9 +498,9 @@ const Roof: React.FC<RoofProps> = ({ width, length, height, pitch, color, skylig
         <boxGeometry args={[0.4, 0.3, length]} />
         <meshStandardMaterial 
           color={color} 
-          metalness={color === '#FFFFFF' ? 0.7 : 0.95} // INCREASED metalness
-          roughness={color === '#FFFFFF' ? 0.2 : 0.05} // REDUCED roughness for sharper definition
-          envMapIntensity={color === '#FFFFFF' ? 1.5 : 2.0} // INCREASED environment reflection
+          metalness={color === '#FFFFFF' ? 0.9 : 1.0} // MAXIMUM metalness
+          roughness={color === '#FFFFFF' ? 0.1 : 0.01} // MINIMUM roughness for ultra-sharp definition
+          envMapIntensity={color === '#FFFFFF' ? 2.0 : 3.0} // MAXIMUM environment reflection
         />
       </mesh>
     </group>
