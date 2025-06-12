@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Building, Car, Barcode as Barn, Home, ArrowRight, Check, Star } from 'lucide-react';
+import { Building, Car, Warehouse, Home, ArrowRight, Check, Star } from 'lucide-react';
 import { buildingTemplates, getTemplatesByCategory } from '../../data/buildingTemplates';
 import { useBuildingStore } from '../../store/buildingStore';
 import type { BuildingTemplate, TemplateCategory } from '../../types/templates';
@@ -17,7 +17,7 @@ const TemplateSelector: React.FC<TemplateSelectorProps> = ({ onTemplateSelect, o
   const categories = [
     { id: 'all' as TemplateCategory, name: 'All Templates', icon: Building, count: buildingTemplates.length },
     { id: 'garage' as TemplateCategory, name: 'Garages', icon: Car, count: buildingTemplates.filter(t => t.category === 'garage').length },
-    { id: 'barn' as TemplateCategory, name: 'Barns', icon: Barn, count: buildingTemplates.filter(t => t.category === 'barn').length }
+    { id: 'barn' as TemplateCategory, name: 'Barns', icon: Warehouse, count: buildingTemplates.filter(t => t.category === 'barn').length }
   ];
 
   const filteredTemplates = getTemplatesByCategory(selectedCategory);
@@ -33,7 +33,7 @@ const TemplateSelector: React.FC<TemplateSelectorProps> = ({ onTemplateSelect, o
   const getCategoryIcon = (category: string) => {
     switch (category) {
       case 'garage': return <Car className="w-4 h-4" />;
-      case 'barn': return <Barn className="w-4 h-4" />;
+      case 'barn': return <Warehouse className="w-4 h-4" />;
       default: return <Building className="w-4 h-4" />;
     }
   };

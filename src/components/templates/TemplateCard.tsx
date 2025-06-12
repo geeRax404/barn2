@@ -1,6 +1,6 @@
 import React from 'react';
 import { motion } from 'framer-motion';
-import { Car, Barcode as Barn, ArrowRight, Star, DollarSign } from 'lucide-react';
+import { Car, Warehouse, ArrowRight, Star, DollarSign } from 'lucide-react';
 import type { BuildingTemplate } from '../../types/templates';
 
 interface TemplateCardProps {
@@ -15,7 +15,7 @@ const TemplateCard: React.FC<TemplateCardProps> = ({ template, onSelect, isSelec
       case 'garage':
         return <Car className="w-6 h-6" />;
       case 'barn':
-        return <Barn className="w-6 h-6" />;
+        return <Warehouse className="w-6 h-6" />;
       default:
         return <Car className="w-6 h-6" />;
     }
