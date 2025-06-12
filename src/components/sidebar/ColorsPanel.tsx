@@ -2,98 +2,102 @@ import React from 'react';
 import { motion } from 'framer-motion';
 import { useBuildingStore } from '../../store/buildingStore';
 
-// 🎯 COPIED COLOR PALETTE from https://shed-builder.bbcinnovation.com.au/
+// 🇳🇿🇦🇺 NEW ZEALAND & AUSTRALIA POPULAR COLORBOND® COLORS
 const colorOptions = [
-  // Whites & Light Colors
-  { name: 'Classic White', value: '#FFFFFF' },
-  { name: 'Off White', value: '#F8F8F8' },
-  { name: 'Cream', value: '#F5F5DC' },
-  { name: 'Light Grey', value: '#E8E8E8' },
+  // Classic Whites & Creams - Very popular in rural areas
+  { name: 'Surfmist®', value: '#F5F5F0' },
+  { name: 'Classic Cream®', value: '#F2F0E6' },
+  { name: 'Paperbark®', value: '#E8E4D6' },
+  { name: 'Shale Grey®', value: '#D4D1C7' },
   
-  // Greys
-  { name: 'Silver Grey', value: '#C0C0C0' },
-  { name: 'Medium Grey', value: '#9E9E9E' },
-  { name: 'Charcoal', value: '#666666' },
-  { name: 'Dark Grey', value: '#4A4A4A' },
+  // Popular Greys - Modern rural choice
+  { name: 'Windspray®', value: '#C7C1B7' },
+  { name: 'Dune®', value: '#A39080' },
+  { name: 'Basalt®', value: '#6D6C6A' },
+  { name: 'Monument®', value: '#3E3E3C' },
   
-  // Blues
-  { name: 'Sky Blue', value: '#87CEEB' },
-  { name: 'Ocean Blue', value: '#4682B4' },
-  { name: 'Navy Blue', value: '#1E3A8A' },
-  { name: 'Steel Blue', value: '#4682B4' },
+  // Traditional Greens - Classic rural/farm colors
+  { name: 'Pale Eucalypt®', value: '#C7C5A6' },
+  { name: 'Eucalypt®', value: '#7A8471' },
+  { name: 'Cottage Green®', value: '#5A6B47' },
+  { name: 'Deep Ocean®', value: '#2F4538' },
   
-  // Greens
-  { name: 'Sage Green', value: '#9CAF88' },
-  { name: 'Forest Green', value: '#228B22' },
-  { name: 'Hunter Green', value: '#355E3B' },
-  { name: 'Dark Green', value: '#006400' },
+  // Popular Blues - Coastal and modern rural
+  { name: 'Evening Haze®', value: '#A5A8B0' },
+  { name: 'Cadet®', value: '#6B7B8C' },
+  { name: 'Deep Ocean®', value: '#2C4F64' },
+  { name: 'Night Sky®', value: '#1E2A3A' },
   
-  // Reds & Browns
-  { name: 'Barn Red', value: '#B22222' },
-  { name: 'Burgundy', value: '#800020' },
-  { name: 'Chocolate Brown', value: '#7B3F00' },
-  { name: 'Coffee Brown', value: '#6F4E37' },
+  // Traditional Reds & Earth Tones - Classic barn colors
+  { name: 'Terrain®', value: '#B5967A' },
+  { name: 'Jasper®', value: '#8B4A2B' },
+  { name: 'Manor Red®', value: '#7A2E2E' },
+  { name: 'Ironstone®', value: '#4A3C32' },
   
-  // Tans & Beiges
-  { name: 'Desert Sand', value: '#EDC9AF' },
-  { name: 'Wheat', value: '#F5DEB3' },
-  { name: 'Tan', value: '#D2B48C' },
-  { name: 'Khaki', value: '#C3B091' },
+  // Modern Neutrals - Contemporary rural buildings
+  { name: 'Wallaby®', value: '#A0927D' },
+  { name: 'Woodland Grey®', value: '#6B6B5D' },
+  { name: 'Gully®', value: '#4A453E' },
+  { name: 'Cove®', value: '#2E2B26' },
 ];
 
-// 🎯 ROOF COLOR PALETTE - Matching shed builder style
+// 🏠 NEW ZEALAND & AUSTRALIA POPULAR ROOF COLORS
 const roofColorOptions = [
-  // Classic Roof Colors
-  { name: 'Classic White', value: '#FFFFFF' },
-  { name: 'Light Grey', value: '#D3D3D3' },
-  { name: 'Medium Grey', value: '#A9A9A9' },
-  { name: 'Charcoal Grey', value: '#36454F' },
-  { name: 'Slate Grey', value: '#708090' },
+  // Classic Roof Colors - Most popular choices
+  { name: 'COLORBOND® Surfmist®', value: '#F5F5F0' },
+  { name: 'COLORBOND® Shale Grey®', value: '#D4D1C7' },
+  { name: 'COLORBOND® Windspray®', value: '#C7C1B7' },
+  { name: 'COLORBOND® Monument®', value: '#3E3E3C' },
+  { name: 'COLORBOND® Basalt®', value: '#6D6C6A' },
   
-  // Traditional Roof Colors
-  { name: 'Terracotta', value: '#E2725B' },
-  { name: 'Barn Red', value: '#B22222' },
-  { name: 'Forest Green', value: '#228B22' },
-  { name: 'Navy Blue', value: '#1E3A8A' },
-  { name: 'Bronze', value: '#CD7F32' },
+  // Traditional Roof Colors - Rural heritage
+  { name: 'COLORBOND® Cottage Green®', value: '#5A6B47' },
+  { name: 'COLORBOND® Manor Red®', value: '#7A2E2E' },
+  { name: 'COLORBOND® Jasper®', value: '#8B4A2B' },
+  { name: 'COLORBOND® Ironstone®', value: '#4A3C32' },
+  { name: 'COLORBOND® Deep Ocean®', value: '#2C4F64' },
   
-  // Modern Roof Colors
-  { name: 'Graphite', value: '#383838' },
-  { name: 'Black', value: '#2C2C2C' },
-  { name: 'Copper', value: '#B87333' },
-  { name: 'Zinc', value: '#7A7A7A' },
-  { name: 'Pewter', value: '#96A8A1' },
+  // Modern Roof Colors - Contemporary choices
+  { name: 'COLORBOND® Woodland Grey®', value: '#6B6B5D' },
+  { name: 'COLORBOND® Gully®', value: '#4A453E' },
+  { name: 'COLORBOND® Night Sky®', value: '#1E2A3A' },
+  { name: 'COLORBOND® Cove®', value: '#2E2B26' },
+  { name: 'ZINCALUME®', value: '#A8A8A8' },
 ];
 
 // 🏗️ LYSAGHT WALL PROFILES - Based on https://lysaght.com/profiles
 const wallProfileOptions = [
   {
-    name: 'Multiclad',
+    name: 'MULTICLAD®',
     value: 'multiclad',
-    description: 'Traditional ribbed profile with deep corrugations',
+    description: 'Traditional deep corrugated profile - 76mm spacing',
     ribWidth: 76, // 76mm rib spacing
-    ribDepth: 'deep'
+    ribDepth: 'deep',
+    popularity: 'Very popular for rural/farm buildings'
   },
   {
-    name: 'Trimdek',
+    name: 'TRIMDEK®',
     value: 'trimdek',
-    description: 'Contemporary trapezoidal profile with clean lines',
+    description: 'Contemporary trapezoidal profile - 65mm spacing',
     ribWidth: 65, // 65mm rib spacing
-    ribDepth: 'medium'
+    ribDepth: 'medium',
+    popularity: 'Most popular modern choice'
   },
   {
-    name: 'CustomOrb',
+    name: 'CUSTOM ORB®',
     value: 'customorb',
-    description: 'Curved profile with rounded ribs',
+    description: 'Curved profile with rounded ribs - 32mm spacing',
     ribWidth: 32, // 32mm rib spacing
-    ribDepth: 'shallow'
+    ribDepth: 'shallow',
+    popularity: 'Premium residential/commercial'
   },
   {
-    name: 'Horizontal CustomOrb',
+    name: 'CUSTOM ORB® Horizontal',
     value: 'horizontal-customorb',
-    description: 'Horizontal installation of CustomOrb profile',
+    description: 'Horizontal installation of CUSTOM ORB®',
     ribWidth: 32,
-    ribDepth: 'shallow'
+    ribDepth: 'shallow',
+    popularity: 'Modern architectural applications'
   }
 ];
 
@@ -136,6 +140,9 @@ const ColorsPanel: React.FC = () => {
                     <div className="text-xs text-gray-500 mt-1">
                       {profile.ribWidth}mm spacing • {profile.ribDepth} profile
                     </div>
+                    <div className="text-xs text-blue-600 mt-1 font-medium">
+                      {profile.popularity}
+                    </div>
                   </div>
                   {wallProfile === profile.value && (
                     <div className="w-5 h-5 bg-blue-500 rounded-full flex items-center justify-center ml-3">
@@ -170,7 +177,7 @@ const ColorsPanel: React.FC = () => {
 
       <div className="mb-6">
         <label className="form-label text-base font-semibold">Wall Color</label>
-        <p className="text-xs text-gray-600 mb-3">Choose from our premium color collection</p>
+        <p className="text-xs text-gray-600 mb-3">Popular COLORBOND® colors in New Zealand & Australia</p>
         <div className="grid grid-cols-4 gap-2">
           {colorOptions.map((option) => (
             <div key={option.value} className="relative group">
@@ -202,7 +209,7 @@ const ColorsPanel: React.FC = () => {
       
       <div className="mb-6">
         <label className="form-label text-base font-semibold">Roof Color</label>
-        <p className="text-xs text-gray-600 mb-3">Select a complementary roof color</p>
+        <p className="text-xs text-gray-600 mb-3">Popular roofing colors for rural buildings</p>
         <div className="grid grid-cols-4 gap-2">
           {roofColorOptions.map((option) => (
             <div key={option.value} className="relative group">
@@ -240,7 +247,7 @@ const ColorsPanel: React.FC = () => {
           <div>
             <div className="text-xs text-gray-600 mb-1">Wall Profile</div>
             <div className="text-sm font-medium text-gray-700">
-              {wallProfileOptions.find(p => p.value === wallProfile)?.name || 'Trimdek'}
+              {wallProfileOptions.find(p => p.value === wallProfile)?.name || 'TRIMDEK®'}
             </div>
             <div className="text-xs text-gray-500">
               {wallProfileOptions.find(p => p.value === wallProfile)?.description}
@@ -286,7 +293,7 @@ const ColorsPanel: React.FC = () => {
           >
             <option value="colorbond">COLORBOND® Steel</option>
             <option value="zincalume">ZINCALUME® Steel</option>
-            <option value="vinyl">Vinyl Cladding</option>
+            <option value="galvanised">Galvanised Steel</option>
             <option value="timber">Timber Weatherboard</option>
             <option value="fiber">Fiber Cement</option>
           </select>
@@ -301,15 +308,17 @@ const ColorsPanel: React.FC = () => {
           >
             <option value="colorbond">COLORBOND® Steel Roofing</option>
             <option value="zincalume">ZINCALUME® Steel Roofing</option>
+            <option value="galvanised">Galvanised Iron</option>
             <option value="tile">Concrete Roof Tiles</option>
-            <option value="shingle">Asphalt Shingles</option>
+            <option value="corrugate">Corrugated Iron</option>
           </select>
         </div>
         
         <div className="text-xs text-blue-700">
-          <p className="mb-1">• 25-year warranty on COLORBOND® steel</p>
+          <p className="mb-1">• 15-year warranty on COLORBOND® steel</p>
           <p className="mb-1">• UV resistant and fade proof</p>
-          <p>• Environmentally sustainable materials</p>
+          <p className="mb-1">• Suitable for coastal environments</p>
+          <p>• Made in Australia for local conditions</p>
         </div>
       </div>
     </motion.div>
