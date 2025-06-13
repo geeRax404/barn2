@@ -12,7 +12,29 @@ import {
   createFeatureBoundsLock,
   suggestSafeDimensionChanges
 } from '../utils/wallBoundsLockSystem';
-import type { BuildingStore, Project, ViewMode, BuildingDimensions, WallFeature, Skylight, WallProfile, Building, WallPosition, WallBoundsProtection } from '../types';
+import {
+  scanSpaceLayout,
+  validateSpaceModification,
+  getFeatureClearanceZones,
+  checkAccessPaths,
+  validateVentilation
+} from '../utils/spaceLayoutDetection';
+import type { 
+  BuildingStore, 
+  Project, 
+  ViewMode, 
+  BuildingDimensions, 
+  WallFeature, 
+  Skylight, 
+  WallProfile, 
+  Building, 
+  WallPosition, 
+  WallBoundsProtection,
+  SpaceLayoutDetection,
+  ClearanceZone,
+  AccessPath,
+  VentilationArea
+} from '../types';
 
 // Default initial building with minimum room constraints
 const defaultBuilding = {
@@ -28,6 +50,7 @@ const defaultBuilding = {
   roofColor: '#9CA3AF', // Medium gray
   wallProfile: 'trimdek' as WallProfile, // Default to Trimdek profile
   wallBoundsProtection: new Map<WallPosition, WallBoundsProtection>(),
+  spaceLayout: undefined as SpaceLayoutDetection | undefined,
 };
 
 // Create a default project with validated dimensions
@@ -60,7 +83,7 @@ export const useBuildingStore = create<BuildingStore>((set, get) => ({
   // Set complete building state atomically
   setBuilding: (building: Building) =>
     set((state) => {
-      console.log(`\n🏗️ SETTING COMPLETE BUILDING STATE WITH BOUNDS PROTECTION`);
+      console.log(`\n🏗️ SETTING COMPLETE BUILDING STATE WITH SPACE LAYOUT DETECTION`);
       
       // First, validate and enforce room dimension constraints
       const roomValidation = validateRoomDimensions(building.dimensions, STANDARD_ROOM_CONSTRAINTS);
@@ -108,6 +131,16 @@ export const useBuildingStore = create<BuildingStore>((set, get) => ({
         return state;
       }
 
+      // 🔍 SCAN SPACE LAYOUT - Detect all architectural elements
+      console.log(`\n🔍 === SPACE LAYOUT DETECTION ===`);
+      const spaceLayout = scanSpaceLayout(building.features, building.dimensions);
+      console.log(`✅ Space layout scan complete:`);
+      console.log(`  - ${spaceLayout.detectedFeatures.length} features with requirements detected`);
+      console.log(`  - ${spaceLayout.clearanceZones.length} clearance zones mapped`);
+      console.log(`  - ${spaceLayout.accessPaths.length} access paths identified`);
+      console.log(`  - ${spaceLayout.ventilationAreas.length} ventilation areas found`);
+      console.log(`  - ${spaceLayout.layoutConstraints.length} layout constraints generated`);
+
       // 🔒 CREATE WALL BOUNDS PROTECTION for all walls with features
       const wallBoundsProtection = new Map<WallPosition, WallBoundsProtection>();
       const wallPositions: WallPosition[] = ['front', 'back', 'left', 'right'];
@@ -120,14 +153,24 @@ export const useBuildingStore = create<BuildingStore>((set, get) => ({
         }
       });
 
-      // Add bounds locks to features
-      const featuresWithLocks = building.features.map(feature => ({
-        ...feature,
-        boundsLock: createFeatureBoundsLock(feature, building.dimensions),
-        isLocked: true
-      }));
+      // Add bounds locks and enhanced requirements to features
+      const featuresWithEnhancements = building.features.map(feature => {
+        const detectedFeature = spaceLayout.detectedFeatures.find(df => df.id === feature.id);
+        
+        return {
+          ...feature,
+          boundsLock: createFeatureBoundsLock(feature, building.dimensions),
+          isLocked: true,
+          clearanceRequirements: detectedFeature?.clearanceRequirements,
+          functionalZone: detectedFeature?.functionalZone,
+          accessRequirements: detectedFeature?.accessRequirements,
+          structuralImpact: detectedFeature?.structuralImpact
+        };
+      });
 
-      console.log(`✅ Building state validation passed with ${wallBoundsProtection.size} protected walls`);
+      console.log(`✅ Building state validation passed with space layout protection`);
+      console.log(`🛡️ ${wallBoundsProtection.size} protected walls`);
+      console.log(`🔍 ${spaceLayout.layoutConstraints.filter(c => c.severity === 'critical').length} critical layout constraints`);
 
       return {
         currentProject: {
@@ -135,18 +178,55 @@ export const useBuildingStore = create<BuildingStore>((set, get) => ({
           lastModified: new Date(),
           building: {
             ...building,
-            features: featuresWithLocks,
-            wallBoundsProtection
+            features: featuresWithEnhancements,
+            wallBoundsProtection,
+            spaceLayout
           },
         },
       };
     }),
 
-  // Update building dimensions with comprehensive validation and bounds checking
+  // Update building dimensions with comprehensive validation and space layout checking
   updateDimensions: (dimensions: Partial<BuildingDimensions>) => 
     set((state) => {
-      console.log(`\n🏗️ UPDATING DIMENSIONS WITH BOUNDS LOCK PROTECTION`);
+      console.log(`\n🏗️ UPDATING DIMENSIONS WITH SPACE LAYOUT PROTECTION`);
       console.log(`Proposed changes:`, dimensions);
+      
+      // 🔍 CHECK SPACE LAYOUT CONSTRAINTS first
+      if (state.currentProject.building.spaceLayout) {
+        const spaceValidation = validateSpaceModification(
+          state.currentProject.building.spaceLayout,
+          dimensions,
+          state.currentProject.building.dimensions
+        );
+        
+        if (!spaceValidation.canModify) {
+          console.log(`\n🚫 DIMENSION UPDATE BLOCKED - SPACE LAYOUT VIOLATIONS`);
+          console.log(`Space violations: ${spaceValidation.violations.length}`);
+          spaceValidation.violations.forEach(violation => console.log(`  ❌ ${violation}`));
+          
+          // Show user-friendly error message
+          const errorMessage = [
+            'Cannot modify room dimensions - architectural elements prevent changes:',
+            ...spaceValidation.violations.slice(0, 3), // Show first 3 violations
+            spaceValidation.violations.length > 3 ? `...and ${spaceValidation.violations.length - 3} more restrictions` : '',
+            '',
+            'Suggestions:',
+            ...spaceValidation.suggestions.slice(0, 2)
+          ].filter(Boolean).join('\n');
+          
+          console.error(errorMessage);
+          
+          // Return current state without changes
+          return state;
+        }
+        
+        // Show suggestions if any
+        if (spaceValidation.suggestions.length > 0) {
+          console.log(`\n💡 SPACE LAYOUT SUGGESTIONS:`);
+          spaceValidation.suggestions.forEach(suggestion => console.log(`  💡 ${suggestion}`));
+        }
+      }
       
       // 🔒 CHECK WALL BOUNDS LOCKS for each affected wall
       const wallPositions: WallPosition[] = ['front', 'back', 'left', 'right'];
@@ -259,6 +339,10 @@ export const useBuildingStore = create<BuildingStore>((set, get) => ({
         }
       }
 
+      // 🔍 UPDATE SPACE LAYOUT after successful dimension change
+      const updatedSpaceLayout = scanSpaceLayout(state.currentProject.building.features, enforcedDimensions);
+      console.log(`🔍 Space layout updated: ${updatedSpaceLayout.layoutConstraints.length} constraints`);
+
       // 🔒 UPDATE WALL BOUNDS PROTECTION after successful dimension change
       const updatedWallBoundsProtection = new Map<WallPosition, WallBoundsProtection>();
       
@@ -272,6 +356,7 @@ export const useBuildingStore = create<BuildingStore>((set, get) => ({
 
       console.log(`✅ Final dimensions: ${enforcedDimensions.width}ft × ${enforcedDimensions.length}ft × ${enforcedDimensions.height}ft`);
       console.log(`🔒 Wall protection updated for ${updatedWallBoundsProtection.size} walls`);
+      console.log(`🔍 Space layout constraints: ${updatedSpaceLayout.layoutConstraints.filter(c => c.severity === 'critical').length} critical`);
 
       return {
         currentProject: {
@@ -280,13 +365,14 @@ export const useBuildingStore = create<BuildingStore>((set, get) => ({
           building: {
             ...state.currentProject.building,
             dimensions: enforcedDimensions,
-            wallBoundsProtection: updatedWallBoundsProtection
+            wallBoundsProtection: updatedWallBoundsProtection,
+            spaceLayout: updatedSpaceLayout
           },
         },
       };
     }),
 
-  // Add a new wall feature with comprehensive validation and bounds locking
+  // Add a new wall feature with comprehensive validation and space layout integration
   addFeature: (feature: Omit<WallFeature, 'id'>) => 
     set((state) => {
       const newFeature = { ...feature, id: uuidv4() };
@@ -311,28 +397,44 @@ export const useBuildingStore = create<BuildingStore>((set, get) => ({
         return state;
       }
 
-      // 🔒 CREATE BOUNDS LOCK for the new feature
-      const featureWithLock: WallFeature = {
+      // 🔍 UPDATE SPACE LAYOUT with new feature
+      const updatedSpaceLayout = scanSpaceLayout(newFeatures, state.currentProject.building.dimensions);
+      console.log(`🔍 Space layout updated with new ${newFeature.type}: ${updatedSpaceLayout.layoutConstraints.length} constraints`);
+
+      // Check if adding this feature creates any critical violations
+      const criticalConstraints = updatedSpaceLayout.layoutConstraints.filter(c => c.severity === 'critical');
+      if (criticalConstraints.length > 0) {
+        console.log(`⚠️ Adding ${newFeature.type} creates ${criticalConstraints.length} critical constraints`);
+      }
+
+      // 🔒 CREATE BOUNDS LOCK for the new feature with enhanced requirements
+      const detectedFeature = updatedSpaceLayout.detectedFeatures.find(df => df.id === newFeature.id);
+      const featureWithEnhancements: WallFeature = {
         ...newFeature,
         boundsLock: createFeatureBoundsLock(newFeature, state.currentProject.building.dimensions),
-        isLocked: true
+        isLocked: true,
+        clearanceRequirements: detectedFeature?.clearanceRequirements,
+        functionalZone: detectedFeature?.functionalZone,
+        accessRequirements: detectedFeature?.accessRequirements,
+        structuralImpact: detectedFeature?.structuralImpact
       };
 
-      const featuresWithLocks = [...state.currentProject.building.features, featureWithLock];
+      const featuresWithEnhancements = [...state.currentProject.building.features, featureWithEnhancements];
 
       // 🔒 UPDATE WALL BOUNDS PROTECTION
       const wallBoundsProtection = new Map<WallPosition, WallBoundsProtection>();
       const wallPositions: WallPosition[] = ['front', 'back', 'left', 'right'];
       
       wallPositions.forEach(wallPosition => {
-        const protection = getWallProtectionStatus(wallPosition, featuresWithLocks, state.currentProject.building.dimensions);
+        const protection = getWallProtectionStatus(wallPosition, featuresWithEnhancements, state.currentProject.building.dimensions);
         if (protection) {
           wallBoundsProtection.set(wallPosition, protection);
         }
       });
 
-      console.log(`🔒 Feature added with bounds lock: ${newFeature.type} on ${newFeature.position.wallPosition} wall`);
+      console.log(`🔒 Feature added with space layout integration: ${newFeature.type} on ${newFeature.position.wallPosition} wall`);
       console.log(`🛡️ Wall protection updated for ${wallBoundsProtection.size} walls`);
+      console.log(`🔍 Clearance zones: ${updatedSpaceLayout.clearanceZones.filter(z => z.featureId === newFeature.id).length} for this feature`);
 
       return {
         currentProject: {
@@ -340,20 +442,25 @@ export const useBuildingStore = create<BuildingStore>((set, get) => ({
           lastModified: new Date(),
           building: {
             ...state.currentProject.building,
-            features: featuresWithLocks,
-            wallBoundsProtection
+            features: featuresWithEnhancements,
+            wallBoundsProtection,
+            spaceLayout: updatedSpaceLayout
           },
         },
       };
     }),
 
-  // Remove a wall feature and update bounds protection
+  // Remove a wall feature and update space layout
   removeFeature: (id: string) => 
     set((state) => {
       const removedFeature = state.currentProject.building.features.find(f => f.id === id);
       const remainingFeatures = state.currentProject.building.features.filter(
         (feature) => feature.id !== id
       );
+
+      // 🔍 UPDATE SPACE LAYOUT after feature removal
+      const updatedSpaceLayout = scanSpaceLayout(remainingFeatures, state.currentProject.building.dimensions);
+      console.log(`🔍 Space layout updated after removing ${removedFeature?.type}: ${updatedSpaceLayout.layoutConstraints.length} constraints`);
 
       // 🔒 UPDATE WALL BOUNDS PROTECTION after feature removal
       const wallBoundsProtection = new Map<WallPosition, WallBoundsProtection>();
@@ -367,8 +474,9 @@ export const useBuildingStore = create<BuildingStore>((set, get) => ({
       });
 
       if (removedFeature) {
-        console.log(`🔓 Feature removed and bounds unlocked: ${removedFeature.type} from ${removedFeature.position.wallPosition} wall`);
+        console.log(`🔓 Feature removed and space unlocked: ${removedFeature.type} from ${removedFeature.position.wallPosition} wall`);
         console.log(`🛡️ Wall protection updated for ${wallBoundsProtection.size} walls`);
+        console.log(`🔍 Layout constraints reduced by feature removal`);
       }
 
       return {
@@ -378,7 +486,8 @@ export const useBuildingStore = create<BuildingStore>((set, get) => ({
           building: {
             ...state.currentProject.building,
             features: remainingFeatures,
-            wallBoundsProtection
+            wallBoundsProtection,
+            spaceLayout: updatedSpaceLayout
           },
         },
       };
@@ -448,7 +557,7 @@ export const useBuildingStore = create<BuildingStore>((set, get) => ({
       };
     }),
 
-  // Update a wall feature with comprehensive validation and bounds checking
+  // Update a wall feature with comprehensive validation and space layout checking
   updateFeature: (id: string, updates: Partial<Omit<WallFeature, 'id'>>) => 
     set((state) => {
       const existingFeature = state.currentProject.building.features.find(f => f.id === id);
@@ -511,6 +620,10 @@ export const useBuildingStore = create<BuildingStore>((set, get) => ({
         }
       }
 
+      // 🔍 UPDATE SPACE LAYOUT after feature update
+      const updatedSpaceLayout = scanSpaceLayout(updatedFeatures, state.currentProject.building.dimensions);
+      console.log(`🔍 Space layout updated after modifying ${existingFeature.type}: ${updatedSpaceLayout.layoutConstraints.length} constraints`);
+
       // 🔒 UPDATE WALL BOUNDS PROTECTION
       const wallBoundsProtection = new Map<WallPosition, WallBoundsProtection>();
       const wallPositions: WallPosition[] = ['front', 'back', 'left', 'right'];
@@ -522,7 +635,7 @@ export const useBuildingStore = create<BuildingStore>((set, get) => ({
         }
       });
 
-      console.log(`🔒 Feature updated: ${existingFeature.type} on ${existingFeature.position.wallPosition} wall`);
+      console.log(`🔒 Feature updated with space layout integration: ${existingFeature.type} on ${existingFeature.position.wallPosition} wall`);
 
       return {
         currentProject: {
@@ -531,7 +644,8 @@ export const useBuildingStore = create<BuildingStore>((set, get) => ({
           building: {
             ...state.currentProject.building,
             features: updatedFeatures,
-            wallBoundsProtection
+            wallBoundsProtection,
+            spaceLayout: updatedSpaceLayout
           },
         },
       };
@@ -670,5 +784,88 @@ export const useBuildingStore = create<BuildingStore>((set, get) => ({
     // In a real implementation, this might require admin privileges
     // For now, just log the override attempt
     return false; // Override not allowed in this implementation
+  },
+
+  // 🔍 SPACE LAYOUT DETECTION METHODS
+
+  // Scan space layout and detect all architectural elements
+  scanSpaceLayout: () => {
+    const state = get();
+    const spaceLayout = scanSpaceLayout(
+      state.currentProject.building.features,
+      state.currentProject.building.dimensions
+    );
+    
+    // Update the building with the new space layout
+    set((currentState) => ({
+      currentProject: {
+        ...currentState.currentProject,
+        lastModified: new Date(),
+        building: {
+          ...currentState.currentProject.building,
+          spaceLayout
+        }
+      }
+    }));
+    
+    return spaceLayout;
+  },
+
+  // Validate space modification against layout constraints
+  validateSpaceModification: (proposedDimensions: Partial<BuildingDimensions>) => {
+    const state = get();
+    
+    if (!state.currentProject.building.spaceLayout) {
+      // No space layout detected, perform scan first
+      const spaceLayout = scanSpaceLayout(
+        state.currentProject.building.features,
+        state.currentProject.building.dimensions
+      );
+      
+      return validateSpaceModification(
+        spaceLayout,
+        proposedDimensions,
+        state.currentProject.building.dimensions
+      );
+    }
+    
+    return validateSpaceModification(
+      state.currentProject.building.spaceLayout,
+      proposedDimensions,
+      state.currentProject.building.dimensions
+    );
+  },
+
+  // Get clearance zones for a specific feature
+  getFeatureClearanceZones: (featureId: string) => {
+    const state = get();
+    
+    if (!state.currentProject.building.spaceLayout) {
+      return [];
+    }
+    
+    return getFeatureClearanceZones(state.currentProject.building.spaceLayout, featureId);
+  },
+
+  // Check all access paths for obstructions
+  checkAccessPaths: () => {
+    const state = get();
+    
+    if (!state.currentProject.building.spaceLayout) {
+      return [];
+    }
+    
+    return checkAccessPaths(state.currentProject.building.spaceLayout);
+  },
+
+  // Validate ventilation areas
+  validateVentilation: () => {
+    const state = get();
+    
+    if (!state.currentProject.building.spaceLayout) {
+      return [];
+    }
+    
+    return validateVentilation(state.currentProject.building.spaceLayout);
   }
 }));

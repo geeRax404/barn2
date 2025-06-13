@@ -71,6 +71,161 @@ export interface FeatureBoundsLock {
   canOverride: boolean;
 }
 
+// Space layout detection and protection
+export interface SpaceLayoutDetection {
+  detectedFeatures: DetectedWallFeature[];
+  clearanceZones: ClearanceZone[];
+  accessPaths: AccessPath[];
+  ventilationAreas: VentilationArea[];
+  structuralElements: StructuralElement[];
+  layoutConstraints: LayoutConstraint[];
+  lastScan: Date;
+}
+
+// Detected wall feature with enhanced properties
+export interface DetectedWallFeature {
+  id: string;
+  type: FeatureType;
+  width: number;
+  height: number;
+  position: FeaturePosition;
+  clearanceRequirements: ClearanceRequirement;
+  functionalZone: FunctionalZone;
+  accessRequirements: AccessRequirement;
+  structuralImpact: StructuralImpact;
+  isProtected: boolean;
+  protectionReason: string;
+}
+
+// Clearance requirements for features
+export interface ClearanceRequirement {
+  front: number; // feet in front of feature
+  sides: number; // feet on each side
+  above: number; // feet above feature
+  swing: number; // feet for door swing clearance
+  emergency: number; // feet for emergency access
+}
+
+// Functional zones around features
+export interface FunctionalZone {
+  type: 'entry' | 'exit' | 'window' | 'ventilation' | 'access';
+  bounds: {
+    left: number;
+    right: number;
+    front: number;
+    back: number;
+    bottom: number;
+    top: number;
+  };
+  purpose: string;
+  restrictions: string[];
+  canModify: boolean;
+}
+
+// Access requirements for features
+export interface AccessRequirement {
+  minimumWidth: number; // feet
+  minimumHeight: number; // feet
+  clearPath: boolean; // must maintain clear path
+  emergencyAccess: boolean; // required for emergency egress
+  dailyUse: boolean; // used for daily operations
+  restrictions: string[];
+}
+
+// Structural impact assessment
+export interface StructuralImpact {
+  loadBearing: boolean;
+  affectsWallIntegrity: boolean;
+  requiresReinforcement: boolean;
+  modificationLimits: string[];
+  engineeringRequired: boolean;
+}
+
+// Clearance zones around features
+export interface ClearanceZone {
+  id: string;
+  featureId: string;
+  type: 'door_swing' | 'window_operation' | 'emergency_egress' | 'ventilation' | 'access';
+  bounds: {
+    left: number;
+    right: number;
+    front: number;
+    back: number;
+    bottom: number;
+    top: number;
+  };
+  isProtected: boolean;
+  restrictions: string[];
+  purpose: string;
+}
+
+// Access paths between features
+export interface AccessPath {
+  id: string;
+  fromFeature: string;
+  toFeature: string;
+  pathType: 'primary' | 'secondary' | 'emergency';
+  minimumWidth: number;
+  currentWidth: number;
+  isBlocked: boolean;
+  restrictions: string[];
+}
+
+// Ventilation areas for windows
+export interface VentilationArea {
+  id: string;
+  windowId: string;
+  airflowZone: {
+    left: number;
+    right: number;
+    front: number;
+    back: number;
+    bottom: number;
+    top: number;
+  };
+  naturalLight: boolean;
+  ventilationCapacity: number; // CFM
+  isObstructed: boolean;
+  restrictions: string[];
+}
+
+// Structural elements that affect layout
+export interface StructuralElement {
+  id: string;
+  type: 'beam' | 'column' | 'header' | 'foundation';
+  position: {
+    x: number;
+    y: number;
+    z: number;
+  };
+  dimensions: {
+    width: number;
+    height: number;
+    depth: number;
+  };
+  isLoadBearing: boolean;
+  canModify: boolean;
+  restrictions: string[];
+}
+
+// Layout constraints based on detected features
+export interface LayoutConstraint {
+  id: string;
+  type: 'clearance' | 'access' | 'structural' | 'code' | 'functional';
+  description: string;
+  affectedArea: {
+    left: number;
+    right: number;
+    front: number;
+    back: number;
+    bottom: number;
+    top: number;
+  };
+  severity: 'critical' | 'important' | 'advisory';
+  canOverride: boolean;
+  overrideRequirements: string[];
+}
+
 // Wall feature (door, window, etc.)
 export interface WallFeature {
   id: string;
@@ -81,6 +236,10 @@ export interface WallFeature {
   color?: string;
   boundsLock?: FeatureBoundsLock;
   isLocked?: boolean;
+  clearanceRequirements?: ClearanceRequirement;
+  functionalZone?: FunctionalZone;
+  accessRequirements?: AccessRequirement;
+  structuralImpact?: StructuralImpact;
 }
 
 // Roof panel types
@@ -134,6 +293,7 @@ export interface Building {
   roofColor: string;
   wallProfile: WallProfile;
   wallBoundsProtection?: Map<WallPosition, WallBoundsProtection>;
+  spaceLayout?: SpaceLayoutDetection;
 }
 
 // Project info
@@ -195,4 +355,11 @@ export interface BuildingStore {
   checkWallBoundsLock: (wallPosition: WallPosition, proposedDimensions: Partial<BuildingDimensions>) => { canModify: boolean; restrictions: string[] };
   getWallProtectionStatus: (wallPosition: WallPosition) => WallBoundsProtection | null;
   overrideWallLock: (wallPosition: WallPosition, reason: string) => boolean;
+  
+  // Space layout detection actions
+  scanSpaceLayout: () => SpaceLayoutDetection;
+  validateSpaceModification: (proposedDimensions: Partial<BuildingDimensions>) => { canModify: boolean; violations: string[]; suggestions: string[] };
+  getFeatureClearanceZones: (featureId: string) => ClearanceZone[];
+  checkAccessPaths: () => AccessPath[];
+  validateVentilation: () => VentilationArea[];
 }
