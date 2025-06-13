@@ -5,8 +5,8 @@ import type { BuildingDimensions, RoomConstraints, WallFeature } from '../types'
  */
 export const STANDARD_ROOM_CONSTRAINTS: RoomConstraints = {
   minimumWallHeight: 8.0, // 8 feet minimum height
-  minimumWallLength: 10.0, // 10 feet minimum length
-  minimumWallWidth: 10.0, // 10 feet minimum width
+  minimumWallLength: 20.0, // 20 feet minimum length
+  minimumWallWidth: 20.0, // 20 feet minimum width
   standardDoorHeight: 7.0, // 7 feet standard door height
   standardWindowHeight: 4.0, // 4 feet standard window height
   structuralClearance: 1.0, // 1 foot clearance above features
@@ -63,7 +63,7 @@ export const validateRoomDimensions = (
   }
 
   // Warnings for dimensions close to minimums
-  const warningThreshold = 1.0; // 1 foot buffer
+  const warningThreshold = 2.0; // 2 foot buffer for 20ft minimums
 
   if (dimensions.width >= constraints.minimumWallWidth && 
       dimensions.width < constraints.minimumWallWidth + warningThreshold) {
@@ -207,23 +207,23 @@ export const suggestOptimalRoomDimensions = (
   // Adjust base dimensions based on intended use
   switch (intendedUse) {
     case 'residential':
-      baseWidth = Math.max(12, constraints.minimumWallWidth);
-      baseLength = Math.max(14, constraints.minimumWallLength);
+      baseWidth = Math.max(22, constraints.minimumWallWidth);
+      baseLength = Math.max(24, constraints.minimumWallLength);
       baseHeight = Math.max(9, constraints.minimumWallHeight);
       break;
     case 'commercial':
-      baseWidth = Math.max(16, constraints.minimumWallWidth);
-      baseLength = Math.max(20, constraints.minimumWallLength);
+      baseWidth = Math.max(26, constraints.minimumWallWidth);
+      baseLength = Math.max(30, constraints.minimumWallLength);
       baseHeight = Math.max(10, constraints.minimumWallHeight);
       break;
     case 'storage':
-      baseWidth = Math.max(14, constraints.minimumWallWidth);
-      baseLength = Math.max(16, constraints.minimumWallLength);
+      baseWidth = Math.max(24, constraints.minimumWallWidth);
+      baseLength = Math.max(26, constraints.minimumWallLength);
       baseHeight = Math.max(10, constraints.minimumWallHeight);
       break;
     case 'workshop':
-      baseWidth = Math.max(18, constraints.minimumWallWidth);
-      baseLength = Math.max(24, constraints.minimumWallLength);
+      baseWidth = Math.max(28, constraints.minimumWallWidth);
+      baseLength = Math.max(34, constraints.minimumWallLength);
       baseHeight = Math.max(12, constraints.minimumWallHeight);
       break;
   }
@@ -244,14 +244,14 @@ export const suggestOptimalRoomDimensions = (
     if (frontFeatures.length > 1 || backFeatures.length > 1) {
       const totalFrontWidth = frontFeatures.reduce((sum, f) => sum + f.width, 0);
       const totalBackWidth = backFeatures.reduce((sum, f) => sum + f.width, 0);
-      const maxRequiredWidth = Math.max(totalFrontWidth, totalBackWidth) + 4; // 4ft spacing
+      const maxRequiredWidth = Math.max(totalFrontWidth, totalBackWidth) + 6; // 6ft spacing for larger rooms
       baseWidth = Math.max(baseWidth, maxRequiredWidth);
     }
 
     if (leftFeatures.length > 1 || rightFeatures.length > 1) {
       const totalLeftWidth = leftFeatures.reduce((sum, f) => sum + f.width, 0);
       const totalRightWidth = rightFeatures.reduce((sum, f) => sum + f.width, 0);
-      const maxRequiredLength = Math.max(totalLeftWidth, totalRightWidth) + 4; // 4ft spacing
+      const maxRequiredLength = Math.max(totalLeftWidth, totalRightWidth) + 6; // 6ft spacing for larger rooms
       baseLength = Math.max(baseLength, maxRequiredLength);
     }
   }
