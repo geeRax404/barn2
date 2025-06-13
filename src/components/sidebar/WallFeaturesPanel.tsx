@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { Plus, X, Move, Edit2, AlertTriangle, CheckCircle, Info, MapPin, Ruler } from 'lucide-react';
+import { Plus, X, Move, Edit2, AlertTriangle, CheckCircle, Info, MapPin, Ruler, Lock, Unlock } from 'lucide-react';
 import { useBuildingStore } from '../../store/buildingStore';
 import { 
   validateNewFeature, 
@@ -16,21 +16,31 @@ import {
   getAvailableSpace,
   isValidFeaturePosition
 } from '../../utils/wallBoundsValidation';
+import { generateLockStatusMessage } from '../../utils/wallBoundsLockSystem';
 import type { FeatureType, WallPosition } from '../../types';
 
 const WallFeaturesPanel: React.FC = () => {
-  const { dimensions, features, addFeature, removeFeature, updateFeature } = useBuildingStore((state) => ({
+  const { 
+    dimensions, 
+    features, 
+    addFeature, 
+    removeFeature, 
+    updateFeature,
+    getWallProtectionStatus 
+  } = useBuildingStore((state) => ({
     dimensions: state.currentProject.building.dimensions,
     features: state.currentProject.building.features,
     addFeature: state.addFeature,
     removeFeature: state.removeFeature,
-    updateFeature: state.updateFeature
+    updateFeature: state.updateFeature,
+    getWallProtectionStatus: state.getWallProtectionStatus
   }));
   
   const [editingFeature, setEditingFeature] = useState<string | null>(null);
   const [validationErrors, setValidationErrors] = useState<string[]>([]);
   const [validationWarnings, setValidationWarnings] = useState<string[]>([]);
   const [boundsValidation, setBoundsValidation] = useState<any>(null);
+  const [wallLockStatus, setWallLockStatus] = useState<Map<WallPosition, any>>(new Map());
   const [newFeature, setNewFeature] = useState({
     type: 'door' as FeatureType,
     width: 3,
@@ -41,6 +51,19 @@ const WallFeaturesPanel: React.FC = () => {
     yOffset: 0
   });
 
+  // Update wall protection status
+  const updateWallLockStatus = () => {
+    const wallPositions: WallPosition[] = ['front', 'back', 'left', 'right'];
+    const lockStatus = new Map();
+    
+    wallPositions.forEach(wallPosition => {
+      const protection = getWallProtectionStatus(wallPosition);
+      lockStatus.set(wallPosition, protection);
+    });
+    
+    setWallLockStatus(lockStatus);
+  };
+
   // Validate all existing features whenever dimensions or features change
   useEffect(() => {
     const heightValidation = validateWallHeights(dimensions, features);
@@ -49,6 +72,9 @@ const WallFeaturesPanel: React.FC = () => {
     setValidationErrors([...heightValidation.errors, ...boundsValidationResult.errors]);
     setValidationWarnings([...heightValidation.warnings, ...boundsValidationResult.warnings]);
     setBoundsValidation(boundsValidationResult);
+    
+    // Update wall lock status
+    updateWallLockStatus();
   }, [dimensions, features]);
 
   // Get maximum allowed dimensions for current position
@@ -135,6 +161,35 @@ const WallFeaturesPanel: React.FC = () => {
   const handleUpdateFeature = (id: string) => {
     const feature = features.find(f => f.id === id);
     if (!feature) return;
+
+    // Check if feature is locked
+    if (feature.isLocked && feature.boundsLock) {
+      const lockedDimensions = feature.boundsLock.lockedDimensions;
+      const violations: string[] = [];
+      
+      if (newFeature.width !== feature.width && lockedDimensions.width) {
+        violations.push('Feature width is locked to maintain wall dimensional integrity');
+      }
+      
+      if (newFeature.height !== feature.height && lockedDimensions.height) {
+        violations.push('Feature height is locked to maintain wall dimensional integrity');
+      }
+      
+      if ((newFeature.xOffset !== feature.position.xOffset || 
+           newFeature.yOffset !== feature.position.yOffset ||
+           newFeature.alignment !== feature.position.alignment) && lockedDimensions.position) {
+        violations.push('Feature position is locked to maintain structural integrity');
+      }
+      
+      if (violations.length > 0) {
+        setValidationErrors([
+          'Cannot modify locked feature:',
+          ...violations,
+          'Remove feature first to make changes, then re-add with new dimensions'
+        ]);
+        return;
+      }
+    }
 
     // Validate the updated feature
     const heightValidation = validateNewFeature(
@@ -268,6 +323,7 @@ const WallFeaturesPanel: React.FC = () => {
   };
 
   const currentWallDimensions = getCurrentWallDimensions();
+  const currentWallProtection = wallLockStatus.get(newFeature.wallPosition);
   
   return (
     <motion.div 
@@ -276,6 +332,22 @@ const WallFeaturesPanel: React.FC = () => {
       exit={{ opacity: 0 }}
       className="space-y-4"
     >
+      {/* Wall Bounds Protection Warning */}
+      {currentWallProtection && (
+        <div className="bg-orange-50 border border-orange-200 rounded-lg p-3">
+          <div className="flex items-center space-x-2 mb-2">
+            <Lock className="w-4 h-4 text-orange-600" />
+            <span className="text-sm font-medium text-orange-800">Wall Protection Active</span>
+          </div>
+          <p className="text-xs text-orange-700">
+            {generateLockStatusMessage(newFeature.wallPosition, currentWallProtection)}
+          </p>
+          <p className="text-xs text-orange-600 mt-1">
+            ⚠️ Adding features will further restrict wall dimension changes
+          </p>
+        </div>
+      )}
+
       {/* Wall Dimensions Information */}
       <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
         <div className="flex items-center space-x-2 mb-2">
@@ -508,7 +580,7 @@ const WallFeaturesPanel: React.FC = () => {
         ) : (
           <>
             <Plus className="w-4 h-4 mr-1" />
-            Add Feature
+            Add Feature (Will Lock Wall Dimensions)
           </>
         )}
       </button>
@@ -543,6 +615,9 @@ const WallFeaturesPanel: React.FC = () => {
                         <p className="text-sm font-medium capitalize">
                           {feature.type}
                         </p>
+                        {feature.isLocked && (
+                          <Lock className="w-3 h-3 text-orange-500" title="Feature locks wall dimensions" />
+                        )}
                         {!isValid && (
                           <AlertTriangle className="w-3 h-3 text-red-500" />
                         )}
@@ -555,6 +630,9 @@ const WallFeaturesPanel: React.FC = () => {
                         {!boundsValid && (
                           <span className="text-red-600 ml-1">(Out of bounds)</span>
                         )}
+                        {feature.isLocked && (
+                          <span className="text-orange-600 ml-1">(Locked)</span>
+                        )}
                       </p>
                     </div>
                   </div>
@@ -562,7 +640,7 @@ const WallFeaturesPanel: React.FC = () => {
                     <button
                       className={`p-1 rounded-full hover:bg-gray-100 ${
                         editingFeature === feature.id ? 'text-blue-500' : 'text-gray-400'
-                      }`}
+                      } ${feature.isLocked ? 'opacity-50' : ''}`}
                       onClick={() => {
                         if (editingFeature === feature.id) {
                           setEditingFeature(null);
@@ -571,12 +649,14 @@ const WallFeaturesPanel: React.FC = () => {
                           startEditing(feature.id);
                         }
                       }}
+                      title={feature.isLocked ? 'Feature is locked - remove to modify' : 'Edit feature'}
                     >
                       <Edit2 className="w-4 h-4" />
                     </button>
                     <button
                       className="p-1 text-gray-400 hover:text-error rounded-full hover:bg-gray-100"
                       onClick={() => removeFeature(feature.id)}
+                      title="Remove feature and unlock wall dimensions"
                     >
                       <X className="w-4 h-4" />
                     </button>
@@ -584,6 +664,22 @@ const WallFeaturesPanel: React.FC = () => {
                 </div>
               );
             })}
+          </div>
+        </div>
+      )}
+
+      {/* Feature Locking Information */}
+      {features.length > 0 && (
+        <div className="mt-4 p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
+          <div className="flex items-center space-x-2 mb-2">
+            <Lock className="w-4 h-4 text-yellow-600" />
+            <span className="text-sm font-medium text-yellow-800">Wall Dimension Protection</span>
+          </div>
+          <div className="text-xs text-yellow-700 space-y-1">
+            <div>• {features.length} feature(s) currently lock wall dimensions</div>
+            <div>• Remove features to unlock wall dimension changes</div>
+            <div>• Locked features prevent wall resizing that would affect their placement</div>
+            <div>• This ensures architectural integrity and prevents feature overflow</div>
           </div>
         </div>
       )}

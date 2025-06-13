@@ -4,7 +4,15 @@ import { validateWallHeights } from '../utils/wallHeightValidation';
 import { isValidFeaturePosition } from '../utils/wallBoundsValidation';
 import { isValidSkylightPosition } from '../utils/skylightValidation';
 import { validateRoomDimensions, enforceMinimumDimensions, STANDARD_ROOM_CONSTRAINTS } from '../utils/roomConstraints';
-import type { BuildingStore, Project, ViewMode, BuildingDimensions, WallFeature, Skylight, WallProfile, Building } from '../types';
+import { 
+  validateWallDimensionChange, 
+  getWallProtectionStatus, 
+  generateLockStatusMessage,
+  checkDimensionLock,
+  createFeatureBoundsLock,
+  suggestSafeDimensionChanges
+} from '../utils/wallBoundsLockSystem';
+import type { BuildingStore, Project, ViewMode, BuildingDimensions, WallFeature, Skylight, WallProfile, Building, WallPosition, WallBoundsProtection } from '../types';
 
 // Default initial building with minimum room constraints
 const defaultBuilding = {
@@ -19,6 +27,7 @@ const defaultBuilding = {
   color: '#E5E7EB', // Light gray
   roofColor: '#9CA3AF', // Medium gray
   wallProfile: 'trimdek' as WallProfile, // Default to Trimdek profile
+  wallBoundsProtection: new Map<WallPosition, WallBoundsProtection>(),
 };
 
 // Create a default project with validated dimensions
@@ -51,7 +60,7 @@ export const useBuildingStore = create<BuildingStore>((set, get) => ({
   // Set complete building state atomically
   setBuilding: (building: Building) =>
     set((state) => {
-      console.log(`\n🏗️ SETTING COMPLETE BUILDING STATE`);
+      console.log(`\n🏗️ SETTING COMPLETE BUILDING STATE WITH BOUNDS PROTECTION`);
       
       // First, validate and enforce room dimension constraints
       const roomValidation = validateRoomDimensions(building.dimensions, STANDARD_ROOM_CONSTRAINTS);
@@ -99,22 +108,107 @@ export const useBuildingStore = create<BuildingStore>((set, get) => ({
         return state;
       }
 
-      console.log(`✅ Building state validation passed`);
+      // 🔒 CREATE WALL BOUNDS PROTECTION for all walls with features
+      const wallBoundsProtection = new Map<WallPosition, WallBoundsProtection>();
+      const wallPositions: WallPosition[] = ['front', 'back', 'left', 'right'];
+      
+      wallPositions.forEach(wallPosition => {
+        const protection = getWallProtectionStatus(wallPosition, building.features, building.dimensions);
+        if (protection) {
+          wallBoundsProtection.set(wallPosition, protection);
+          console.log(`🛡️ ${generateLockStatusMessage(wallPosition, protection)}`);
+        }
+      });
+
+      // Add bounds locks to features
+      const featuresWithLocks = building.features.map(feature => ({
+        ...feature,
+        boundsLock: createFeatureBoundsLock(feature, building.dimensions),
+        isLocked: true
+      }));
+
+      console.log(`✅ Building state validation passed with ${wallBoundsProtection.size} protected walls`);
 
       return {
         currentProject: {
           ...state.currentProject,
           lastModified: new Date(),
-          building,
+          building: {
+            ...building,
+            features: featuresWithLocks,
+            wallBoundsProtection
+          },
         },
       };
     }),
 
-  // Update building dimensions with comprehensive validation and minimum enforcement
+  // Update building dimensions with comprehensive validation and bounds checking
   updateDimensions: (dimensions: Partial<BuildingDimensions>) => 
     set((state) => {
-      console.log(`\n🏗️ UPDATING DIMENSIONS with room constraints`);
+      console.log(`\n🏗️ UPDATING DIMENSIONS WITH BOUNDS LOCK PROTECTION`);
       console.log(`Proposed changes:`, dimensions);
+      
+      // 🔒 CHECK WALL BOUNDS LOCKS for each affected wall
+      const wallPositions: WallPosition[] = ['front', 'back', 'left', 'right'];
+      const lockViolations: string[] = [];
+      const lockWarnings: string[] = [];
+      
+      wallPositions.forEach(wallPosition => {
+        // Check if this dimension change affects this wall
+        const affectedDimensions = [];
+        if ((wallPosition === 'front' || wallPosition === 'back') && dimensions.width !== undefined) {
+          affectedDimensions.push('width');
+        }
+        if ((wallPosition === 'left' || wallPosition === 'right') && dimensions.length !== undefined) {
+          affectedDimensions.push('length');
+        }
+        if (dimensions.height !== undefined) {
+          affectedDimensions.push('height');
+        }
+        
+        if (affectedDimensions.length > 0) {
+          const validation = validateWallDimensionChange(
+            wallPosition,
+            state.currentProject.building.dimensions,
+            dimensions,
+            state.currentProject.building.features
+          );
+          
+          if (!validation.canModify) {
+            lockViolations.push(...validation.restrictions);
+            console.log(`❌ ${wallPosition} wall: DIMENSION CHANGE BLOCKED`);
+            validation.restrictions.forEach(restriction => console.log(`  - ${restriction}`));
+          } else if (validation.warnings.length > 0) {
+            lockWarnings.push(...validation.warnings);
+            console.log(`⚠️ ${wallPosition} wall: Warnings for dimension change`);
+          }
+        }
+      });
+      
+      // If any walls are locked, prevent the dimension change
+      if (lockViolations.length > 0) {
+        console.log(`\n🚫 DIMENSION UPDATE BLOCKED - WALL BOUNDS PROTECTION ACTIVE`);
+        console.log(`Lock violations: ${lockViolations.length}`);
+        lockViolations.forEach(violation => console.log(`  ❌ ${violation}`));
+        
+        // Show user-friendly error message
+        const errorMessage = [
+          'Cannot modify room dimensions - wall features prevent changes:',
+          ...lockViolations.slice(0, 3), // Show first 3 violations
+          lockViolations.length > 3 ? `...and ${lockViolations.length - 3} more restrictions` : ''
+        ].filter(Boolean).join('\n');
+        
+        console.error(errorMessage);
+        
+        // Return current state without changes
+        return state;
+      }
+      
+      // Show warnings if any
+      if (lockWarnings.length > 0) {
+        console.log(`\n⚠️ DIMENSION UPDATE WARNINGS:`);
+        lockWarnings.forEach(warning => console.log(`  ⚠️ ${warning}`));
+      }
       
       // First, enforce minimum room constraints
       const enforcedDimensions = enforceMinimumDimensions(
@@ -165,7 +259,19 @@ export const useBuildingStore = create<BuildingStore>((set, get) => ({
         }
       }
 
+      // 🔒 UPDATE WALL BOUNDS PROTECTION after successful dimension change
+      const updatedWallBoundsProtection = new Map<WallPosition, WallBoundsProtection>();
+      
+      wallPositions.forEach(wallPosition => {
+        const protection = getWallProtectionStatus(wallPosition, state.currentProject.building.features, enforcedDimensions);
+        if (protection) {
+          updatedWallBoundsProtection.set(wallPosition, protection);
+          console.log(`🛡️ Updated: ${generateLockStatusMessage(wallPosition, protection)}`);
+        }
+      });
+
       console.log(`✅ Final dimensions: ${enforcedDimensions.width}ft × ${enforcedDimensions.length}ft × ${enforcedDimensions.height}ft`);
+      console.log(`🔒 Wall protection updated for ${updatedWallBoundsProtection.size} walls`);
 
       return {
         currentProject: {
@@ -174,12 +280,13 @@ export const useBuildingStore = create<BuildingStore>((set, get) => ({
           building: {
             ...state.currentProject.building,
             dimensions: enforcedDimensions,
+            wallBoundsProtection: updatedWallBoundsProtection
           },
         },
       };
     }),
 
-  // Add a new wall feature with comprehensive validation
+  // Add a new wall feature with comprehensive validation and bounds locking
   addFeature: (feature: Omit<WallFeature, 'id'>) => 
     set((state) => {
       const newFeature = { ...feature, id: uuidv4() };
@@ -204,32 +311,78 @@ export const useBuildingStore = create<BuildingStore>((set, get) => ({
         return state;
       }
 
+      // 🔒 CREATE BOUNDS LOCK for the new feature
+      const featureWithLock: WallFeature = {
+        ...newFeature,
+        boundsLock: createFeatureBoundsLock(newFeature, state.currentProject.building.dimensions),
+        isLocked: true
+      };
+
+      const featuresWithLocks = [...state.currentProject.building.features, featureWithLock];
+
+      // 🔒 UPDATE WALL BOUNDS PROTECTION
+      const wallBoundsProtection = new Map<WallPosition, WallBoundsProtection>();
+      const wallPositions: WallPosition[] = ['front', 'back', 'left', 'right'];
+      
+      wallPositions.forEach(wallPosition => {
+        const protection = getWallProtectionStatus(wallPosition, featuresWithLocks, state.currentProject.building.dimensions);
+        if (protection) {
+          wallBoundsProtection.set(wallPosition, protection);
+        }
+      });
+
+      console.log(`🔒 Feature added with bounds lock: ${newFeature.type} on ${newFeature.position.wallPosition} wall`);
+      console.log(`🛡️ Wall protection updated for ${wallBoundsProtection.size} walls`);
+
       return {
         currentProject: {
           ...state.currentProject,
           lastModified: new Date(),
           building: {
             ...state.currentProject.building,
-            features: newFeatures,
+            features: featuresWithLocks,
+            wallBoundsProtection
           },
         },
       };
     }),
 
-  // Remove a wall feature
+  // Remove a wall feature and update bounds protection
   removeFeature: (id: string) => 
-    set((state) => ({
-      currentProject: {
-        ...state.currentProject,
-        lastModified: new Date(),
-        building: {
-          ...state.currentProject.building,
-          features: state.currentProject.building.features.filter(
-            (feature) => feature.id !== id
-          ),
+    set((state) => {
+      const removedFeature = state.currentProject.building.features.find(f => f.id === id);
+      const remainingFeatures = state.currentProject.building.features.filter(
+        (feature) => feature.id !== id
+      );
+
+      // 🔒 UPDATE WALL BOUNDS PROTECTION after feature removal
+      const wallBoundsProtection = new Map<WallPosition, WallBoundsProtection>();
+      const wallPositions: WallPosition[] = ['front', 'back', 'left', 'right'];
+      
+      wallPositions.forEach(wallPosition => {
+        const protection = getWallProtectionStatus(wallPosition, remainingFeatures, state.currentProject.building.dimensions);
+        if (protection) {
+          wallBoundsProtection.set(wallPosition, protection);
+        }
+      });
+
+      if (removedFeature) {
+        console.log(`🔓 Feature removed and bounds unlocked: ${removedFeature.type} from ${removedFeature.position.wallPosition} wall`);
+        console.log(`🛡️ Wall protection updated for ${wallBoundsProtection.size} walls`);
+      }
+
+      return {
+        currentProject: {
+          ...state.currentProject,
+          lastModified: new Date(),
+          building: {
+            ...state.currentProject.building,
+            features: remainingFeatures,
+            wallBoundsProtection
+          },
         },
-      },
-    })),
+      };
+    }),
 
   // Add a new skylight with validation
   addSkylight: (skylight: Skylight) =>
@@ -295,9 +448,43 @@ export const useBuildingStore = create<BuildingStore>((set, get) => ({
       };
     }),
 
-  // Update a wall feature with comprehensive validation
+  // Update a wall feature with comprehensive validation and bounds checking
   updateFeature: (id: string, updates: Partial<Omit<WallFeature, 'id'>>) => 
     set((state) => {
+      const existingFeature = state.currentProject.building.features.find(f => f.id === id);
+      if (!existingFeature) {
+        console.error('Feature not found for update:', id);
+        return state;
+      }
+
+      // 🔒 CHECK IF FEATURE IS LOCKED
+      if (existingFeature.isLocked && existingFeature.boundsLock) {
+        const lockedDimensions = existingFeature.boundsLock.lockedDimensions;
+        
+        // Check if trying to modify locked dimensions
+        const violations: string[] = [];
+        
+        if (updates.width !== undefined && lockedDimensions.width) {
+          violations.push('Feature width is locked to maintain wall dimensional integrity');
+        }
+        
+        if (updates.height !== undefined && lockedDimensions.height) {
+          violations.push('Feature height is locked to maintain wall dimensional integrity');
+        }
+        
+        if (updates.position !== undefined && lockedDimensions.position) {
+          violations.push('Feature position is locked to maintain structural integrity');
+        }
+        
+        if (violations.length > 0) {
+          console.log(`🚫 FEATURE UPDATE BLOCKED - BOUNDS LOCK ACTIVE`);
+          violations.forEach(violation => console.log(`  ❌ ${violation}`));
+          
+          // For now, allow the update but warn - in production you might want to block it
+          console.warn('Feature update contains locked properties but proceeding with warning');
+        }
+      }
+
       const updatedFeatures = state.currentProject.building.features.map((feature) =>
         feature.id === id ? { ...feature, ...updates } : feature
       );
@@ -324,6 +511,19 @@ export const useBuildingStore = create<BuildingStore>((set, get) => ({
         }
       }
 
+      // 🔒 UPDATE WALL BOUNDS PROTECTION
+      const wallBoundsProtection = new Map<WallPosition, WallBoundsProtection>();
+      const wallPositions: WallPosition[] = ['front', 'back', 'left', 'right'];
+      
+      wallPositions.forEach(wallPosition => {
+        const protection = getWallProtectionStatus(wallPosition, updatedFeatures, state.currentProject.building.dimensions);
+        if (protection) {
+          wallBoundsProtection.set(wallPosition, protection);
+        }
+      });
+
+      console.log(`🔒 Feature updated: ${existingFeature.type} on ${existingFeature.position.wallPosition} wall`);
+
       return {
         currentProject: {
           ...state.currentProject,
@@ -331,6 +531,7 @@ export const useBuildingStore = create<BuildingStore>((set, get) => ({
           building: {
             ...state.currentProject.building,
             features: updatedFeatures,
+            wallBoundsProtection
           },
         },
       };
@@ -434,4 +635,40 @@ export const useBuildingStore = create<BuildingStore>((set, get) => ({
         currentProject: newProject,
       };
     }),
+
+  // 🔒 WALL BOUNDS PROTECTION METHODS
+
+  // Check if wall bounds are locked for proposed dimension changes
+  checkWallBoundsLock: (wallPosition: WallPosition, proposedDimensions: Partial<BuildingDimensions>) => {
+    const state = get();
+    const validation = validateWallDimensionChange(
+      wallPosition,
+      state.currentProject.building.dimensions,
+      proposedDimensions,
+      state.currentProject.building.features
+    );
+    
+    return {
+      canModify: validation.canModify,
+      restrictions: validation.restrictions
+    };
+  },
+
+  // Get wall protection status
+  getWallProtectionStatus: (wallPosition: WallPosition) => {
+    const state = get();
+    return getWallProtectionStatus(
+      wallPosition, 
+      state.currentProject.building.features, 
+      state.currentProject.building.dimensions
+    );
+  },
+
+  // Override wall lock (for advanced users)
+  overrideWallLock: (wallPosition: WallPosition, reason: string) => {
+    console.log(`🔓 WALL LOCK OVERRIDE REQUESTED: ${wallPosition} wall - ${reason}`);
+    // In a real implementation, this might require admin privileges
+    // For now, just log the override attempt
+    return false; // Override not allowed in this implementation
+  }
 }));

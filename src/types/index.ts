@@ -33,6 +33,44 @@ export interface FeaturePosition {
   alignment: 'left' | 'center' | 'right';
 }
 
+// Wall segment lock status
+export interface WallSegmentLock {
+  segmentId: string;
+  wallPosition: WallPosition;
+  startPosition: number; // feet from wall start
+  endPosition: number; // feet from wall start
+  lockedBy: string[]; // Array of feature IDs that lock this segment
+  lockType: 'dimensional' | 'positional' | 'full';
+  lockReason: string;
+  canModify: boolean;
+}
+
+// Wall bounds protection
+export interface WallBoundsProtection {
+  wallPosition: WallPosition;
+  protectedSegments: WallSegmentLock[];
+  totalLockedLength: number;
+  availableLength: number;
+  modificationRestrictions: string[];
+  lastModified: Date;
+}
+
+// Feature bounds lock information
+export interface FeatureBoundsLock {
+  featureId: string;
+  featureType: FeatureType;
+  wallPosition: WallPosition;
+  lockedDimensions: {
+    width: boolean;
+    height: boolean;
+    position: boolean;
+  };
+  affectedWallSegments: string[];
+  lockTimestamp: Date;
+  lockReason: string;
+  canOverride: boolean;
+}
+
 // Wall feature (door, window, etc.)
 export interface WallFeature {
   id: string;
@@ -41,6 +79,8 @@ export interface WallFeature {
   height: number;
   position: FeaturePosition;
   color?: string;
+  boundsLock?: FeatureBoundsLock;
+  isLocked?: boolean;
 }
 
 // Roof panel types
@@ -93,6 +133,7 @@ export interface Building {
   color: string;
   roofColor: string;
   wallProfile: WallProfile;
+  wallBoundsProtection?: Map<WallPosition, WallBoundsProtection>;
 }
 
 // Project info
@@ -149,4 +190,9 @@ export interface BuildingStore {
   saveProject: () => void;
   loadProject: (id: string) => void;
   createNewProject: (name?: string) => void;
+  
+  // Wall bounds protection actions
+  checkWallBoundsLock: (wallPosition: WallPosition, proposedDimensions: Partial<BuildingDimensions>) => { canModify: boolean; restrictions: string[] };
+  getWallProtectionStatus: (wallPosition: WallPosition) => WallBoundsProtection | null;
+  overrideWallLock: (wallPosition: WallPosition, reason: string) => boolean;
 }
