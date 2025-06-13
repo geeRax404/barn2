@@ -1,9 +1,24 @@
-import type { WallFeature, BuildingDimensions } from '../types';
+import type { WallFeature, BuildingDimensions, BuildingCodeRequirements } from '../types';
 
 export interface ValidationResult {
   valid: boolean;
   errors: string[];
   warnings: string[];
+  minimumRequiredHeight?: number;
+  breakdown?: HeightRequirementBreakdown;
+}
+
+export interface HeightRequirementBreakdown {
+  baseCeilingHeight: number;
+  highestFeatureRequirement: number;
+  electricalRequirement: number;
+  plumbingRequirement: number;
+  structuralRequirement: number;
+  fireCodeRequirement: number;
+  ventilationRequirement: number;
+  insulationRequirement: number;
+  finalMinimum: number;
+  contributingFactors: string[];
 }
 
 export interface FeatureValidationDetails {
@@ -12,6 +27,147 @@ export interface FeatureValidationDetails {
   positionValid: boolean;
   errors: string[];
 }
+
+/**
+ * Default building code requirements for Australian/New Zealand standards
+ */
+export const DEFAULT_BUILDING_CODE_REQUIREMENTS: BuildingCodeRequirements = {
+  minimumCeilingHeight: 8.0, // 8 feet minimum ceiling height
+  minimumDoorClearance: 0.5, // 6 inches above door
+  minimumWindowClearance: 0.25, // 3 inches above window
+  structuralLoadBearing: 0.5, // 6 inches for structural elements
+  fireCodeClearance: 0.5, // 6 inches for fire safety
+  electrical: {
+    minimumOutletHeight: 1.0, // 12 inches from floor
+    minimumSwitchHeight: 3.5, // 42 inches from floor
+    minimumCeilingClearance: 1.0, // 12 inches from ceiling
+    minimumServicePanelClearance: 3.0, // 36 inches around panel
+  },
+  plumbing: {
+    minimumFixtureHeight: 2.5, // 30 inches from floor
+    minimumCeilingClearance: 1.0, // 12 inches from ceiling
+    minimumAccessClearance: 2.0, // 24 inches for access
+    minimumVentClearance: 1.0, // 12 inches for vents
+  },
+  ventilationClearance: 1.0, // 12 inches for HVAC
+  insulationSpace: 0.5, // 6 inches for insulation
+};
+
+/**
+ * Calculates the minimum required wall height based on all building requirements
+ */
+export const calculateMinimumRequiredHeight = (
+  features: WallFeature[],
+  buildingCodeRequirements: BuildingCodeRequirements = DEFAULT_BUILDING_CODE_REQUIREMENTS
+): HeightRequirementBreakdown => {
+  console.log(`\n🏗️ CALCULATING MINIMUM REQUIRED WALL HEIGHT`);
+  console.log(`Features to analyze: ${features.length}`);
+  
+  const breakdown: HeightRequirementBreakdown = {
+    baseCeilingHeight: buildingCodeRequirements.minimumCeilingHeight,
+    highestFeatureRequirement: 0,
+    electricalRequirement: 0,
+    plumbingRequirement: 0,
+    structuralRequirement: buildingCodeRequirements.structuralLoadBearing,
+    fireCodeRequirement: buildingCodeRequirements.fireCodeClearance,
+    ventilationRequirement: buildingCodeRequirements.ventilationClearance,
+    insulationRequirement: buildingCodeRequirements.insulationSpace,
+    finalMinimum: 0,
+    contributingFactors: []
+  };
+
+  // 1. Start with base ceiling height requirement
+  let minimumHeight = breakdown.baseCeilingHeight;
+  breakdown.contributingFactors.push(`Base ceiling height: ${breakdown.baseCeilingHeight}ft`);
+  console.log(`📏 Base ceiling height: ${breakdown.baseCeilingHeight}ft`);
+
+  // 2. Calculate highest feature requirement (doors and windows)
+  if (features.length > 0) {
+    let highestFeatureTop = 0;
+    let criticalFeature: WallFeature | null = null;
+
+    features.forEach(feature => {
+      const featureTop = feature.position.yOffset + feature.height;
+      let requiredClearance = 0;
+
+      // Determine clearance based on feature type
+      switch (feature.type) {
+        case 'door':
+        case 'rollupDoor':
+        case 'walkDoor':
+          requiredClearance = buildingCodeRequirements.minimumDoorClearance;
+          break;
+        case 'window':
+          requiredClearance = buildingCodeRequirements.minimumWindowClearance;
+          break;
+      }
+
+      const totalRequiredHeight = featureTop + requiredClearance;
+      
+      console.log(`  ${feature.type}: top at ${featureTop.toFixed(2)}ft + ${requiredClearance}ft clearance = ${totalRequiredHeight.toFixed(2)}ft required`);
+
+      if (totalRequiredHeight > highestFeatureTop) {
+        highestFeatureTop = totalRequiredHeight;
+        criticalFeature = feature;
+        breakdown.highestFeatureRequirement = totalRequiredHeight;
+      }
+    });
+
+    if (criticalFeature && highestFeatureTop > minimumHeight) {
+      minimumHeight = highestFeatureTop;
+      breakdown.contributingFactors.push(
+        `${criticalFeature.type} (${criticalFeature.width}×${criticalFeature.height}ft) requires ${highestFeatureTop.toFixed(2)}ft`
+      );
+      console.log(`🚪 Critical feature: ${criticalFeature.type} requires ${highestFeatureTop.toFixed(2)}ft`);
+    }
+  }
+
+  // 3. Electrical requirements
+  const electricalHeight = Math.max(
+    buildingCodeRequirements.electrical.minimumSwitchHeight + buildingCodeRequirements.electrical.minimumCeilingClearance,
+    buildingCodeRequirements.electrical.minimumOutletHeight + buildingCodeRequirements.electrical.minimumCeilingClearance
+  );
+  breakdown.electricalRequirement = electricalHeight;
+
+  if (electricalHeight > minimumHeight) {
+    minimumHeight = electricalHeight;
+    breakdown.contributingFactors.push(`Electrical clearance: ${electricalHeight.toFixed(2)}ft`);
+    console.log(`⚡ Electrical requirement: ${electricalHeight.toFixed(2)}ft`);
+  }
+
+  // 4. Plumbing requirements
+  const plumbingHeight = buildingCodeRequirements.plumbing.minimumFixtureHeight + 
+                         buildingCodeRequirements.plumbing.minimumCeilingClearance;
+  breakdown.plumbingRequirement = plumbingHeight;
+
+  if (plumbingHeight > minimumHeight) {
+    minimumHeight = plumbingHeight;
+    breakdown.contributingFactors.push(`Plumbing clearance: ${plumbingHeight.toFixed(2)}ft`);
+    console.log(`🚰 Plumbing requirement: ${plumbingHeight.toFixed(2)}ft`);
+  }
+
+  // 5. Add cumulative overhead requirements
+  const overheadRequirements = 
+    breakdown.structuralRequirement +
+    breakdown.fireCodeRequirement +
+    breakdown.ventilationRequirement +
+    breakdown.insulationRequirement;
+
+  const finalMinimumHeight = minimumHeight + overheadRequirements;
+  breakdown.finalMinimum = finalMinimumHeight;
+
+  if (overheadRequirements > 0) {
+    breakdown.contributingFactors.push(
+      `Overhead requirements: +${overheadRequirements.toFixed(2)}ft (structural, fire, HVAC, insulation)`
+    );
+    console.log(`🏗️ Overhead requirements: +${overheadRequirements.toFixed(2)}ft`);
+  }
+
+  console.log(`📊 FINAL MINIMUM HEIGHT: ${finalMinimumHeight.toFixed(2)}ft`);
+  console.log(`Contributing factors: ${breakdown.contributingFactors.length}`);
+
+  return breakdown;
+};
 
 /**
  * Validates that a single feature doesn't exceed wall height constraints
@@ -131,19 +287,43 @@ export const validateStackedFeatures = (
 };
 
 /**
- * Comprehensive wall height validation for all features
+ * Comprehensive wall height validation for all features with building code requirements
  */
 export const validateWallHeights = (
   dimensions: BuildingDimensions,
-  features: WallFeature[]
+  features: WallFeature[],
+  buildingCodeRequirements: BuildingCodeRequirements = DEFAULT_BUILDING_CODE_REQUIREMENTS
 ): ValidationResult => {
   const errors: string[] = [];
   const warnings: string[] = [];
   const wallHeight = dimensions.height;
 
-  console.log(`\n🏗️ WALL HEIGHT VALIDATION`);
-  console.log(`Wall height: ${wallHeight}ft`);
+  console.log(`\n🏗️ COMPREHENSIVE WALL HEIGHT VALIDATION`);
+  console.log(`Proposed wall height: ${wallHeight}ft`);
   console.log(`Total features to validate: ${features.length}`);
+
+  // Calculate minimum required height based on all requirements
+  const heightBreakdown = calculateMinimumRequiredHeight(features, buildingCodeRequirements);
+  const minimumRequiredHeight = heightBreakdown.finalMinimum;
+
+  console.log(`📏 Minimum required height: ${minimumRequiredHeight.toFixed(2)}ft`);
+
+  // CRITICAL CHECK: Validate proposed height against minimum requirement
+  if (wallHeight < minimumRequiredHeight) {
+    const shortfall = minimumRequiredHeight - wallHeight;
+    errors.push(
+      `CRITICAL: Wall height (${wallHeight}ft) is ${shortfall.toFixed(2)}ft below minimum required height (${minimumRequiredHeight.toFixed(2)}ft)`
+    );
+    errors.push(`Minimum height determined by: ${heightBreakdown.contributingFactors.join(', ')}`);
+    console.log(`❌ CRITICAL: Wall height too low by ${shortfall.toFixed(2)}ft`);
+  } else {
+    const clearance = wallHeight - minimumRequiredHeight;
+    console.log(`✅ Wall height acceptable with ${clearance.toFixed(2)}ft clearance above minimum`);
+    
+    if (clearance < 1.0) {
+      warnings.push(`Warning: Wall height (${wallHeight}ft) has minimal clearance (${clearance.toFixed(2)}ft) above minimum requirement`);
+    }
+  }
 
   // Validate each individual feature
   const featureValidations = features.map(feature => 
@@ -172,12 +352,19 @@ export const validateWallHeights = (
     warnings.push(`Warning: High opening ratio (${(openingRatio * 100).toFixed(1)}%) may require additional structural support`);
   }
 
+  // Building code compliance warnings
+  if (wallHeight < buildingCodeRequirements.minimumCeilingHeight + 1.0) {
+    warnings.push(`Warning: Wall height is close to minimum ceiling height requirement - consider increasing for comfort`);
+  }
+
   console.log(`Validation complete: ${errors.length} errors, ${warnings.length} warnings`);
 
   return {
     valid: errors.length === 0,
     errors,
-    warnings
+    warnings,
+    minimumRequiredHeight,
+    breakdown: heightBreakdown
   };
 };
 
@@ -187,7 +374,8 @@ export const validateWallHeights = (
 export const validateNewFeature = (
   newFeature: Omit<WallFeature, 'id'>,
   existingFeatures: WallFeature[],
-  wallHeight: number
+  wallHeight: number,
+  buildingCodeRequirements: BuildingCodeRequirements = DEFAULT_BUILDING_CODE_REQUIREMENTS
 ): ValidationResult => {
   const errors: string[] = [];
   const warnings: string[] = [];
@@ -201,6 +389,17 @@ export const validateNewFeature = (
   // Validate individual feature height
   const featureValidation = validateFeatureHeight(tempFeature, wallHeight);
   errors.push(...featureValidation.errors);
+
+  // Check if adding this feature would increase minimum required height
+  const allFeatures = [...existingFeatures, tempFeature];
+  const heightBreakdown = calculateMinimumRequiredHeight(allFeatures, buildingCodeRequirements);
+  
+  if (heightBreakdown.finalMinimum > wallHeight) {
+    const shortfall = heightBreakdown.finalMinimum - wallHeight;
+    errors.push(
+      `Error: Adding this ${newFeature.type} would require wall height of ${heightBreakdown.finalMinimum.toFixed(2)}ft (${shortfall.toFixed(2)}ft above current ${wallHeight}ft)`
+    );
+  }
 
   // Validate against existing features on the same wall
   const wallFeatures = existingFeatures.filter(f => 
@@ -235,7 +434,9 @@ export const validateNewFeature = (
   return {
     valid: errors.length === 0,
     errors,
-    warnings
+    warnings,
+    minimumRequiredHeight: heightBreakdown.finalMinimum,
+    breakdown: heightBreakdown
   };
 };
 
@@ -271,10 +472,16 @@ export const getMaxAllowedHeight = (
  */
 export const suggestValidPosition = (
   feature: Omit<WallFeature, 'id'>,
-  wallHeight: number
-): { yOffset: number; height: number } => {
+  wallHeight: number,
+  buildingCodeRequirements: BuildingCodeRequirements = DEFAULT_BUILDING_CODE_REQUIREMENTS
+): { yOffset: number; height: number; minimumWallHeight: number } => {
   let suggestedHeight = feature.height;
   let suggestedYOffset = feature.position.yOffset;
+
+  // Calculate what the minimum wall height would be with this feature
+  const tempFeature: WallFeature = { ...feature, id: 'temp' };
+  const heightBreakdown = calculateMinimumRequiredHeight([tempFeature], buildingCodeRequirements);
+  const minimumWallHeight = heightBreakdown.finalMinimum;
 
   // If feature height exceeds wall height, reduce it
   if (feature.height > wallHeight) {
@@ -293,6 +500,7 @@ export const suggestValidPosition = (
 
   return {
     yOffset: Math.max(0, suggestedYOffset),
-    height: Math.min(suggestedHeight, wallHeight)
+    height: Math.min(suggestedHeight, wallHeight),
+    minimumWallHeight
   };
 };

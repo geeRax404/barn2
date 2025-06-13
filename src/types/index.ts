@@ -48,6 +48,33 @@ export interface Skylight {
 // View modes
 export type ViewMode = '3d' | 'plan' | 'floor';
 
+// Building Code Requirements
+export interface ElectricalRequirement {
+  minimumOutletHeight: number; // feet from floor
+  minimumSwitchHeight: number; // feet from floor
+  minimumCeilingClearance: number; // feet from ceiling
+  minimumServicePanelClearance: number; // feet around electrical panel
+}
+
+export interface PlumbingRequirement {
+  minimumFixtureHeight: number; // feet from floor
+  minimumCeilingClearance: number; // feet from ceiling
+  minimumAccessClearance: number; // feet for maintenance access
+  minimumVentClearance: number; // feet for plumbing vents
+}
+
+export interface BuildingCodeRequirements {
+  minimumCeilingHeight: number; // feet - absolute minimum ceiling height
+  minimumDoorClearance: number; // feet above door height
+  minimumWindowClearance: number; // feet above window height
+  structuralLoadBearing: number; // feet for load-bearing requirements
+  fireCodeClearance: number; // feet for fire safety clearances
+  electrical: ElectricalRequirement;
+  plumbing: PlumbingRequirement;
+  ventilationClearance: number; // feet for HVAC systems
+  insulationSpace: number; // feet for insulation thickness
+}
+
 // Building state
 export interface Building {
   dimensions: BuildingDimensions;

@@ -1,8 +1,9 @@
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
-import { AlertTriangle, Info } from 'lucide-react';
+import { AlertTriangle, Info, Shield, Zap, Droplets, Wind, Home } from 'lucide-react';
 import { useBuildingStore } from '../../store/buildingStore';
-import { validateWallHeights } from '../../utils/wallHeightValidation';
+import { validateWallHeights, DEFAULT_BUILDING_CODE_REQUIREMENTS } from '../../utils/wallHeightValidation';
+import type { BuildingCodeRequirements } from '../../types';
 
 const DimensionsPanel: React.FC = () => {
   const { dimensions, features, updateDimensions } = useBuildingStore((state) => ({
@@ -12,19 +13,39 @@ const DimensionsPanel: React.FC = () => {
   }));
 
   const [heightWarning, setHeightWarning] = useState<string[]>([]);
+  const [minimumHeight, setMinimumHeight] = useState<number | null>(null);
+  const [heightBreakdown, setHeightBreakdown] = useState<any>(null);
+  const [showBreakdown, setShowBreakdown] = useState(false);
+
+  // Use default building code requirements
+  const buildingCodeRequirements: BuildingCodeRequirements = DEFAULT_BUILDING_CODE_REQUIREMENTS;
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>, dimension: keyof typeof dimensions) => {
     const value = parseFloat(e.target.value);
     if (!isNaN(value)) {
-      // If changing height, validate against existing features
+      // If changing height, validate against building code requirements
       if (dimension === 'height') {
         const newDimensions = { ...dimensions, height: value };
-        const validation = validateWallHeights(newDimensions, features);
+        const validation = validateWallHeights(newDimensions, features, buildingCodeRequirements);
         
         if (!validation.valid) {
           setHeightWarning(validation.errors);
+          setMinimumHeight(validation.minimumRequiredHeight || null);
+          setHeightBreakdown(validation.breakdown || null);
+          
+          // Prevent updating if height is below minimum requirement
+          const isBelowMinimum = validation.errors.some(error => 
+            error.includes('below minimum required height')
+          );
+          
+          if (isBelowMinimum) {
+            console.log(`❌ Preventing height update: ${value}ft is below minimum required height`);
+            return; // Don't update dimensions if below minimum
+          }
         } else {
-          setHeightWarning([]);
+          setHeightWarning(validation.warnings || []);
+          setMinimumHeight(validation.minimumRequiredHeight || null);
+          setHeightBreakdown(validation.breakdown || null);
         }
       }
       
@@ -38,12 +59,35 @@ const DimensionsPanel: React.FC = () => {
     feature.position.yOffset + feature.height > dimensions.height
   );
 
+  // Calculate current minimum required height
+  const currentValidation = validateWallHeights(dimensions, features, buildingCodeRequirements);
+  const currentMinimumHeight = currentValidation.minimumRequiredHeight || buildingCodeRequirements.minimumCeilingHeight;
+  const heightClearance = dimensions.height - currentMinimumHeight;
+
   return (
     <motion.div 
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
     >
+      {/* Building Code Requirements Info */}
+      <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+        <div className="flex items-center space-x-2 mb-2">
+          <Shield className="w-4 h-4 text-blue-600" />
+          <span className="text-sm font-medium text-blue-800">Building Code Compliance</span>
+        </div>
+        <div className="text-xs text-blue-700 space-y-1">
+          <div>Minimum ceiling height: {buildingCodeRequirements.minimumCeilingHeight}ft</div>
+          <div>Current minimum required: {currentMinimumHeight.toFixed(2)}ft</div>
+          <div className={`font-medium ${heightClearance >= 0 ? 'text-green-700' : 'text-red-700'}`}>
+            {heightClearance >= 0 
+              ? `✅ ${heightClearance.toFixed(2)}ft clearance above minimum`
+              : `❌ ${Math.abs(heightClearance).toFixed(2)}ft below minimum`
+            }
+          </div>
+        </div>
+      </div>
+
       {/* Height validation warning */}
       {heightWarning.length > 0 && (
         <div className="mb-4 bg-red-50 border border-red-200 rounded-lg p-3">
@@ -56,9 +100,69 @@ const DimensionsPanel: React.FC = () => {
               <li key={index}>• {error}</li>
             ))}
           </ul>
-          <p className="text-xs text-red-600 mt-2">
-            Please adjust wall height or modify/remove conflicting features.
-          </p>
+          {minimumHeight && (
+            <div className="mt-2 p-2 bg-red-100 rounded">
+              <div className="text-xs font-medium text-red-800">
+                Required minimum height: {minimumHeight.toFixed(2)}ft
+              </div>
+              {heightBreakdown && (
+                <button
+                  onClick={() => setShowBreakdown(!showBreakdown)}
+                  className="text-xs text-red-600 hover:text-red-800 underline mt-1"
+                >
+                  {showBreakdown ? 'Hide' : 'Show'} height calculation breakdown
+                </button>
+              )}
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Height Breakdown Modal */}
+      {showBreakdown && heightBreakdown && (
+        <div className="mb-4 bg-gray-50 border border-gray-200 rounded-lg p-3">
+          <div className="flex items-center justify-between mb-2">
+            <span className="text-sm font-medium text-gray-800">Height Requirement Breakdown</span>
+            <button
+              onClick={() => setShowBreakdown(false)}
+              className="text-gray-500 hover:text-gray-700"
+            >
+              ×
+            </button>
+          </div>
+          <div className="space-y-2 text-xs text-gray-700">
+            <div className="flex items-center space-x-2">
+              <Home className="w-3 h-3" />
+              <span>Base ceiling: {heightBreakdown.baseCeilingHeight}ft</span>
+            </div>
+            {heightBreakdown.highestFeatureRequirement > 0 && (
+              <div className="flex items-center space-x-2">
+                <AlertTriangle className="w-3 h-3" />
+                <span>Highest feature: {heightBreakdown.highestFeatureRequirement.toFixed(2)}ft</span>
+              </div>
+            )}
+            {heightBreakdown.electricalRequirement > 0 && (
+              <div className="flex items-center space-x-2">
+                <Zap className="w-3 h-3" />
+                <span>Electrical: {heightBreakdown.electricalRequirement.toFixed(2)}ft</span>
+              </div>
+            )}
+            {heightBreakdown.plumbingRequirement > 0 && (
+              <div className="flex items-center space-x-2">
+                <Droplets className="w-3 h-3" />
+                <span>Plumbing: {heightBreakdown.plumbingRequirement.toFixed(2)}ft</span>
+              </div>
+            )}
+            {heightBreakdown.ventilationRequirement > 0 && (
+              <div className="flex items-center space-x-2">
+                <Wind className="w-3 h-3" />
+                <span>HVAC: +{heightBreakdown.ventilationRequirement.toFixed(2)}ft</span>
+              </div>
+            )}
+            <div className="border-t pt-2 font-medium">
+              Final minimum: {heightBreakdown.finalMinimum.toFixed(2)}ft
+            </div>
+          </div>
         </div>
       )}
 
@@ -145,9 +249,9 @@ const DimensionsPanel: React.FC = () => {
           <input
             type="range"
             id="height-range"
-            min="8"
+            min={Math.max(8, currentMinimumHeight)}
             max="20"
-            step="1"
+            step="0.5"
             value={dimensions.height}
             onChange={(e) => handleChange(e, 'height')}
             className="flex-1 mr-3"
@@ -155,13 +259,23 @@ const DimensionsPanel: React.FC = () => {
           <input
             type="number"
             id="height"
-            min="8"
+            min={Math.max(8, currentMinimumHeight)}
             max="20"
+            step="0.5"
             value={dimensions.height}
             onChange={(e) => handleChange(e, 'height')}
             className={`w-20 form-input ${heightWarning.length > 0 ? 'border-red-300 bg-red-50' : ''}`}
           />
         </div>
+        
+        {/* Height constraint information */}
+        <div className="mt-2 text-xs text-gray-600">
+          <div>Minimum allowed: {currentMinimumHeight.toFixed(2)}ft</div>
+          {heightClearance >= 0 && (
+            <div className="text-green-600">Current clearance: {heightClearance.toFixed(2)}ft</div>
+          )}
+        </div>
+        
         {features.length > 0 && (
           <div className="mt-2 bg-blue-50 border border-blue-200 rounded p-2">
             <div className="flex items-center space-x-2 mb-1">
@@ -194,6 +308,10 @@ const DimensionsPanel: React.FC = () => {
           Total area: {dimensions.width * dimensions.length} sq ft
           <br />
           Wall height: {dimensions.height} ft
+          <br />
+          <span className={heightClearance >= 0 ? 'text-green-700' : 'text-red-700'}>
+            Code compliance: {heightClearance >= 0 ? '✅ Compliant' : '❌ Non-compliant'}
+          </span>
         </p>
       </div>
     </motion.div>
