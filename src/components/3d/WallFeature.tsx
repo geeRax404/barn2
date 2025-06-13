@@ -234,7 +234,6 @@ const WallFeature: React.FC<WallFeatureProps> = ({ feature, buildingDimensions }
               <boxGeometry args={dimensions} />
               <meshStandardMaterial 
                 color="#87CEEB" 
-                transparent 
                 opacity={0.4} 
                 metalness={0.2}
                 roughness={0}

@@ -69,7 +69,7 @@ const roofColorOptions = [
 const wallProfileOptions = [
   {
     name: 'MULTICLAD®',
-    value: 'multiclad',
+    value: 'multiclad' as const,
     description: 'Traditional deep corrugated profile - 76mm spacing',
     ribWidth: 76, // 76mm rib spacing
     ribDepth: 'deep',
@@ -77,7 +77,7 @@ const wallProfileOptions = [
   },
   {
     name: 'TRIMDEK®',
-    value: 'trimdek',
+    value: 'trimdek' as const,
     description: 'Contemporary trapezoidal profile - 65mm spacing',
     ribWidth: 65, // 65mm rib spacing
     ribDepth: 'medium',
@@ -85,7 +85,7 @@ const wallProfileOptions = [
   },
   {
     name: 'CUSTOM ORB®',
-    value: 'customorb',
+    value: 'customorb' as const,
     description: 'Curved profile with rounded ribs - 32mm spacing',
     ribWidth: 32, // 32mm rib spacing
     ribDepth: 'shallow',
@@ -93,7 +93,7 @@ const wallProfileOptions = [
   },
   {
     name: 'CUSTOM ORB® Horizontal',
-    value: 'horizontal-customorb',
+    value: 'horizontal-customorb' as const,
     description: 'Horizontal installation of CUSTOM ORB®',
     ribWidth: 32,
     ribDepth: 'shallow',

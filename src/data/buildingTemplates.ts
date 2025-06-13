@@ -1,4 +1,4 @@
-import type { BuildingTemplate } from '../types/templates';
+import type { BuildingTemplate, TemplateCategory } from '../types/templates';
 
 export const buildingTemplates: BuildingTemplate[] = [
   // GARAGE TEMPLATES
