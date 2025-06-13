@@ -3,9 +3,10 @@ import { v4 as uuidv4 } from 'uuid';
 import { validateWallHeights } from '../utils/wallHeightValidation';
 import { isValidFeaturePosition } from '../utils/wallBoundsValidation';
 import { isValidSkylightPosition } from '../utils/skylightValidation';
+import { validateRoomDimensions, enforceMinimumDimensions, STANDARD_ROOM_CONSTRAINTS } from '../utils/roomConstraints';
 import type { BuildingStore, Project, ViewMode, BuildingDimensions, WallFeature, Skylight, WallProfile, Building } from '../types';
 
-// Default initial building
+// Default initial building with minimum room constraints
 const defaultBuilding = {
   dimensions: {
     width: 30,
@@ -20,14 +21,26 @@ const defaultBuilding = {
   wallProfile: 'trimdek' as WallProfile, // Default to Trimdek profile
 };
 
-// Create a default project
-const createDefaultProject = (): Project => ({
-  id: uuidv4(),
-  name: 'New Barn',
-  created: new Date(),
-  lastModified: new Date(),
-  building: { ...defaultBuilding },
-});
+// Create a default project with validated dimensions
+const createDefaultProject = (): Project => {
+  // Ensure default dimensions meet minimum requirements
+  const validatedDimensions = enforceMinimumDimensions(
+    defaultBuilding.dimensions,
+    defaultBuilding.dimensions,
+    STANDARD_ROOM_CONSTRAINTS
+  );
+
+  return {
+    id: uuidv4(),
+    name: 'New Room',
+    created: new Date(),
+    lastModified: new Date(),
+    building: { 
+      ...defaultBuilding,
+      dimensions: validatedDimensions
+    },
+  };
+};
 
 // Create the store
 export const useBuildingStore = create<BuildingStore>((set, get) => ({
@@ -38,6 +51,26 @@ export const useBuildingStore = create<BuildingStore>((set, get) => ({
   // Set complete building state atomically
   setBuilding: (building: Building) =>
     set((state) => {
+      console.log(`\n🏗️ SETTING COMPLETE BUILDING STATE`);
+      
+      // First, validate and enforce room dimension constraints
+      const roomValidation = validateRoomDimensions(building.dimensions, STANDARD_ROOM_CONSTRAINTS);
+      
+      if (!roomValidation.valid) {
+        console.error('Room dimension validation failed:', roomValidation.errors);
+        
+        // Use adjusted dimensions if available, otherwise enforce minimums
+        const adjustedDimensions = roomValidation.adjustedDimensions || 
+          enforceMinimumDimensions(building.dimensions, building.dimensions, STANDARD_ROOM_CONSTRAINTS);
+        
+        building = {
+          ...building,
+          dimensions: adjustedDimensions
+        };
+        
+        console.log(`📏 Applied dimension adjustments: ${adjustedDimensions.width}ft × ${adjustedDimensions.length}ft × ${adjustedDimensions.height}ft`);
+      }
+
       // Validate height constraints for all features
       const heightValidation = validateWallHeights(building.dimensions, building.features);
       
@@ -66,6 +99,8 @@ export const useBuildingStore = create<BuildingStore>((set, get) => ({
         return state;
       }
 
+      console.log(`✅ Building state validation passed`);
+
       return {
         currentProject: {
           ...state.currentProject,
@@ -75,17 +110,35 @@ export const useBuildingStore = create<BuildingStore>((set, get) => ({
       };
     }),
 
-  // Update building dimensions with comprehensive validation
+  // Update building dimensions with comprehensive validation and minimum enforcement
   updateDimensions: (dimensions: Partial<BuildingDimensions>) => 
     set((state) => {
-      const newDimensions = {
-        ...state.currentProject.building.dimensions,
-        ...dimensions,
-      };
+      console.log(`\n🏗️ UPDATING DIMENSIONS with room constraints`);
+      console.log(`Proposed changes:`, dimensions);
+      
+      // First, enforce minimum room constraints
+      const enforcedDimensions = enforceMinimumDimensions(
+        dimensions,
+        state.currentProject.building.dimensions,
+        STANDARD_ROOM_CONSTRAINTS
+      );
+
+      // Validate the enforced dimensions
+      const roomValidation = validateRoomDimensions(enforcedDimensions, STANDARD_ROOM_CONSTRAINTS);
+      
+      if (!roomValidation.valid) {
+        console.warn('Room dimension validation failed after enforcement:', roomValidation.errors);
+        
+        // Use adjusted dimensions if available
+        if (roomValidation.adjustedDimensions) {
+          Object.assign(enforcedDimensions, roomValidation.adjustedDimensions);
+          console.log(`📏 Applied additional adjustments:`, roomValidation.adjustedDimensions);
+        }
+      }
 
       // If height changed, validate all existing features
       if (dimensions.height !== undefined) {
-        const heightValidation = validateWallHeights(newDimensions, state.currentProject.building.features);
+        const heightValidation = validateWallHeights(enforcedDimensions, state.currentProject.building.features);
         
         if (!heightValidation.valid) {
           console.warn('Wall height validation failed:', heightValidation.errors);
@@ -95,7 +148,7 @@ export const useBuildingStore = create<BuildingStore>((set, get) => ({
       // If width or length changed, validate wall bounds for all features
       if (dimensions.width !== undefined || dimensions.length !== undefined) {
         const invalidFeatures = state.currentProject.building.features.filter(feature => {
-          return !isValidFeaturePosition(feature, newDimensions);
+          return !isValidFeaturePosition(feature, enforcedDimensions);
         });
 
         if (invalidFeatures.length > 0) {
@@ -104,7 +157,7 @@ export const useBuildingStore = create<BuildingStore>((set, get) => ({
 
         // Also validate skylights when roof dimensions change
         const invalidSkylights = state.currentProject.building.skylights.filter(skylight => {
-          return !isValidSkylightPosition(skylight, newDimensions);
+          return !isValidSkylightPosition(skylight, enforcedDimensions);
         });
 
         if (invalidSkylights.length > 0) {
@@ -112,13 +165,15 @@ export const useBuildingStore = create<BuildingStore>((set, get) => ({
         }
       }
 
+      console.log(`✅ Final dimensions: ${enforcedDimensions.width}ft × ${enforcedDimensions.length}ft × ${enforcedDimensions.height}ft`);
+
       return {
         currentProject: {
           ...state.currentProject,
           lastModified: new Date(),
           building: {
             ...state.currentProject.building,
-            dimensions: newDimensions,
+            dimensions: enforcedDimensions,
           },
         },
       };
@@ -365,12 +420,18 @@ export const useBuildingStore = create<BuildingStore>((set, get) => ({
       };
     }),
 
-  // Create a new project
-  createNewProject: (name = 'New Barn') => 
-    set(() => ({
-      currentProject: {
-        ...createDefaultProject(),
-        name,
-      },
-    })),
+  // Create a new project with minimum room constraints
+  createNewProject: (name = 'New Room') => 
+    set(() => {
+      const newProject = createDefaultProject();
+      newProject.name = name;
+      
+      console.log(`\n🏠 CREATING NEW ROOM PROJECT: ${name}`);
+      console.log(`Dimensions: ${newProject.building.dimensions.width}ft × ${newProject.building.dimensions.length}ft × ${newProject.building.dimensions.height}ft`);
+      console.log(`Meets minimums: ✅`);
+      
+      return {
+        currentProject: newProject,
+      };
+    }),
 }));

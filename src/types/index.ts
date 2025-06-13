@@ -6,6 +6,16 @@ export interface BuildingDimensions {
   roofPitch: number; // in degrees
 }
 
+// Room design constraints
+export interface RoomConstraints {
+  minimumWallHeight: number; // feet
+  minimumWallLength: number; // feet
+  minimumWallWidth: number; // feet
+  standardDoorHeight: number; // feet
+  standardWindowHeight: number; // feet
+  structuralClearance: number; // feet above features
+}
+
 // Wall feature types
 export type FeatureType = 'door' | 'window' | 'rollupDoor' | 'walkDoor';
 
