@@ -469,14 +469,14 @@ export const buildingTemplates: BuildingTemplate[] = [
       {
         width: 4,
         length: 6,
-        xOffset: -8,
+        xOffset: -6,
         yOffset: -10,
         panel: 'left'
       },
       {
         width: 4,
         length: 6,
-        xOffset: 8,
+        xOffset: 6,
         yOffset: -10,
         panel: 'right'
       }
