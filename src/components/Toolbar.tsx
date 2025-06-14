@@ -1,16 +1,14 @@
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
-import { Save, Upload, Download, Share2, Settings, HelpCircle, RotateCcw, ClipboardCheck, Grid3X3, Layers } from 'lucide-react';
+import { Save, Upload, Download, Share2, Settings, HelpCircle, RotateCcw, ClipboardCheck, Grid3X3 } from 'lucide-react';
 import { useBuildingStore } from '../store/buildingStore';
 import { useTemplateStore } from '../store/templateStore';
 import { exportTechnicalDrawings } from './TechnicalDrawings';
 import RightWallInspectionReport from './inspection/RightWallInspectionReport';
 import TemplateSelector from './templates/TemplateSelector';
-import WallSections from './WallSections';
 
 const Toolbar: React.FC = () => {
   const [showInspectionReport, setShowInspectionReport] = useState(false);
-  const [showWallSections, setShowWallSections] = useState(false);
   
   const { createNewProject, saveProject, dimensions, features } = useBuildingStore((state) => ({
     createNewProject: state.createNewProject,
@@ -33,10 +31,6 @@ const Toolbar: React.FC = () => {
 
   const handleInspectionReport = () => {
     setShowInspectionReport(true);
-  };
-
-  const handleWallSections = () => {
-    setShowWallSections(true);
   };
 
   const handleTemplateSelect = (template: any) => {
@@ -96,14 +90,6 @@ const Toolbar: React.FC = () => {
             <ClipboardCheck className="w-4 h-4 mr-1" />
             Beam Inspection
           </button>
-
-          <button 
-            onClick={handleWallSections}
-            className="btn-secondary btn"
-          >
-            <Layers className="w-4 h-4 mr-1" />
-            Wall Sections
-          </button>
         </div>
         
         <div className="flex space-x-2">
@@ -144,24 +130,6 @@ const Toolbar: React.FC = () => {
               </button>
             </div>
             <RightWallInspectionReport />
-          </div>
-        </div>
-      )}
-
-      {/* Wall Sections Modal */}
-      {showWallSections && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-lg max-w-7xl max-h-[90vh] overflow-y-auto w-full">
-            <div className="sticky top-0 bg-white border-b border-gray-200 p-4 flex justify-between items-center">
-              <h2 className="text-xl font-bold">Detailed Wall Sections</h2>
-              <button
-                onClick={() => setShowWallSections(false)}
-                className="text-gray-500 hover:text-gray-700 text-2xl"
-              >
-                ×
-              </button>
-            </div>
-            <WallSections />
           </div>
         </div>
       )}
