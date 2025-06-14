@@ -390,7 +390,7 @@ export const buildingTemplates: BuildingTemplate[] = [
     defaultDimensions: {
       width: 36,
       length: 48,
-      height: 16,
+      height: 17,
       roofPitch: 6
     },
     roofType: 'gable',
