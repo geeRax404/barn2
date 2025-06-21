@@ -278,7 +278,7 @@ const SkillionWall: React.FC<SkillionWallProps> = ({
     // - RIGHT WALL: RECTANGULAR - goes all the way up to the high side (height + roofHeight)
     // - LEFT WALL: RECTANGULAR - stays at base height
     // - FRONT WALL: TRAPEZOIDAL - follows the roof slope (low on left, high on right)
-    // - BACK WALL: TRAPEZOIDAL - follows the roof slope (low on left, high on right)
+    // - BACK WALL: TRAPEZOIDAL - follows the roof slope BUT MIRRORED (high on left, low on right)
     
     if ((wallPosition === 'front' || wallPosition === 'back') && roofPitch > 0) {
       // 🎯 FRONT/BACK WALLS: Follow the roof slope - TRAPEZOIDAL SHAPE
@@ -286,16 +286,25 @@ const SkillionWall: React.FC<SkillionWallProps> = ({
       console.log(`  Roof height: ${roofHeight}ft, Wall width: ${width}ft (building width)`);
       
       const wallShape = new THREE.Shape();
-      // Create trapezoidal shape: low on left side, high on right side
-      // For front/back walls, width = building width, so:
-      // -width/2 = left side (low), +width/2 = right side (high)
-      wallShape.moveTo(-width/2, -height/2); // Bottom left (low side)
-      wallShape.lineTo(width/2, -height/2);  // Bottom right (low side)
-      wallShape.lineTo(width/2, height/2 + roofHeight); // Top right (high side)
-      wallShape.lineTo(-width/2, height/2); // Top left (normal height)
-      wallShape.closePath();
-
-      console.log(`  Trapezoidal shape: left height = ${height}ft, right height = ${height + roofHeight}ft`);
+      
+      if (wallPosition === 'front') {
+        // 🎯 FRONT WALL: Normal slope (low on left, high on right)
+        console.log(`  FRONT wall: low left (${height}ft) → high right (${height + roofHeight}ft)`);
+        wallShape.moveTo(-width/2, -height/2); // Bottom left (low side)
+        wallShape.lineTo(width/2, -height/2);  // Bottom right (low side)
+        wallShape.lineTo(width/2, height/2 + roofHeight); // Top right (high side)
+        wallShape.lineTo(-width/2, height/2); // Top left (normal height)
+        wallShape.closePath();
+      } else {
+        // 🎯 BACK WALL: MIRRORED slope (high on left, low on right)
+        // This compensates for the 180° rotation applied to the back wall
+        console.log(`  BACK wall: high left (${height + roofHeight}ft) → low right (${height}ft) [MIRRORED for rotation]`);
+        wallShape.moveTo(-width/2, -height/2); // Bottom left (low side)
+        wallShape.lineTo(width/2, -height/2);  // Bottom right (low side)
+        wallShape.lineTo(width/2, height/2); // Top right (normal height)
+        wallShape.lineTo(-width/2, height/2 + roofHeight); // Top left (high side) - MIRRORED!
+        wallShape.closePath();
+      }
 
       // Add window cutouts
       windowFeatures.forEach(feature => {
@@ -316,9 +325,17 @@ const SkillionWall: React.FC<SkillionWallProps> = ({
         }
         
         // Calculate the wall height at this X position due to slope
-        // Linear interpolation: height varies from 'height' to 'height + roofHeight'
-        const heightRatio = (windowX + width/2) / width; // 0 at left, 1 at right
-        const heightAtX = height + heightRatio * roofHeight;
+        let heightAtX: number;
+        if (wallPosition === 'front') {
+          // Front wall: height varies from 'height' to 'height + roofHeight' (left to right)
+          const heightRatio = (windowX + width/2) / width; // 0 at left, 1 at right
+          heightAtX = height + heightRatio * roofHeight;
+        } else {
+          // Back wall: height varies from 'height + roofHeight' to 'height' (left to right) - MIRRORED
+          const heightRatio = (windowX + width/2) / width; // 0 at left, 1 at right
+          heightAtX = height + (1 - heightRatio) * roofHeight; // Inverted ratio for mirrored slope
+        }
+        
         const windowY = -height/2 + feature.position.yOffset + feature.height/2;
         
         console.log(`  Window at X=${windowX.toFixed(1)}: wall height = ${heightAtX.toFixed(1)}ft, window top = ${(windowY + feature.height/2).toFixed(1)}ft`);
