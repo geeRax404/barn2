@@ -32,6 +32,43 @@ const Building: React.FC = () => {
     return wallFeatures;
   };
   
+  // Calculate wall positions for skillion roof
+  const getWallPosition = (wallPos: string): [number, number, number] => {
+    const baseHeight = dimensions.height / 2;
+    
+    if (roofType === 'skillion') {
+      const roofHeightTotal = dimensions.width * (dimensions.roofPitch / 12);
+      
+      switch (wallPos) {
+        case 'front':
+          return [0, baseHeight, halfLength];
+        case 'back':
+          // Back wall is taller for skillion roof
+          return [0, baseHeight + roofHeightTotal / 2, -halfLength];
+        case 'left':
+          return [-halfWidth, baseHeight + roofHeightTotal / 4, 0];
+        case 'right':
+          return [halfWidth, baseHeight + roofHeightTotal / 4, 0];
+        default:
+          return [0, baseHeight, 0];
+      }
+    } else {
+      // Gable roof - all walls same height
+      switch (wallPos) {
+        case 'front':
+          return [0, baseHeight, halfLength];
+        case 'back':
+          return [0, baseHeight, -halfLength];
+        case 'left':
+          return [-halfWidth, baseHeight, 0];
+        case 'right':
+          return [halfWidth, baseHeight, 0];
+        default:
+          return [0, baseHeight, 0];
+      }
+    }
+  };
+  
   return (
     <group>
       {/* Enhanced Foundation with better materials */}
@@ -47,7 +84,7 @@ const Building: React.FC = () => {
       
       {/* Front wall */}
       <Wall 
-        position={[0, dimensions.height/2, halfLength]} 
+        position={getWallPosition('front')} 
         width={dimensions.width}
         height={dimensions.height}
         color={color}
@@ -61,9 +98,9 @@ const Building: React.FC = () => {
       
       {/* Back wall */}
       <Wall 
-        position={[0, dimensions.height/2, -halfLength]} 
+        position={getWallPosition('back')} 
         width={dimensions.width}
-        height={dimensions.height}
+        height={roofType === 'skillion' ? dimensions.height + dimensions.width * (dimensions.roofPitch / 12) : dimensions.height}
         color={color}
         wallPosition="back"
         roofPitch={dimensions.roofPitch}
@@ -76,12 +113,13 @@ const Building: React.FC = () => {
       
       {/* Left wall */}
       <Wall 
-        position={[-halfWidth, dimensions.height/2, 0]} 
+        position={getWallPosition('left')} 
         width={dimensions.length}
         height={dimensions.height}
         color={color}
         wallPosition="left"
         rotation={[0, Math.PI / 2, 0]}
+        roofPitch={dimensions.roofPitch}
         wallFeatures={getWallFeatures('left')}
         wallProfile={wallProfile}
         roofType={roofType}
@@ -90,12 +128,13 @@ const Building: React.FC = () => {
       
       {/* Right wall */}
       <Wall 
-        position={[halfWidth, dimensions.height/2, 0]} 
+        position={getWallPosition('right')} 
         width={dimensions.length}
         height={dimensions.height}
         color={color}
         wallPosition="right"
         rotation={[0, -Math.PI / 2, 0]}
+        roofPitch={dimensions.roofPitch}
         wallFeatures={getWallFeatures('right')}
         wallProfile={wallProfile}
         roofType={roofType}
