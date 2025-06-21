@@ -22,13 +22,14 @@ const DoubleSkillionRoof: React.FC<DoubleSkillionRoofProps> = ({
   wallProfile = 'trimdek'
 }) => {
   const roofHeight = useMemo(() => {
-    return (width / 4) * (pitch / 12); // Quarter width for each slope
+    // For butterfly roof, the peak height at the edges
+    return (width / 2) * (pitch / 12);
   }, [width, pitch]);
 
-  // Create roof materials and geometries for double skillion roof
-  const { leftRoofGeometry, rightRoofGeometry, leftRoofMaterial, rightRoofMaterial } = useMemo(() => {
-    // Create enhanced roof profile texture for double skillion roof
-    const createDoubleSkillionRoofTexture = (side: 'left' | 'right') => {
+  // Create roof materials and geometries for butterfly roof
+  const { leftRoofGeometry, rightRoofGeometry, roofMaterial } = useMemo(() => {
+    // Create enhanced roof profile texture for butterfly roof
+    const createButterflyRoofTexture = () => {
       const textureWidth = 1024;
       const textureHeight = 1024;
       const canvas = document.createElement('canvas');
@@ -41,7 +42,7 @@ const DoubleSkillionRoof: React.FC<DoubleSkillionRoofProps> = ({
         ctx.fillStyle = color;
         ctx.fillRect(0, 0, textureWidth, textureHeight);
         
-        // Profile-specific patterns for double skillion roof
+        // Profile-specific patterns for butterfly roof
         let ribWidth: number;
         let ribSpacing: number;
         let profileType: string;
@@ -74,7 +75,7 @@ const DoubleSkillionRoof: React.FC<DoubleSkillionRoofProps> = ({
         const deepShadowOpacity = isWhite ? 0.7 : isDark ? 1.0 : 0.85;
         const brightHighlightOpacity = isWhite ? 0.6 : isDark ? 1.0 : 0.8;
         
-        console.log(`🏗️ CREATING DOUBLE SKILLION ROOF ${wallProfile.toUpperCase()} PROFILE: ${profileType} for ${side} side`);
+        console.log(`🏗️ CREATING BUTTERFLY ROOF ${wallProfile.toUpperCase()} PROFILE: ${profileType}`);
         
         // Create profile-specific patterns running along the slope
         for (let x = 0; x < textureWidth; x += ribSpacing) {
@@ -160,14 +161,14 @@ const DoubleSkillionRoof: React.FC<DoubleSkillionRoofProps> = ({
           ctx.globalAlpha = 1.0;
         }
         
-        console.log(`✅ DOUBLE SKILLION ROOF ${wallProfile.toUpperCase()} PROFILE TEXTURE CREATED for ${side} side`);
+        console.log(`✅ BUTTERFLY ROOF ${wallProfile.toUpperCase()} PROFILE TEXTURE CREATED`);
       }
       
       const texture = new THREE.CanvasTexture(canvas);
       texture.wrapS = THREE.RepeatWrapping;
       texture.wrapT = THREE.RepeatWrapping;
       
-      // Texture scaling for double skillion roof
+      // Texture scaling for butterfly roof
       let scaleX = width / 4; // Quarter width for each slope
       let scaleY = length / 3;
       
@@ -181,8 +182,7 @@ const DoubleSkillionRoof: React.FC<DoubleSkillionRoofProps> = ({
       return texture;
     };
 
-    const leftTexture = createDoubleSkillionRoofTexture('left');
-    const rightTexture = createDoubleSkillionRoofTexture('right');
+    const roofTexture = createButterflyRoofTexture();
     
     // Material properties for matte finish
     const isWhite = color === '#FFFFFF';
@@ -202,35 +202,30 @@ const DoubleSkillionRoof: React.FC<DoubleSkillionRoofProps> = ({
       envMapIntensity: 0.35,
     };
     
-    const leftMaterial = new THREE.MeshStandardMaterial({
-      map: leftTexture,
+    const material = new THREE.MeshStandardMaterial({
+      map: roofTexture,
       ...materialProps,
       side: THREE.DoubleSide,
     });
 
-    const rightMaterial = new THREE.MeshStandardMaterial({
-      map: rightTexture,
-      ...materialProps,
-      side: THREE.DoubleSide,
-    });
-
-    // Create double skillion roof geometries - butterfly/inverted V shape
-    console.log(`🏗️ Creating DOUBLE SKILLION roof: ${width}ft × ${length}ft, ${pitch}:12 pitch`);
+    // Create butterfly roof geometries - two opposing slopes meeting at valley
+    console.log(`🏗️ Creating BUTTERFLY ROOF: ${width}ft × ${length}ft, ${pitch}:12 pitch`);
     
-    // Left slope - slopes down from center to left edge
-    const leftPlaneGeometry = new THREE.PlaneGeometry(width/2, length, 16, 16);
+    // Left slope - slopes UP from center valley to left edge (inverted from skillion)
+    const leftPlaneGeometry = new THREE.PlaneGeometry(width/2, length, 32, 32);
     const leftPositions = leftPlaneGeometry.attributes.position.array as Float32Array;
     
-    // Modify vertices for left slope (high at center, low at left edge)
+    // Modify vertices for left slope (LOW at center valley, HIGH at left edge)
     for (let i = 0; i < leftPositions.length; i += 3) {
-      const x = leftPositions[i];     // X coordinate
+      const x = leftPositions[i];     // X coordinate (-width/4 to 0)
       const y = leftPositions[i + 1]; // Y coordinate (will become Z after rotation)
       const z = leftPositions[i + 2]; // Z coordinate (will become Y after rotation)
       
       // Calculate height based on X position for left slope
       // X ranges from -width/4 to 0 (left half)
-      // Height should be roofHeight at center (x=0) and 0 at left edge (x=-width/4)
-      const heightAtX = ((x + width/4) / (width/4)) * roofHeight;
+      // Height should be 0 at center (x=0) and roofHeight at left edge (x=-width/4)
+      const distanceFromCenter = Math.abs(x); // Distance from center valley
+      const heightAtX = (distanceFromCenter / (width/4)) * roofHeight;
       leftPositions[i + 2] = heightAtX;
     }
     
@@ -238,20 +233,21 @@ const DoubleSkillionRoof: React.FC<DoubleSkillionRoofProps> = ({
     leftPlaneGeometry.computeVertexNormals();
     leftPlaneGeometry.rotateX(-Math.PI / 2);
     
-    // Right slope - slopes down from center to right edge
-    const rightPlaneGeometry = new THREE.PlaneGeometry(width/2, length, 16, 16);
+    // Right slope - slopes UP from center valley to right edge (inverted from skillion)
+    const rightPlaneGeometry = new THREE.PlaneGeometry(width/2, length, 32, 32);
     const rightPositions = rightPlaneGeometry.attributes.position.array as Float32Array;
     
-    // Modify vertices for right slope (high at center, low at right edge)
+    // Modify vertices for right slope (LOW at center valley, HIGH at right edge)
     for (let i = 0; i < rightPositions.length; i += 3) {
-      const x = rightPositions[i];     // X coordinate
+      const x = rightPositions[i];     // X coordinate (0 to width/4)
       const y = rightPositions[i + 1]; // Y coordinate (will become Z after rotation)
       const z = rightPositions[i + 2]; // Z coordinate (will become Y after rotation)
       
       // Calculate height based on X position for right slope
       // X ranges from 0 to width/4 (right half)
-      // Height should be roofHeight at center (x=0) and 0 at right edge (x=width/4)
-      const heightAtX = ((width/4 - x) / (width/4)) * roofHeight;
+      // Height should be 0 at center (x=0) and roofHeight at right edge (x=width/4)
+      const distanceFromCenter = Math.abs(x); // Distance from center valley
+      const heightAtX = (distanceFromCenter / (width/4)) * roofHeight;
       rightPositions[i + 2] = heightAtX;
     }
     
@@ -262,8 +258,7 @@ const DoubleSkillionRoof: React.FC<DoubleSkillionRoofProps> = ({
     return { 
       leftRoofGeometry: leftPlaneGeometry,
       rightRoofGeometry: rightPlaneGeometry,
-      leftRoofMaterial: leftMaterial, 
-      rightRoofMaterial: rightMaterial 
+      roofMaterial: material 
     };
   }, [color, length, width, roofHeight, wallProfile, pitch]);
 
@@ -284,21 +279,14 @@ const DoubleSkillionRoof: React.FC<DoubleSkillionRoofProps> = ({
     const skylightX = skylight.xOffset;
     const skylightZ = skylight.yOffset;
     
-    // Determine which slope this skylight is on and calculate height
-    let heightAtX: number;
-    if (skylightX < 0) {
-      // Left slope
-      heightAtX = ((skylightX + width/4) / (width/4)) * roofHeight;
-    } else {
-      // Right slope
-      heightAtX = ((width/4 - skylightX) / (width/4)) * roofHeight;
-    }
-    
+    // Determine height based on distance from center valley
+    const distanceFromCenter = Math.abs(skylightX);
+    const heightAtX = (distanceFromCenter / (width/4)) * roofHeight;
     const skylightY = heightAtX + 0.05; // Slightly above the roof surface
     
     return (
       <mesh
-        key={`double-skillion-skylight-${index}`}
+        key={`butterfly-skylight-${index}`}
         position={[skylightX, skylightY, skylightZ]}
         rotation={[0, 0, 0]}
         castShadow
@@ -312,62 +300,62 @@ const DoubleSkillionRoof: React.FC<DoubleSkillionRoofProps> = ({
   
   return (
     <group position={[0, height, 0]}>
-      {/* Left sloping roof surface */}
+      {/* Left sloping roof surface - slopes UP from center to left edge */}
       <mesh position={[-width/4, 0, 0]} castShadow receiveShadow>
         <primitive object={leftRoofGeometry} />
-        <primitive object={leftRoofMaterial} attach="material" />
+        <primitive object={roofMaterial} attach="material" />
       </mesh>
       
-      {/* Right sloping roof surface */}
+      {/* Right sloping roof surface - slopes UP from center to right edge */}
       <mesh position={[width/4, 0, 0]} castShadow receiveShadow>
         <primitive object={rightRoofGeometry} />
-        <primitive object={rightRoofMaterial} attach="material" />
+        <primitive object={roofMaterial} attach="material" />
       </mesh>
       
-      {/* Skylights for double skillion roof */}
+      {/* Skylights for butterfly roof */}
       {skylights.map((skylight, index) => createSkylight(skylight, index))}
       
-      {/* Valley gutter at the center where the two slopes meet */}
+      {/* Valley gutter at the center where the two slopes meet (CRITICAL for butterfly roof) */}
       <mesh 
-        position={[0, roofHeight/2, 0]} 
+        position={[0, 0.1, 0]} 
         castShadow 
         receiveShadow
       >
-        <boxGeometry args={[0.3, 0.2, length]} />
+        <boxGeometry args={[0.4, 0.3, length]} />
         <meshStandardMaterial 
-          color="#B8B8B8" // Galvanized steel color for gutter
+          color="#B8B8B8" // Galvanized steel color for valley gutter
           metalness={0.8}
           roughness={0.3}
           envMapIntensity={1.0}
         />
       </mesh>
       
-      {/* Edge trim for both slopes */}
+      {/* Edge trim for both slopes - at the HIGH edges */}
       <mesh 
-        position={[-width/2, roofHeight/4, 0]} 
+        position={[-width/2, roofHeight/2, 0]} 
         castShadow 
         receiveShadow
       >
         <boxGeometry args={[0.2, 0.3, length]} />
         <meshStandardMaterial 
           color={color} 
-          metalness={materialProps.metalness}
-          roughness={materialProps.roughness}
-          envMapIntensity={materialProps.envMapIntensity}
+          metalness={0.15}
+          roughness={0.75}
+          envMapIntensity={0.35}
         />
       </mesh>
       
       <mesh 
-        position={[width/2, roofHeight/4, 0]} 
+        position={[width/2, roofHeight/2, 0]} 
         castShadow 
         receiveShadow
       >
         <boxGeometry args={[0.2, 0.3, length]} />
         <meshStandardMaterial 
           color={color} 
-          metalness={materialProps.metalness}
-          roughness={materialProps.roughness}
-          envMapIntensity={materialProps.envMapIntensity}
+          metalness={0.15}
+          roughness={0.75}
+          envMapIntensity={0.35}
         />
       </mesh>
     </group>
