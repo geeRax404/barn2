@@ -1,11 +1,17 @@
 import React, { useRef, useEffect } from 'react';
-import { Canvas, useFrame, useThree } from '@react-three/fiber';
+import { Canvas, useFrame, useThree, extend } from '@react-three/fiber';
 import { OrbitControls, PerspectiveCamera, Grid, Text, Line } from '@react-three/drei';
 import * as THREE from 'three';
+import { Line2 } from 'three/examples/jsm/lines/Line2.js';
+import { LineMaterial } from 'three/examples/jsm/lines/LineMaterial.js';
+import { LineGeometry } from 'three/examples/jsm/lines/LineGeometry.js';
 import { useBuildingStore } from '../store/buildingStore';
 import Building from './3d/Building';
 import FloorPlan from './FloorPlan';
 import type { ViewMode } from '../types';
+
+// Extend the THREE namespace with Line2 components
+extend({ Line2, LineMaterial, LineGeometry });
 
 const GrassGround: React.FC = () => {
   const meshRef = useRef<THREE.Mesh>(null);

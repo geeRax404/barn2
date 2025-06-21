@@ -188,13 +188,11 @@ const DimensionsPanel: React.FC = () => {
       </div>
       
       <div className="mt-4 p-3 bg-blue-50 rounded-md border border-blue-100">
-        <p className="text-sm text-blue-800">
-          Building footprint: {dimensions.width} x {dimensions.length} ft
-          <br />
-          Total area: {dimensions.width * dimensions.length} sq ft
-          <br />
-          Wall height: {dimensions.height} ft
-        </p>
+        <div className="text-sm text-blue-800">
+          <div>Building footprint: {dimensions.width} x {dimensions.length} ft</div>
+          <div>Total area: {dimensions.width * dimensions.length} sq ft</div>
+          <div>Wall height: {dimensions.height} ft</div>
+        </div>
       </div>
     </motion.div>
   );
