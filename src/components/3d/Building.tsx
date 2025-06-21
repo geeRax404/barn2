@@ -42,27 +42,32 @@ const Building: React.FC = () => {
       switch (wallPos) {
         case 'front':
           // Front wall: TRAPEZOIDAL - follows roof slope (low left, high right)
+          // Position at average height to center the trapezoidal shape
           return {
             position: [0, baseHeight + roofHeightTotal / 4, halfLength],
             height: dimensions.height // Base height, geometry will be sloped
           };
         case 'back':
           // Back wall: TRAPEZOIDAL - follows roof slope (low left, high right)
+          // Position at average height to center the trapezoidal shape
           return {
             position: [0, baseHeight + roofHeightTotal / 4, -halfLength],
             height: dimensions.height // Base height, geometry will be sloped
           };
         case 'left':
           // Left wall: RECTANGULAR - stays at base height (low side)
+          // 🎯 FIX: Position slightly lower to align with roof
           return {
-            position: [-halfWidth, baseHeight, 0],
-            height: dimensions.height
+            position: [-halfWidth, baseHeight - 0.05, 0], // Slightly lower
+            height: dimensions.height - 0.1 // Slightly shorter to avoid overhang
           };
         case 'right':
           // Right wall: RECTANGULAR - full height to reach high side
+          // 🎯 FIX: Adjust height to match roof exactly
+          const rightWallHeight = dimensions.height + roofHeightTotal;
           return {
-            position: [halfWidth, baseHeight + roofHeightTotal / 2, 0],
-            height: dimensions.height + roofHeightTotal
+            position: [halfWidth, baseHeight + roofHeightTotal / 2 - 0.05, 0], // Slightly lower
+            height: rightWallHeight - 0.1 // Slightly shorter to avoid overhang
           };
         default:
           return {
