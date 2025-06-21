@@ -32,7 +32,7 @@ const roofProfileOptions = [
   }
 ];
 
-// 🏗️ ROOF TYPE OPTIONS
+// 🏗️ ROOF TYPE OPTIONS - now includes double skillion
 const roofTypeOptions = [
   {
     name: 'Gable Roof',
@@ -45,6 +45,12 @@ const roofTypeOptions = [
     value: 'skillion' as RoofType,
     description: 'Single-slope roof, modern and efficient',
     characteristics: ['Single sloping surface', 'Modern appearance', 'Efficient drainage', 'Cost effective']
+  },
+  {
+    name: 'Double Skillion Roof',
+    value: 'double-skillion' as RoofType,
+    description: 'Butterfly roof with two opposing slopes creating a valley',
+    characteristics: ['Butterfly/inverted V shape', 'Central valley', 'Distinctive architecture', 'Modern design']
   }
 ];
 
@@ -83,7 +89,7 @@ const RoofPanel: React.FC = () => {
       setValidationWarnings(validation.warnings);
       setSkylightValidation(validation);
     } else {
-      // For skillion roofs, clear skylight validation since they work differently
+      // For skillion and double-skillion roofs, clear skylight validation since they work differently
       setValidationErrors([]);
       setValidationWarnings([]);
       setSkylightValidation(null);
@@ -176,7 +182,7 @@ const RoofPanel: React.FC = () => {
         panel: newSkylight.panel
       });
     } else {
-      // For skillion roofs, just center the skylight
+      // For skillion and double-skillion roofs, just center the skylight
       setNewSkylight({
         ...newSkylight,
         xOffset: 0,
@@ -188,12 +194,14 @@ const RoofPanel: React.FC = () => {
 
   // Check if current skylight configuration is valid
   const isCurrentSkylightValid = () => {
-    if (roofType === 'skillion') return true; // Skillion roofs are more flexible
+    if (roofType === 'skillion' || roofType === 'double-skillion') return true; // More flexible for these roof types
     return isValidSkylightPosition(newSkylight, dimensions);
   };
 
   // Calculate roof rise based on pitch
-  const roofRise = (dimensions.width / 2) * (dimensions.roofPitch / 12);
+  const roofRise = roofType === 'double-skillion' 
+    ? (dimensions.width / 4) * (dimensions.roofPitch / 12) // Quarter width for double skillion
+    : (dimensions.width / 2) * (dimensions.roofPitch / 12); // Half width for gable/skillion
   
   return (
     <motion.div 
@@ -326,6 +334,24 @@ const RoofPanel: React.FC = () => {
             <div>Single sloping surface: {dimensions.width}ft × {dimensions.length}ft</div>
             <div>Skylights positioned on the sloping plane</div>
             <div>More flexible skylight placement than gable roofs</div>
+            <div>Profile: {roofProfileOptions.find(p => p.value === wallProfile)?.description}</div>
+          </div>
+        </div>
+      )}
+
+      {roofType === 'double-skillion' && (
+        <div className="bg-purple-50 border border-purple-200 rounded-lg p-3 mb-4">
+          <div className="flex items-center space-x-2 mb-2">
+            <Info className="w-4 h-4 text-purple-600" />
+            <span className="text-sm font-medium text-purple-800">
+              Double Skillion (Butterfly) Roof - {roofProfileOptions.find(p => p.value === wallProfile)?.name || 'Trimdek'} Profile
+            </span>
+          </div>
+          <div className="text-xs text-purple-700 space-y-1">
+            <div>Butterfly shape: {dimensions.width}ft × {dimensions.length}ft</div>
+            <div>Two opposing slopes creating central valley</div>
+            <div>Distinctive architectural feature</div>
+            <div>Skylights positioned on sloping surfaces</div>
             <div>Profile: {roofProfileOptions.find(p => p.value === wallProfile)?.description}</div>
           </div>
         </div>
@@ -505,7 +531,9 @@ const RoofPanel: React.FC = () => {
               <p className="text-xs text-gray-500 mt-1">
                 {roofType === 'gable' 
                   ? `Position from panel center (0 = center of ${newSkylight.panel} panel)`
-                  : 'Position across roof width (0 = center)'
+                  : roofType === 'double-skillion'
+                    ? 'Position across roof width (0 = valley center)'
+                    : 'Position across roof width (0 = center)'
                 }
               </p>
             </div>
@@ -587,7 +615,7 @@ const RoofPanel: React.FC = () => {
             <div className="space-y-2">
               {skylights.map((skylight, index) => {
                 const validation = skylightValidation?.skylightValidations?.[index];
-                const isValid = roofType === 'skillion' || validation?.valid ?? true;
+                const isValid = roofType === 'skillion' || roofType === 'double-skillion' || validation?.valid ?? true;
                 
                 return (
                   <div 

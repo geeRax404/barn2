@@ -39,7 +39,7 @@ export const useTemplateStore = create<TemplateStore>((set, get) => ({
       color: template.defaultColor,
       roofColor: template.defaultRoofColor,
       wallProfile: template.wallProfile,
-      roofType: template.roofType === 'skillion' ? 'skillion' : 'gable', // Map template roof types to our types
+      roofType: template.roofType === 'skillion' ? 'skillion' : template.roofType === 'double-skillion' ? 'double-skillion' : 'gable', // Map template roof types to our types
       features: template.features.map(feature => ({
         ...feature,
         id: uuidv4() // Ensure each feature has a unique ID

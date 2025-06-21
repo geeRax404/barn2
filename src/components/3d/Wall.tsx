@@ -1,6 +1,7 @@
 import React from 'react';
 import GableWall from './GableWall';
 import SkillionWall from './SkillionWall';
+import DoubleSkillionWall from './DoubleSkillionWall';
 import type { WallPosition, WallFeature, WallProfile } from '../../types';
 
 interface WallProps {
@@ -13,8 +14,8 @@ interface WallProps {
   roofPitch?: number;
   wallFeatures?: WallFeature[];
   wallProfile?: WallProfile;
-  roofType?: 'gable' | 'skillion';
-  buildingWidth?: number; // For skillion roof calculations
+  roofType?: 'gable' | 'skillion' | 'double-skillion';
+  buildingWidth?: number; // For skillion and double-skillion roof calculations
 }
 
 const Wall: React.FC<WallProps> = ({ 
@@ -35,6 +36,21 @@ const Wall: React.FC<WallProps> = ({
   if (roofType === 'skillion') {
     return (
       <SkillionWall
+        position={position}
+        width={width}
+        height={height}
+        color={color}
+        wallPosition={wallPosition}
+        rotation={rotation}
+        roofPitch={roofPitch}
+        wallFeatures={wallFeatures}
+        wallProfile={wallProfile}
+        buildingWidth={buildingWidth}
+      />
+    );
+  } else if (roofType === 'double-skillion') {
+    return (
+      <DoubleSkillionWall
         position={position}
         width={width}
         height={height}
