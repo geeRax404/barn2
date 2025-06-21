@@ -1,10 +1,10 @@
 import React from 'react';
 import { motion } from 'framer-motion';
-import Sidebar from './components/Sidebar';
-import Toolbar from './components/Toolbar';
-import ViewControls from './components/ViewControls';
-import Canvas3D from './components/Canvas3D';
-import { useBuildingStore } from './store/buildingStore';
+import Sidebar from '../Sidebar';
+import Toolbar from '../Toolbar';
+import ViewControls from '../ViewControls';
+import Canvas3D from '../Canvas3D';
+import { useBuildingStore } from '../../store/buildingStore';
 
 function App() {
   const currentView = useBuildingStore((state) => state.currentView);
