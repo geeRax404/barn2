@@ -22,6 +22,8 @@ const Building: React.FC = () => {
   // Calculate total height including roof peak
   const roofHeight = roofType === 'gable' 
     ? (dimensions.width / 2) * (dimensions.roofPitch / 12)
+    : roofType === 'double-skillion'
+    ? (dimensions.width / 4) * (dimensions.roofPitch / 12) // Quarter width for double skillion
     : dimensions.width * (dimensions.roofPitch / 12);
   const totalHeight = dimensions.height + roofHeight;
   
@@ -32,7 +34,7 @@ const Building: React.FC = () => {
     return wallFeatures;
   };
   
-  // 🎯 PERFECT FLUSH ALIGNMENT: Calculate exact wall positions and heights for skillion roof
+  // 🎯 PERFECT FLUSH ALIGNMENT: Calculate exact wall positions and heights for different roof types
   const getWallData = (wallPos: string): { position: [number, number, number], height: number } => {
     const baseHeight = dimensions.height / 2;
     
@@ -46,7 +48,6 @@ const Building: React.FC = () => {
       switch (wallPos) {
         case 'front':
           // Front wall: TRAPEZOIDAL - follows roof slope (low left, high right)
-          // Position at the EXACT center of the sloped geometry
           const frontAvgHeight = dimensions.height + roofHeightTotal / 2;
           console.log(`  FRONT wall: avg height = ${frontAvgHeight}ft, positioned at y = ${frontAvgHeight / 2}`);
           return {
@@ -56,7 +57,6 @@ const Building: React.FC = () => {
           
         case 'back':
           // Back wall: TRAPEZOIDAL - follows roof slope (low left, high right)
-          // Position at the EXACT center of the sloped geometry
           const backAvgHeight = dimensions.height + roofHeightTotal / 2;
           console.log(`  BACK wall: avg height = ${backAvgHeight}ft, positioned at y = ${backAvgHeight / 2}`);
           return {
@@ -66,7 +66,6 @@ const Building: React.FC = () => {
           
         case 'left':
           // Left wall: RECTANGULAR - stays at base height (low side)
-          // 🎯 PERFECT FLUSH: Position to sit EXACTLY under the roof edge
           console.log(`  LEFT wall: base height = ${dimensions.height}ft, positioned at y = ${baseHeight}`);
           return {
             position: [-halfWidth, baseHeight, 0],
@@ -75,13 +74,45 @@ const Building: React.FC = () => {
           
         case 'right':
           // Right wall: RECTANGULAR - full height to reach high side
-          // 🎯 PERFECT FLUSH: Calculate EXACT height to meet roof at high side
           const rightWallHeight = dimensions.height + roofHeightTotal;
           const rightWallCenter = rightWallHeight / 2;
           console.log(`  RIGHT wall: full height = ${rightWallHeight}ft, positioned at y = ${rightWallCenter}`);
           return {
             position: [halfWidth, rightWallCenter, 0],
             height: rightWallHeight // Exact height to reach roof
+          };
+          
+        default:
+          return {
+            position: [0, baseHeight, 0],
+            height: dimensions.height
+          };
+      }
+    } else if (roofType === 'double-skillion') {
+      const roofHeightTotal = (dimensions.width / 4) * (dimensions.roofPitch / 12); // Quarter width for each slope
+      
+      console.log(`🎯 PERFECT FLUSH: Calculating ${wallPos} wall for double skillion (butterfly) roof`);
+      console.log(`  Roof height total: ${roofHeightTotal}ft`);
+      console.log(`  Base wall height: ${dimensions.height}ft`);
+      
+      switch (wallPos) {
+        case 'front':
+        case 'back':
+          // Front/Back walls: BUTTERFLY SHAPE - high at edges, low at center
+          const butterflyAvgHeight = dimensions.height + roofHeightTotal / 2;
+          console.log(`  ${wallPos.toUpperCase()} wall: butterfly avg height = ${butterflyAvgHeight}ft, positioned at y = ${butterflyAvgHeight / 2}`);
+          return {
+            position: [0, butterflyAvgHeight / 2, wallPos === 'front' ? halfLength : -halfLength],
+            height: dimensions.height // Base height, geometry will be butterfly-shaped
+          };
+          
+        case 'left':
+        case 'right':
+          // Left/Right walls: RECTANGULAR - stay at base height (no slope along length)
+          console.log(`  ${wallPos.toUpperCase()} wall: base height = ${dimensions.height}ft, positioned at y = ${baseHeight}`);
+          return {
+            position: [wallPos === 'left' ? -halfWidth : halfWidth, baseHeight, 0],
+            height: dimensions.height // Exact base height
           };
           
         default:
@@ -179,7 +210,7 @@ const Building: React.FC = () => {
         buildingWidth={dimensions.width}
       />
       
-      {/* Roof with profile-specific textures */}
+      {/* Roof with profile-specific textures - NOW INCLUDES ROOF TYPE! */}
       <Roof
         width={dimensions.width}
         length={dimensions.length}
