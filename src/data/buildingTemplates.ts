@@ -1,4 +1,3 @@
-```typescript
 import type { BuildingTemplate } from '../types/templates';
 
 export const buildingTemplates: BuildingTemplate[] = [
@@ -618,4 +617,3 @@ export const getTemplatesByCategory = (category: TemplateCategory): BuildingTemp
 export const getTemplateById = (id: string): BuildingTemplate | undefined => {
   return buildingTemplates.find(template => template.id === id);
 };
-```
