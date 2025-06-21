@@ -88,7 +88,7 @@ const DoubleSkillionWall: React.FC<DoubleSkillionWallProps> = ({
       const deepShadowOpacity = isWhite ? 0.5 : isDark ? 0.9 : 0.65;
       const brightHighlightOpacity = isWhite ? 0.4 : isDark ? 1.0 : 0.6;
       
-      console.log(`🏗️ CREATING BUTTERFLY WALL ${wallProfile.toUpperCase()} PROFILE: ${profileType} for ${wallPosition} wall`);
+      console.log(`🏗️ CREATING CLERESTORY WALL ${wallProfile.toUpperCase()} PROFILE: ${profileType} for ${wallPosition} wall`);
       
       if (profileType === 'horizontal-curved') {
         // HORIZONTAL CUSTOMORB - Horizontal ribs
@@ -217,7 +217,7 @@ const DoubleSkillionWall: React.FC<DoubleSkillionWallProps> = ({
         ctx.globalAlpha = 1.0;
       }
       
-      console.log(`✅ BUTTERFLY WALL ${wallProfile.toUpperCase()} PROFILE TEXTURE CREATED for ${wallPosition}`);
+      console.log(`✅ CLERESTORY WALL ${wallProfile.toUpperCase()} PROFILE TEXTURE CREATED for ${wallPosition}`);
     }
     
     const texture = new THREE.CanvasTexture(canvas);
@@ -263,35 +263,38 @@ const DoubleSkillionWall: React.FC<DoubleSkillionWallProps> = ({
     });
   }, [color, width, height, wallProfile, wallPosition]);
 
-  // Create wall geometry with CORRECT butterfly roof logic
+  // Create wall geometry with CORRECT clerestory roof logic
   const wallGeometry = useMemo(() => {
     const windowFeatures = wallFeatures.filter(feature => 
       feature.position.wallPosition === wallPosition && feature.type === 'window'
     );
 
-    console.log(`🏗️ Creating BUTTERFLY wall geometry for ${wallPosition} with ${windowFeatures.length} window cutouts`);
+    console.log(`🏗️ Creating CLERESTORY wall geometry for ${wallPosition} with ${windowFeatures.length} window cutouts`);
 
-    // Calculate roof height for butterfly roof
-    const roofHeight = (buildingWidth / 2) * (roofPitch / 12); // Half width for butterfly roof peak
+    // Calculate roof height for clerestory roof
+    const roofHeight = (buildingWidth * 0.3) * (roofPitch / 12); // 30% of width for the rise section
     
-    // 🎯 BUTTERFLY ROOF LOGIC:
-    // - FRONT/BACK WALLS: Follow the butterfly roof shape (valley in center, high at edges)
+    // 🎯 CLERESTORY ROOF LOGIC:
+    // - FRONT/BACK WALLS: Follow the clerestory roof shape (lower on sides, higher in center)
     // - LEFT/RIGHT WALLS: Rectangular - stay at base height (no slope along length)
     
     if ((wallPosition === 'front' || wallPosition === 'back') && roofPitch > 0) {
-      // 🎯 FRONT/BACK WALLS: Follow the butterfly roof shape - BUTTERFLY/INVERTED V SHAPE
-      console.log(`🏗️ Creating ${wallPosition.toUpperCase()} wall with BUTTERFLY shape for butterfly roof`);
+      // 🎯 FRONT/BACK WALLS: Follow the clerestory roof shape - MONITOR/CLERESTORY SHAPE
+      console.log(`🏗️ Creating ${wallPosition.toUpperCase()} wall with CLERESTORY shape for monitor roof`);
       console.log(`  Roof height: ${roofHeight}ft, Wall width: ${width}ft (building width)`);
       
       const wallShape = new THREE.Shape();
       
-      // 🎯 BUTTERFLY SHAPE: High at edges, low (valley) in center
-      console.log(`  BUTTERFLY wall: high edges (${height + roofHeight}ft) → low center (${height}ft)`);
+      // 🎯 CLERESTORY SHAPE: Low at edges, high in center (monitor roof profile)
+      console.log(`  CLERESTORY wall: low edges (${height}ft) → high center (${height + roofHeight}ft)`);
       wallShape.moveTo(-width/2, -height/2); // Bottom left
       wallShape.lineTo(width/2, -height/2);  // Bottom right
-      wallShape.lineTo(width/2, height/2 + roofHeight); // Top right (high edge)
-      wallShape.lineTo(0, height/2); // Top center (valley - normal height)
-      wallShape.lineTo(-width/2, height/2 + roofHeight); // Top left (high edge)
+      wallShape.lineTo(width/2, height/2); // Top right (low edge)
+      wallShape.lineTo(width * 0.2, height/2); // Start of rise
+      wallShape.lineTo(width * 0.2, height/2 + roofHeight); // Top of clerestory wall
+      wallShape.lineTo(-width * 0.2, height/2 + roofHeight); // Top of clerestory wall (left)
+      wallShape.lineTo(-width * 0.2, height/2); // End of rise
+      wallShape.lineTo(-width/2, height/2); // Top left (low edge)
       wallShape.closePath();
 
       // Add window cutouts
@@ -312,18 +315,21 @@ const DoubleSkillionWall: React.FC<DoubleSkillionWallProps> = ({
             break;
         }
         
-        // Calculate the wall height at this X position due to butterfly slope
+        // Calculate the wall height at this X position due to clerestory shape
         let heightAtX: number;
-        const distanceFromCenter = Math.abs(windowX);
-        const maxDistanceFromCenter = width / 2;
-        const heightRatio = distanceFromCenter / maxDistanceFromCenter;
-        heightAtX = height + heightRatio * roofHeight; // Higher at edges, lower at center
+        if (Math.abs(windowX) <= width * 0.2) {
+          // In the center clerestory section
+          heightAtX = height + roofHeight;
+        } else {
+          // In the lower side sections
+          heightAtX = height;
+        }
         
         const windowY = -height/2 + feature.position.yOffset + feature.height/2;
         
         console.log(`  Window at X=${windowX.toFixed(1)}: wall height = ${heightAtX.toFixed(1)}ft, window top = ${(windowY + feature.height/2).toFixed(1)}ft`);
         
-        // Only add window if it fits within the butterfly wall
+        // Only add window if it fits within the clerestory wall
         if (windowY + feature.height/2 <= heightAtX/2) {
           const halfWidth = feature.width / 2;
           const halfHeight = feature.height / 2;
@@ -335,9 +341,9 @@ const DoubleSkillionWall: React.FC<DoubleSkillionWallProps> = ({
           windowHole.closePath();
           
           wallShape.holes.push(windowHole);
-          console.log(`    ✅ Added window cutout at (${windowX.toFixed(1)}, ${windowY.toFixed(1)}) on butterfly wall`);
+          console.log(`    ✅ Added window cutout at (${windowX.toFixed(1)}, ${windowY.toFixed(1)}) on clerestory wall`);
         } else {
-          console.log(`    ❌ Window too high for butterfly wall at this position`);
+          console.log(`    ❌ Window too high for clerestory wall at this position`);
         }
       });
 
@@ -444,7 +450,7 @@ const DoubleSkillionWall: React.FC<DoubleSkillionWallProps> = ({
 
   // Generate structural beams (same as other walls)
   const beamSegments = useMemo(() => {
-    console.log(`\n🏗️  BUTTERFLY WALL STRUCTURAL BEAM GENERATION for ${wallPosition} wall (${width}x${height})`);
+    console.log(`\n🏗️  CLERESTORY WALL STRUCTURAL BEAM GENERATION for ${wallPosition} wall (${width}x${height})`);
     
     const allFeatures = wallFeatures.filter(feature => 
       feature.position.wallPosition === wallPosition
@@ -462,7 +468,7 @@ const DoubleSkillionWall: React.FC<DoubleSkillionWallProps> = ({
   }, [width, height, wallFeatures, wallPosition]);
 
   const horizontalBeamSegments = useMemo(() => {
-    console.log(`\n🏗️  BUTTERFLY WALL HORIZONTAL STRUCTURAL BEAM GENERATION for ${wallPosition} wall`);
+    console.log(`\n🏗️  CLERESTORY WALL HORIZONTAL STRUCTURAL BEAM GENERATION for ${wallPosition} wall`);
     
     const allFeatures = wallFeatures.filter(feature => 
       feature.position.wallPosition === wallPosition
@@ -510,7 +516,7 @@ const DoubleSkillionWall: React.FC<DoubleSkillionWallProps> = ({
       envMapIntensity: 1.0,
     });
     
-    const key = `butterfly-interior-beam-${wallPosition}-${segment.x}-${segment.bottomY}-${segment.topY}-${segmentIndex}`;
+    const key = `clerestory-interior-beam-${wallPosition}-${segment.x}-${segment.bottomY}-${segment.topY}-${segmentIndex}`;
     
     return (
       <group key={key} position={[segment.x, beamCenterY, zOffset]}>
@@ -558,7 +564,7 @@ const DoubleSkillionWall: React.FC<DoubleSkillionWallProps> = ({
       envMapIntensity: 1.0,
     });
     
-    const key = `butterfly-interior-h-beam-${wallPosition}-${segment.x}-${segment.bottomY}-${segment.topY}-${segment.width}-${segmentIndex}`;
+    const key = `clerestory-interior-h-beam-${wallPosition}-${segment.x}-${segment.bottomY}-${segment.topY}-${segment.width}-${segmentIndex}`;
     
     return (
       <group key={key} position={[segment.x, beamCenterY, zOffset]}>
