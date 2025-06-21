@@ -41,28 +41,28 @@ const Building: React.FC = () => {
       
       switch (wallPos) {
         case 'front':
-          // Front wall stays at base height (low side)
+          // Front wall: TRAPEZOIDAL - follows roof slope (low left, high right)
           return {
-            position: [0, baseHeight, halfLength],
-            height: dimensions.height
+            position: [0, baseHeight + roofHeightTotal / 4, halfLength],
+            height: dimensions.height // Base height, geometry will be sloped
           };
         case 'back':
-          // Back wall is taller (high side)
+          // Back wall: TRAPEZOIDAL - follows roof slope (low left, high right)
           return {
-            position: [0, baseHeight + roofHeightTotal / 2, -halfLength],
-            height: dimensions.height + roofHeightTotal
+            position: [0, baseHeight + roofHeightTotal / 4, -halfLength],
+            height: dimensions.height // Base height, geometry will be sloped
           };
         case 'left':
-          // Left wall stays rectangular
+          // Left wall: RECTANGULAR - stays at base height (low side)
           return {
             position: [-halfWidth, baseHeight, 0],
             height: dimensions.height
           };
         case 'right':
-          // Right wall follows the slope - positioned at average height
+          // Right wall: RECTANGULAR - full height to reach high side
           return {
-            position: [halfWidth, baseHeight + roofHeightTotal / 4, 0],
-            height: dimensions.height // Base height, but geometry will be sloped
+            position: [halfWidth, baseHeight + roofHeightTotal / 2, 0],
+            height: dimensions.height + roofHeightTotal
           };
         default:
           return {

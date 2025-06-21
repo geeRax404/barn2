@@ -275,27 +275,27 @@ const SkillionWall: React.FC<SkillionWallProps> = ({
     const roofHeight = buildingWidth * (roofPitch / 12);
 
     // 🎯 CORRECT SKILLION ROOF LOGIC:
-    // - RIGHT WALL: follows the roof slope (trapezoidal shape) - slopes from front (low) to back (high)
-    // - FRONT WALL: stays at base height (low side) - rectangular
-    // - BACK WALL: gets taller by roofHeight (high side) - rectangular
-    // - LEFT WALL: stays rectangular (no slope)
+    // - RIGHT WALL: RECTANGULAR - goes all the way up to the high side (height + roofHeight)
+    // - LEFT WALL: RECTANGULAR - stays at base height
+    // - FRONT WALL: TRAPEZOIDAL - follows the roof slope (low on left, high on right)
+    // - BACK WALL: TRAPEZOIDAL - follows the roof slope (low on left, high on right)
     
-    if (wallPosition === 'right' && roofPitch > 0) {
-      // 🎯 RIGHT WALL: Follows the roof slope - TRAPEZOIDAL SHAPE
-      console.log(`🏗️ Creating RIGHT wall with TRAPEZOIDAL shape for skillion roof slope`);
-      console.log(`  Roof height: ${roofHeight}ft, Wall width: ${width}ft (building length)`);
+    if ((wallPosition === 'front' || wallPosition === 'back') && roofPitch > 0) {
+      // 🎯 FRONT/BACK WALLS: Follow the roof slope - TRAPEZOIDAL SHAPE
+      console.log(`🏗️ Creating ${wallPosition.toUpperCase()} wall with TRAPEZOIDAL shape for skillion roof slope`);
+      console.log(`  Roof height: ${roofHeight}ft, Wall width: ${width}ft (building width)`);
       
       const wallShape = new THREE.Shape();
-      // Create trapezoidal shape: low on front side, high on back side
-      // For right wall, width = building length, so:
-      // -width/2 = front side (low), +width/2 = back side (high)
-      wallShape.moveTo(-width/2, -height/2); // Bottom front (low side)
-      wallShape.lineTo(width/2, -height/2);  // Bottom back (low side)
-      wallShape.lineTo(width/2, height/2 + roofHeight); // Top back (high side)
-      wallShape.lineTo(-width/2, height/2); // Top front (normal height)
+      // Create trapezoidal shape: low on left side, high on right side
+      // For front/back walls, width = building width, so:
+      // -width/2 = left side (low), +width/2 = right side (high)
+      wallShape.moveTo(-width/2, -height/2); // Bottom left (low side)
+      wallShape.lineTo(width/2, -height/2);  // Bottom right (low side)
+      wallShape.lineTo(width/2, height/2 + roofHeight); // Top right (high side)
+      wallShape.lineTo(-width/2, height/2); // Top left (normal height)
       wallShape.closePath();
 
-      console.log(`  Trapezoidal shape: front height = ${height}ft, back height = ${height + roofHeight}ft`);
+      console.log(`  Trapezoidal shape: left height = ${height}ft, right height = ${height + roofHeight}ft`);
 
       // Add window cutouts
       windowFeatures.forEach(feature => {
@@ -317,7 +317,7 @@ const SkillionWall: React.FC<SkillionWallProps> = ({
         
         // Calculate the wall height at this X position due to slope
         // Linear interpolation: height varies from 'height' to 'height + roofHeight'
-        const heightRatio = (windowX + width/2) / width; // 0 at front, 1 at back
+        const heightRatio = (windowX + width/2) / width; // 0 at left, 1 at right
         const heightAtX = height + heightRatio * roofHeight;
         const windowY = -height/2 + feature.position.yOffset + feature.height/2;
         
@@ -368,18 +368,26 @@ const SkillionWall: React.FC<SkillionWallProps> = ({
       return geometry;
       
     } else {
-      // 🎯 ALL OTHER WALLS: Rectangular shapes
-      console.log(`🏗️ Creating ${wallPosition.toUpperCase()} wall - RECTANGULAR (height: ${height}ft)`);
+      // 🎯 LEFT/RIGHT WALLS: Rectangular shapes
+      // RIGHT WALL gets the full height (height + roofHeight) to reach the high side
+      // LEFT WALL stays at base height
+      let actualHeight = height;
+      if (wallPosition === 'right') {
+        actualHeight = height + roofHeight;
+        console.log(`🏗️ Creating RIGHT wall - RECTANGULAR (full height: ${actualHeight}ft to reach high side)`);
+      } else {
+        console.log(`🏗️ Creating ${wallPosition.toUpperCase()} wall - RECTANGULAR (height: ${actualHeight}ft)`);
+      }
       
       if (windowFeatures.length === 0) {
-        return new THREE.BoxGeometry(width, height, 0.2);
+        return new THREE.BoxGeometry(width, actualHeight, 0.2);
       }
 
       const wallShape = new THREE.Shape();
-      wallShape.moveTo(-width/2, -height/2);
-      wallShape.lineTo(width/2, -height/2);
-      wallShape.lineTo(width/2, height/2);
-      wallShape.lineTo(-width/2, height/2);
+      wallShape.moveTo(-width/2, -actualHeight/2);
+      wallShape.lineTo(width/2, -actualHeight/2);
+      wallShape.lineTo(width/2, actualHeight/2);
+      wallShape.lineTo(-width/2, actualHeight/2);
       wallShape.closePath();
 
       windowFeatures.forEach(feature => {
@@ -399,7 +407,7 @@ const SkillionWall: React.FC<SkillionWallProps> = ({
             break;
         }
         
-        const windowY = -height/2 + feature.position.yOffset + feature.height/2;
+        const windowY = -actualHeight/2 + feature.position.yOffset + feature.height/2;
         
         const halfWidth = feature.width / 2;
         const halfHeight = feature.height / 2;
@@ -430,7 +438,7 @@ const SkillionWall: React.FC<SkillionWallProps> = ({
         const y = positions[i + 1];
         
         const u = (x + width/2) / width;
-        const v = (y + height/2) / height;
+        const v = (y + actualHeight/2) / actualHeight;
         
         const uvIndex = (i / 3) * 2;
         uvs[uvIndex] = u;
