@@ -57,14 +57,16 @@ export const useBuildingStore = create<BuildingStore>((set, get) => ({
         return state;
       }
 
-      // Validate skylight bounds for all skylights
-      const invalidSkylights = building.skylights.filter(skylight => {
-        return !isValidSkylightPosition(skylight, building.dimensions);
-      });
+      // Only validate skylight bounds for gable roofs
+      if (building.roofType === 'gable') {
+        const invalidSkylights = building.skylights.filter(skylight => {
+          return !isValidSkylightPosition(skylight, building.dimensions);
+        });
 
-      if (invalidSkylights.length > 0) {
-        console.error('Building skylight bounds validation failed for skylights:', invalidSkylights.length);
-        return state;
+        if (invalidSkylights.length > 0) {
+          console.error('Building skylight bounds validation failed for skylights:', invalidSkylights.length);
+          return state;
+        }
       }
 
       return {
@@ -103,13 +105,15 @@ export const useBuildingStore = create<BuildingStore>((set, get) => ({
           console.warn('Wall bounds validation failed for features:', invalidFeatures.map(f => f.id));
         }
 
-        // Also validate skylights when roof dimensions change
-        const invalidSkylights = state.currentProject.building.skylights.filter(skylight => {
-          return !isValidSkylightPosition(skylight, newDimensions);
-        });
+        // Also validate skylights when roof dimensions change (only for gable roofs)
+        if (state.currentProject.building.roofType === 'gable') {
+          const invalidSkylights = state.currentProject.building.skylights.filter(skylight => {
+            return !isValidSkylightPosition(skylight, newDimensions);
+          });
 
-        if (invalidSkylights.length > 0) {
-          console.warn('Skylight bounds validation failed for skylights:', invalidSkylights.length);
+          if (invalidSkylights.length > 0) {
+            console.warn('Skylight bounds validation failed for skylights:', invalidSkylights.length);
+          }
         }
       }
 
@@ -180,12 +184,14 @@ export const useBuildingStore = create<BuildingStore>((set, get) => ({
   // Add a new skylight with validation
   addSkylight: (skylight: Skylight) =>
     set((state) => {
-      // Validate skylight bounds
-      const boundsValid = isValidSkylightPosition(skylight, state.currentProject.building.dimensions);
+      // Only validate skylight bounds for gable roofs
+      if (state.currentProject.building.roofType === 'gable') {
+        const boundsValid = isValidSkylightPosition(skylight, state.currentProject.building.dimensions);
 
-      if (!boundsValid) {
-        console.error('Skylight bounds validation failed: Skylight extends beyond roof boundaries');
-        return state;
+        if (!boundsValid) {
+          console.error('Skylight bounds validation failed: Skylight extends beyond roof boundaries');
+          return state;
+        }
       }
 
       return {
@@ -220,13 +226,15 @@ export const useBuildingStore = create<BuildingStore>((set, get) => ({
         i === index ? { ...skylight, ...updates } : skylight
       );
 
-      // Validate the updated skylight
-      const updatedSkylight = updatedSkylights[index];
-      const boundsValid = isValidSkylightPosition(updatedSkylight, state.currentProject.building.dimensions);
+      // Only validate the updated skylight for gable roofs
+      if (state.currentProject.building.roofType === 'gable') {
+        const updatedSkylight = updatedSkylights[index];
+        const boundsValid = isValidSkylightPosition(updatedSkylight, state.currentProject.building.dimensions);
 
-      if (!boundsValid) {
-        console.error('Skylight update bounds validation failed: Skylight extends beyond roof boundaries');
-        return state;
+        if (!boundsValid) {
+          console.error('Skylight update bounds validation failed: Skylight extends beyond roof boundaries');
+          return state;
+        }
       }
 
       return {
