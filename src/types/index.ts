@@ -15,6 +15,9 @@ export type WallPosition = 'front' | 'back' | 'left' | 'right';
 // Wall profile types - Lysaght profiles
 export type WallProfile = 'multiclad' | 'trimdek' | 'customorb' | 'horizontal-customorb';
 
+// Roof types
+export type RoofType = 'gable' | 'skillion';
+
 // Feature positioning
 export interface FeaturePosition {
   wallPosition: WallPosition;
@@ -56,6 +59,7 @@ export interface Building {
   color: string;
   roofColor: string;
   wallProfile: WallProfile;
+  roofType: RoofType;
 }
 
 // Project info
@@ -108,6 +112,7 @@ export interface BuildingStore {
   setColor: (color: string) => void;
   setRoofColor: (color: string) => void;
   setWallProfile: (profile: WallProfile) => void;
+  setRoofType: (roofType: RoofType) => void;
   setCurrentView: (view: ViewMode) => void;
   saveProject: () => void;
   loadProject: (id: string) => void;

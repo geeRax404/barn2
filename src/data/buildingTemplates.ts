@@ -174,7 +174,7 @@ export const buildingTemplates: BuildingTemplate[] = [
       height: 12,
       roofPitch: 3
     },
-    roofType: 'double-skillion',
+    roofType: 'gable', // This is actually a complex roof, but we'll use gable for now
     wallProfile: 'trimdek',
     defaultColor: '#A39080', // Dune
     defaultRoofColor: '#2E2B26', // Cove

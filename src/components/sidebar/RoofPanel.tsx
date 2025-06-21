@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { Plus, X, Edit2, AlertTriangle, CheckCircle, Info } from 'lucide-react';
+import { Plus, X, Edit2, AlertTriangle, CheckCircle, Info, Ruler, Home } from 'lucide-react';
 import { useBuildingStore } from '../../store/buildingStore';
-import { 
+import {
   validateSkylight, 
   validateAllSkylights, 
   suggestValidSkylightPosition,
@@ -10,7 +10,7 @@ import {
   getSkylightBounds,
   isValidSkylightPosition
 } from '../../utils/skylightValidation';
-import type { Skylight, RoofPanel as RoofPanelType, WallProfile } from '../../types';
+import type { Skylight, RoofPanel as RoofPanelType, WallProfile, RoofType } from '../../types';
 
 // 🏗️ ROOF PROFILE OPTIONS - Based on Lysaght profiles
 const roofProfileOptions = [
@@ -32,16 +32,34 @@ const roofProfileOptions = [
   }
 ];
 
+// 🏗️ ROOF TYPE OPTIONS
+const roofTypeOptions = [
+  {
+    name: 'Gable Roof',
+    value: 'gable' as RoofType,
+    description: 'Traditional two-slope roof with ridge at center',
+    characteristics: ['Two sloping panels', 'Central ridge', 'Classic appearance', 'Good for skylights']
+  },
+  {
+    name: 'Skillion Roof',
+    value: 'skillion' as RoofType,
+    description: 'Single-slope roof, modern and efficient',
+    characteristics: ['Single sloping surface', 'Modern appearance', 'Efficient drainage', 'Cost effective']
+  }
+];
+
 const RoofPanel: React.FC = () => {
-  const { dimensions, skylights, wallProfile, updateDimensions, addSkylight, removeSkylight, updateSkylight, setWallProfile } = useBuildingStore((state) => ({
+  const { dimensions, skylights, wallProfile, roofType, updateDimensions, addSkylight, removeSkylight, updateSkylight, setWallProfile, setRoofType } = useBuildingStore((state) => ({
     dimensions: state.currentProject.building.dimensions,
     skylights: state.currentProject.building.skylights,
     wallProfile: state.currentProject.building.wallProfile || 'trimdek',
+    roofType: state.currentProject.building.roofType || 'gable',
     updateDimensions: state.updateDimensions,
     addSkylight: state.addSkylight,
     removeSkylight: state.removeSkylight,
     updateSkylight: state.updateSkylight,
-    setWallProfile: state.setWallProfile
+    setWallProfile: state.setWallProfile,
+    setRoofType: state.setRoofType
   }));
 
   const [newSkylight, setNewSkylight] = useState<Skylight>({
@@ -59,22 +77,29 @@ const RoofPanel: React.FC = () => {
 
   // Validate all existing skylights whenever dimensions or skylights change
   useEffect(() => {
-    const validation = validateAllSkylights(skylights, dimensions);
-    setValidationErrors(validation.errors);
-    setValidationWarnings(validation.warnings);
-    setSkylightValidation(validation);
-  }, [dimensions, skylights]);
+    if (roofType === 'gable') {
+      const validation = validateAllSkylights(skylights, dimensions);
+      setValidationErrors(validation.errors);
+      setValidationWarnings(validation.warnings);
+      setSkylightValidation(validation);
+    } else {
+      // For skillion roofs, clear skylight validation since they work differently
+      setValidationErrors([]);
+      setValidationWarnings([]);
+      setSkylightValidation(null);
+    }
+  }, [dimensions, skylights, roofType]);
 
-  // Get skylight bounds for current roof panel
-  const skylightBounds = getSkylightBounds(dimensions, newSkylight.panel);
+  // Get skylight bounds for current roof panel (only for gable roofs)
+  const skylightBounds = roofType === 'gable' ? getSkylightBounds(dimensions, newSkylight.panel) : null;
 
-  // Get maximum allowed dimensions for current position
-  const maxAllowedDimensions = getMaxAllowedSkylightDimensions(
+  // Get maximum allowed dimensions for current position (only for gable roofs)
+  const maxAllowedDimensions = roofType === 'gable' ? getMaxAllowedSkylightDimensions(
     newSkylight.xOffset,
     newSkylight.yOffset,
     dimensions,
     newSkylight.panel
-  );
+  ) : { maxWidth: dimensions.width * 0.8, maxLength: dimensions.length * 0.8 };
 
   const handlePitchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = parseFloat(e.target.value);
@@ -84,12 +109,14 @@ const RoofPanel: React.FC = () => {
   };
 
   const handleAddSkylight = () => {
-    // Validate the new skylight before adding
-    const validation = validateSkylight(newSkylight, dimensions);
+    // Only validate for gable roofs
+    if (roofType === 'gable') {
+      const validation = validateSkylight(newSkylight, dimensions);
 
-    if (!validation.valid) {
-      setValidationErrors(validation.errors);
-      return;
+      if (!validation.valid) {
+        setValidationErrors(validation.errors);
+        return;
+      }
     }
 
     // Clear validation errors and add the skylight
@@ -99,12 +126,14 @@ const RoofPanel: React.FC = () => {
   };
 
   const handleUpdateSkylight = (index: number) => {
-    // Validate the updated skylight
-    const validation = validateSkylight(newSkylight, dimensions);
+    // Only validate for gable roofs
+    if (roofType === 'gable') {
+      const validation = validateSkylight(newSkylight, dimensions);
 
-    if (!validation.valid) {
-      setValidationErrors(validation.errors);
-      return;
+      if (!validation.valid) {
+        setValidationErrors(validation.errors);
+        return;
+      }
     }
 
     // Clear validation errors and update the skylight
@@ -136,20 +165,30 @@ const RoofPanel: React.FC = () => {
   };
 
   const handleSuggestValidPosition = () => {
-    const suggestion = suggestValidSkylightPosition(newSkylight, dimensions);
-    
-    setNewSkylight({
-      width: suggestion.suggestedWidth,
-      length: suggestion.suggestedLength,
-      xOffset: suggestion.suggestedXOffset,
-      yOffset: suggestion.suggestedYOffset,
-      panel: newSkylight.panel
-    });
+    if (roofType === 'gable') {
+      const suggestion = suggestValidSkylightPosition(newSkylight, dimensions);
+      
+      setNewSkylight({
+        width: suggestion.suggestedWidth,
+        length: suggestion.suggestedLength,
+        xOffset: suggestion.suggestedXOffset,
+        yOffset: suggestion.suggestedYOffset,
+        panel: newSkylight.panel
+      });
+    } else {
+      // For skillion roofs, just center the skylight
+      setNewSkylight({
+        ...newSkylight,
+        xOffset: 0,
+        yOffset: 0
+      });
+    }
     setValidationErrors([]);
   };
 
   // Check if current skylight configuration is valid
   const isCurrentSkylightValid = () => {
+    if (roofType === 'skillion') return true; // Skillion roofs are more flexible
     return isValidSkylightPosition(newSkylight, dimensions);
   };
 
@@ -162,6 +201,46 @@ const RoofPanel: React.FC = () => {
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
     >
+      {/* Roof Type Selection */}
+      <div className="mb-6">
+        <label className="form-label text-base font-semibold">Roof Type</label>
+        <p className="text-xs text-gray-600 mb-3">Choose the roof style for your building</p>
+        
+        <div className="space-y-3">
+          {roofTypeOptions.map((type) => (
+            <div key={type.value} className="relative">
+              <button
+                className={`w-full p-3 text-left rounded-lg border-2 transition-all duration-200 hover:shadow-md ${
+                  roofType === type.value 
+                    ? 'border-blue-500 bg-blue-50 ring-2 ring-blue-200' 
+                    : 'border-gray-300 hover:border-gray-400 bg-white'
+                }`}
+                onClick={() => setRoofType(type.value)}
+              >
+                <div className="flex items-center justify-between">
+                  <div className="flex-1">
+                    <div className="font-medium text-gray-900">{type.name}</div>
+                    <div className="text-xs text-gray-600 mt-1">{type.description}</div>
+                    <div className="flex flex-wrap gap-1 mt-2">
+                      {type.characteristics.map((char, index) => (
+                        <span key={index} className="text-xs bg-gray-100 text-gray-700 px-2 py-1 rounded">
+                          {char}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                  {roofType === type.value && (
+                    <div className="w-5 h-5 bg-blue-500 rounded-full flex items-center justify-center ml-3">
+                      <div className="w-2 h-2 bg-white rounded-full"></div>
+                    </div>
+                  )}
+                </div>
+              </button>
+            </div>
+          ))}
+        </div>
+      </div>
+
       {/* Roof Profile Selection */}
       <div className="mb-6">
         <label className="form-label text-base font-semibold">Roof Profile</label>
@@ -217,21 +296,40 @@ const RoofPanel: React.FC = () => {
       </div>
 
       {/* Roof Panel Information */}
-      <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 mb-4">
-        <div className="flex items-center space-x-2 mb-2">
-          <Info className="w-4 h-4 text-blue-600" />
-          <span className="text-sm font-medium text-blue-800">
-            {newSkylight.panel.charAt(0).toUpperCase() + newSkylight.panel.slice(1)} Roof Panel - {roofProfileOptions.find(p => p.value === wallProfile)?.name || 'Trimdek'} Profile
-          </span>
+      {roofType === 'gable' && skylightBounds && (
+        <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 mb-4">
+          <div className="flex items-center space-x-2 mb-2">
+            <Info className="w-4 h-4 text-blue-600" />
+            <span className="text-sm font-medium text-blue-800">
+              {newSkylight.panel.charAt(0).toUpperCase() + newSkylight.panel.slice(1)} Roof Panel - {roofProfileOptions.find(p => p.value === wallProfile)?.name || 'Trimdek'} Profile
+            </span>
+          </div>
+          <div className="text-xs text-blue-700 space-y-1">
+            <div>Panel dimensions: {(dimensions.width/2).toFixed(1)}ft × {dimensions.length}ft</div>
+            <div>Valid X range: {skylightBounds.minXOffset.toFixed(1)}ft to {skylightBounds.maxXOffset.toFixed(1)}ft</div>
+            <div>Valid Y range: {skylightBounds.minYOffset.toFixed(1)}ft to {skylightBounds.maxYOffset.toFixed(1)}ft</div>
+            <div>Max skylight size: {skylightBounds.maxWidth.toFixed(1)}ft × {skylightBounds.maxLength.toFixed(1)}ft</div>
+            <div>Profile: {roofProfileOptions.find(p => p.value === wallProfile)?.description}</div>
+          </div>
         </div>
-        <div className="text-xs text-blue-700 space-y-1">
-          <div>Panel dimensions: {(dimensions.width/2).toFixed(1)}ft × {dimensions.length}ft</div>
-          <div>Valid X range: {skylightBounds.minXOffset.toFixed(1)}ft to {skylightBounds.maxXOffset.toFixed(1)}ft</div>
-          <div>Valid Y range: {skylightBounds.minYOffset.toFixed(1)}ft to {skylightBounds.maxYOffset.toFixed(1)}ft</div>
-          <div>Max skylight size: {skylightBounds.maxWidth.toFixed(1)}ft × {skylightBounds.maxLength.toFixed(1)}ft</div>
-          <div>Profile: {roofProfileOptions.find(p => p.value === wallProfile)?.description}</div>
+      )}
+
+      {roofType === 'skillion' && (
+        <div className="bg-green-50 border border-green-200 rounded-lg p-3 mb-4">
+          <div className="flex items-center space-x-2 mb-2">
+            <Info className="w-4 h-4 text-green-600" />
+            <span className="text-sm font-medium text-green-800">
+              Skillion Roof - {roofProfileOptions.find(p => p.value === wallProfile)?.name || 'Trimdek'} Profile
+            </span>
+          </div>
+          <div className="text-xs text-green-700 space-y-1">
+            <div>Single sloping surface: {dimensions.width}ft × {dimensions.length}ft</div>
+            <div>Skylights positioned on the sloping plane</div>
+            <div>More flexible skylight placement than gable roofs</div>
+            <div>Profile: {roofProfileOptions.find(p => p.value === wallProfile)?.description}</div>
+          </div>
         </div>
-      </div>
+      )}
 
       {/* Global Validation Status */}
       {validationErrors.length > 0 && (
@@ -266,7 +364,9 @@ const RoofPanel: React.FC = () => {
         <div className="bg-green-50 border border-green-200 rounded-lg p-3 mb-4">
           <div className="flex items-center space-x-2">
             <CheckCircle className="w-4 h-4 text-green-600" />
-            <span className="text-sm font-medium text-green-800">All skylights are positioned within roof panel bounds</span>
+            <span className="text-sm font-medium text-green-800">
+              All skylights are positioned correctly for {roofType} roof
+            </span>
           </div>
         </div>
       )}
@@ -306,28 +406,30 @@ const RoofPanel: React.FC = () => {
         </h3>
         
         <div className="space-y-4">
-          {/* Roof Panel Selection */}
-          <div>
-            <label className="form-label">Roof Panel</label>
-            <select
-              className="form-input"
-              value={newSkylight.panel}
-              onChange={(e) => {
-                const newPanel = e.target.value as RoofPanelType;
-                setNewSkylight({ 
-                  ...newSkylight, 
-                  panel: newPanel,
-                  xOffset: 0 // Reset position when changing panels
-                });
-              }}
-            >
-              <option value="left">Left Panel</option>
-              <option value="right">Right Panel</option>
-            </select>
-            <p className="text-xs text-gray-500 mt-1">
-              Choose which side of the roof to place the skylight
-            </p>
-          </div>
+          {/* Roof Panel Selection - only show for gable roofs */}
+          {roofType === 'gable' && (
+            <div>
+              <label className="form-label">Roof Panel</label>
+              <select
+                className="form-input"
+                value={newSkylight.panel}
+                onChange={(e) => {
+                  const newPanel = e.target.value as RoofPanelType;
+                  setNewSkylight({ 
+                    ...newSkylight, 
+                    panel: newPanel,
+                    xOffset: 0 // Reset position when changing panels
+                  });
+                }}
+              >
+                <option value="left">Left Panel</option>
+                <option value="right">Right Panel</option>
+              </select>
+              <p className="text-xs text-gray-500 mt-1">
+                Choose which side of the roof to place the skylight
+              </p>
+            </div>
+          )}
 
           <div className="grid grid-cols-2 gap-3">
             <div>
@@ -379,50 +481,62 @@ const RoofPanel: React.FC = () => {
           <div className="grid grid-cols-2 gap-3">
             <div>
               <label className="form-label">
-                Panel Position (ft)
-                <span className="text-xs text-gray-500 ml-1">
-                  ({skylightBounds.minXOffset.toFixed(1)} to {skylightBounds.maxXOffset.toFixed(1)})
-                </span>
+                {roofType === 'gable' ? 'Panel Position (ft)' : 'X Position (ft)'}
+                {roofType === 'gable' && skylightBounds && (
+                  <span className="text-xs text-gray-500 ml-1">
+                    ({skylightBounds.minXOffset.toFixed(1)} to {skylightBounds.maxXOffset.toFixed(1)})
+                  </span>
+                )}
               </label>
               <input
                 type="number"
                 className={`form-input ${
-                  newSkylight.xOffset - newSkylight.width/2 < skylightBounds.minXOffset || 
-                  newSkylight.xOffset + newSkylight.width/2 > skylightBounds.maxXOffset 
-                    ? 'border-red-300 bg-red-50' : ''
+                  roofType === 'gable' && skylightBounds && (
+                    newSkylight.xOffset - newSkylight.width/2 < skylightBounds.minXOffset || 
+                    newSkylight.xOffset + newSkylight.width/2 > skylightBounds.maxXOffset
+                  ) ? 'border-red-300 bg-red-50' : ''
                 }`}
-                min={skylightBounds.minXOffset + newSkylight.width/2}
-                max={skylightBounds.maxXOffset - newSkylight.width/2}
+                min={roofType === 'gable' && skylightBounds ? skylightBounds.minXOffset + newSkylight.width/2 : -dimensions.width/2}
+                max={roofType === 'gable' && skylightBounds ? skylightBounds.maxXOffset - newSkylight.width/2 : dimensions.width/2}
                 step="0.5"
                 value={newSkylight.xOffset}
                 onChange={(e) => setNewSkylight({ ...newSkylight, xOffset: parseFloat(e.target.value) })}
               />
               <p className="text-xs text-gray-500 mt-1">
-                Position from panel center (0 = center of {newSkylight.panel} panel)
+                {roofType === 'gable' 
+                  ? `Position from panel center (0 = center of ${newSkylight.panel} panel)`
+                  : 'Position across roof width (0 = center)'
+                }
               </p>
             </div>
             <div>
               <label className="form-label">
-                Ridge Distance (ft)
-                <span className="text-xs text-gray-500 ml-1">
-                  ({skylightBounds.minYOffset.toFixed(1)} to {skylightBounds.maxYOffset.toFixed(1)})
-                </span>
+                {roofType === 'gable' ? 'Ridge Distance (ft)' : 'Y Position (ft)'}
+                {roofType === 'gable' && skylightBounds && (
+                  <span className="text-xs text-gray-500 ml-1">
+                    ({skylightBounds.minYOffset.toFixed(1)} to {skylightBounds.maxYOffset.toFixed(1)})
+                  </span>
+                )}
               </label>
               <input
                 type="number"
                 className={`form-input ${
-                  newSkylight.yOffset - newSkylight.length/2 < skylightBounds.minYOffset || 
-                  newSkylight.yOffset + newSkylight.length/2 > skylightBounds.maxYOffset 
-                    ? 'border-red-300 bg-red-50' : ''
+                  roofType === 'gable' && skylightBounds && (
+                    newSkylight.yOffset - newSkylight.length/2 < skylightBounds.minYOffset || 
+                    newSkylight.yOffset + newSkylight.length/2 > skylightBounds.maxYOffset
+                  ) ? 'border-red-300 bg-red-50' : ''
                 }`}
-                min={skylightBounds.minYOffset + newSkylight.length/2}
-                max={skylightBounds.maxYOffset - newSkylight.length/2}
+                min={roofType === 'gable' && skylightBounds ? skylightBounds.minYOffset + newSkylight.length/2 : -dimensions.length/2}
+                max={roofType === 'gable' && skylightBounds ? skylightBounds.maxYOffset - newSkylight.length/2 : dimensions.length/2}
                 step="0.5"
                 value={newSkylight.yOffset}
                 onChange={(e) => setNewSkylight({ ...newSkylight, yOffset: parseFloat(e.target.value) })}
               />
               <p className="text-xs text-gray-500 mt-1">
-                Distance from roof ridge (negative = toward eave)
+                {roofType === 'gable' 
+                  ? 'Distance from roof ridge (negative = toward eave)'
+                  : 'Position along roof length (0 = center)'
+                }
               </p>
             </div>
           </div>
@@ -434,7 +548,7 @@ const RoofPanel: React.FC = () => {
               onClick={handleSuggestValidPosition}
             >
               <AlertTriangle className="w-4 h-4 mr-1" />
-              Auto-fix Position & Size to Fit Panel Bounds
+              Auto-fix Position & Size to Fit {roofType === 'gable' ? 'Panel Bounds' : 'Roof'}
             </button>
           )}
           
@@ -461,7 +575,7 @@ const RoofPanel: React.FC = () => {
                 onClick={handleAddSkylight}
               >
                 <Plus className="w-4 h-4 mr-1" />
-                Add Skylight to {newSkylight.panel.charAt(0).toUpperCase() + newSkylight.panel.slice(1)} Panel
+                Add Skylight to {roofType === 'gable' ? `${newSkylight.panel.charAt(0).toUpperCase() + newSkylight.panel.slice(1)} Panel` : 'Roof'}
               </button>
             )}
           </div>
@@ -473,7 +587,7 @@ const RoofPanel: React.FC = () => {
             <div className="space-y-2">
               {skylights.map((skylight, index) => {
                 const validation = skylightValidation?.skylightValidations?.[index];
-                const isValid = validation?.valid ?? true;
+                const isValid = roofType === 'skillion' || validation?.valid ?? true;
                 
                 return (
                   <div 
@@ -492,17 +606,22 @@ const RoofPanel: React.FC = () => {
                           <p className="text-sm font-medium">
                             {skylight.width}' × {skylight.length}'
                           </p>
-                          <span className={`text-xs px-2 py-1 rounded ${
-                            skylight.panel === 'left' ? 'bg-blue-100 text-blue-800' : 'bg-green-100 text-green-800'
-                          }`}>
-                            {skylight.panel}
-                          </span>
+                          {roofType === 'gable' && (
+                            <span className={`text-xs px-2 py-1 rounded ${
+                              skylight.panel === 'left' ? 'bg-blue-100 text-blue-800' : 'bg-green-100 text-green-800'
+                            }`}>
+                              {skylight.panel}
+                            </span>
+                          )}
                           {!isValid && (
                             <AlertTriangle className="w-3 h-3 text-red-500" />
                           )}
                         </div>
                         <p className="text-xs text-gray-500">
-                          Panel pos: {skylight.xOffset}', Ridge: {skylight.yOffset}'
+                          {roofType === 'gable' 
+                            ? `Panel pos: ${skylight.xOffset}', Ridge: ${skylight.yOffset}'`
+                            : `Position: ${skylight.xOffset}', ${skylight.yOffset}'`
+                          }
                           {!isValid && (
                             <span className="text-red-600 ml-1">(Out of bounds)</span>
                           )}

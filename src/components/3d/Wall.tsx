@@ -13,6 +13,7 @@ interface WallProps {
   roofPitch?: number;
   wallFeatures?: WallFeature[];
   wallProfile?: WallProfile;
+  roofType?: 'gable' | 'skillion';
 }
 
 const Wall: React.FC<WallProps> = ({ 
@@ -24,7 +25,8 @@ const Wall: React.FC<WallProps> = ({
   rotation = [0, 0, 0],
   roofPitch = 0,
   wallFeatures = [],
-  wallProfile = 'trimdek'
+  wallProfile = 'trimdek',
+  roofType = 'gable'
 }) => {
   // Create profile-specific textured material
   const wallMaterial = useMemo(() => {
@@ -296,8 +298,10 @@ const Wall: React.FC<WallProps> = ({
 
     console.log(`🏗️ Creating wall geometry for ${wallPosition} with ${windowFeatures.length} window cutouts`);
 
-    // If it's a gabled wall (front/back) with roof pitch, create the gabled shape
-    if ((wallPosition === 'front' || wallPosition === 'back') && roofPitch > 0) {
+    // Check if it's a gabled wall (front/back) with roof pitch for gable roofs
+    const isGabledWall = (wallPosition === 'front' || wallPosition === 'back') && roofPitch > 0 && roofType === 'gable';
+    
+    if (isGabledWall) {
       const roofHeight = (width / 2) * (roofPitch / 12);
       const totalHeight = height + roofHeight;
       
@@ -450,7 +454,7 @@ const Wall: React.FC<WallProps> = ({
       geometry.attributes.uv.needsUpdate = true;
       return geometry;
     }
-  }, [width, height, wallPosition, roofPitch, wallFeatures]);
+  }, [width, height, wallPosition, roofPitch, wallFeatures, roofType]);
 
   // CRITICAL FIX: Generate structural beams that split around ALL features (including doors)
   const beamSegments = useMemo(() => {

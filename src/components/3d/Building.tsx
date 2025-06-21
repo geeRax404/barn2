@@ -6,13 +6,14 @@ import Roof from './Roof';
 import WallFeature from './WallFeature';
 
 const Building: React.FC = () => {
-  const { dimensions, features, color, roofColor, skylights, wallProfile } = useBuildingStore((state) => ({
+  const { dimensions, features, color, roofColor, skylights, wallProfile, roofType } = useBuildingStore((state) => ({
     dimensions: state.currentProject.building.dimensions,
     features: state.currentProject.building.features,
     color: state.currentProject.building.color,
     roofColor: state.currentProject.building.roofColor,
     skylights: state.currentProject.building.skylights,
-    wallProfile: state.currentProject.building.wallProfile || 'trimdek'
+    wallProfile: state.currentProject.building.wallProfile || 'trimdek',
+    roofType: state.currentProject.building.roofType || 'gable'
   }));
   
   const halfWidth = dimensions.width / 2;
@@ -52,6 +53,7 @@ const Building: React.FC = () => {
         roofPitch={dimensions.roofPitch}
         wallFeatures={getWallFeatures('front')}
         wallProfile={wallProfile}
+        roofType={roofType}
       />
       
       {/* Back wall */}
@@ -65,6 +67,7 @@ const Building: React.FC = () => {
         rotation={[0, Math.PI, 0]}
         wallFeatures={getWallFeatures('back')}
         wallProfile={wallProfile}
+        roofType={roofType}
       />
       
       {/* Left wall */}
@@ -77,6 +80,7 @@ const Building: React.FC = () => {
         rotation={[0, Math.PI / 2, 0]}
         wallFeatures={getWallFeatures('left')}
         wallProfile={wallProfile}
+        roofType={roofType}
       />
       
       {/* Right wall */}
@@ -89,9 +93,10 @@ const Building: React.FC = () => {
         rotation={[0, -Math.PI / 2, 0]}
         wallFeatures={getWallFeatures('right')}
         wallProfile={wallProfile}
+        roofType={roofType}
       />
       
-      {/* Roof with profile-specific textures */}
+      {/* Roof with profile-specific textures and roof type support */}
       <Roof
         width={dimensions.width}
         length={dimensions.length}
@@ -100,6 +105,7 @@ const Building: React.FC = () => {
         color={roofColor}
         skylights={skylights}
         wallProfile={wallProfile}
+        roofType={roofType}
       />
       
       {/* Wall Features (doors, windows, etc.) */}

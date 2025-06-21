@@ -3,7 +3,7 @@ import { v4 as uuidv4 } from 'uuid';
 import { validateWallHeights } from '../utils/wallHeightValidation';
 import { isValidFeaturePosition } from '../utils/wallBoundsValidation';
 import { isValidSkylightPosition } from '../utils/skylightValidation';
-import type { BuildingStore, Project, ViewMode, BuildingDimensions, WallFeature, Skylight, WallProfile, Building } from '../types';
+import type { BuildingStore, Project, ViewMode, BuildingDimensions, WallFeature, Skylight, WallProfile, RoofType, Building } from '../types';
 
 // Default initial building
 const defaultBuilding = {
@@ -18,6 +18,7 @@ const defaultBuilding = {
   color: '#E5E7EB', // Light gray
   roofColor: '#9CA3AF', // Medium gray
   wallProfile: 'trimdek' as WallProfile, // Default to Trimdek profile
+  roofType: 'gable' as RoofType, // Default to gable roof
 };
 
 // Create a default project
@@ -316,6 +317,19 @@ export const useBuildingStore = create<BuildingStore>((set, get) => ({
         building: {
           ...state.currentProject.building,
           wallProfile: profile,
+        },
+      },
+    })),
+
+  // Set roof type
+  setRoofType: (roofType: RoofType) => 
+    set((state) => ({
+      currentProject: {
+        ...state.currentProject,
+        lastModified: new Date(),
+        building: {
+          ...state.currentProject.building,
+          roofType,
         },
       },
     })),
