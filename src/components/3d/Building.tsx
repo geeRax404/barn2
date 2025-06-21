@@ -32,43 +32,58 @@ const Building: React.FC = () => {
     return wallFeatures;
   };
   
-  // Calculate wall positions and heights for skillion roof
+  // 🎯 PERFECT FLUSH ALIGNMENT: Calculate exact wall positions and heights for skillion roof
   const getWallData = (wallPos: string): { position: [number, number, number], height: number } => {
     const baseHeight = dimensions.height / 2;
     
     if (roofType === 'skillion') {
       const roofHeightTotal = dimensions.width * (dimensions.roofPitch / 12);
       
+      console.log(`🎯 PERFECT FLUSH: Calculating ${wallPos} wall for skillion roof`);
+      console.log(`  Roof height total: ${roofHeightTotal}ft`);
+      console.log(`  Base wall height: ${dimensions.height}ft`);
+      
       switch (wallPos) {
         case 'front':
           // Front wall: TRAPEZOIDAL - follows roof slope (low left, high right)
-          // Position at average height to center the trapezoidal shape
+          // Position at the EXACT center of the sloped geometry
+          const frontAvgHeight = dimensions.height + roofHeightTotal / 2;
+          console.log(`  FRONT wall: avg height = ${frontAvgHeight}ft, positioned at y = ${frontAvgHeight / 2}`);
           return {
-            position: [0, baseHeight + roofHeightTotal / 4, halfLength],
+            position: [0, frontAvgHeight / 2, halfLength],
             height: dimensions.height // Base height, geometry will be sloped
           };
+          
         case 'back':
           // Back wall: TRAPEZOIDAL - follows roof slope (low left, high right)
-          // Position at average height to center the trapezoidal shape
+          // Position at the EXACT center of the sloped geometry
+          const backAvgHeight = dimensions.height + roofHeightTotal / 2;
+          console.log(`  BACK wall: avg height = ${backAvgHeight}ft, positioned at y = ${backAvgHeight / 2}`);
           return {
-            position: [0, baseHeight + roofHeightTotal / 4, -halfLength],
+            position: [0, backAvgHeight / 2, -halfLength],
             height: dimensions.height // Base height, geometry will be sloped
           };
+          
         case 'left':
           // Left wall: RECTANGULAR - stays at base height (low side)
-          // 🎯 FIX: Position slightly lower to align with roof
+          // 🎯 PERFECT FLUSH: Position to sit EXACTLY under the roof edge
+          console.log(`  LEFT wall: base height = ${dimensions.height}ft, positioned at y = ${baseHeight}`);
           return {
-            position: [-halfWidth, baseHeight - 0.05, 0], // Slightly lower
-            height: dimensions.height - 0.1 // Slightly shorter to avoid overhang
+            position: [-halfWidth, baseHeight, 0],
+            height: dimensions.height // Exact base height
           };
+          
         case 'right':
           // Right wall: RECTANGULAR - full height to reach high side
-          // 🎯 FIX: Adjust height to match roof exactly
+          // 🎯 PERFECT FLUSH: Calculate EXACT height to meet roof at high side
           const rightWallHeight = dimensions.height + roofHeightTotal;
+          const rightWallCenter = rightWallHeight / 2;
+          console.log(`  RIGHT wall: full height = ${rightWallHeight}ft, positioned at y = ${rightWallCenter}`);
           return {
-            position: [halfWidth, baseHeight + roofHeightTotal / 2 - 0.05, 0], // Slightly lower
-            height: rightWallHeight - 0.1 // Slightly shorter to avoid overhang
+            position: [halfWidth, rightWallCenter, 0],
+            height: rightWallHeight // Exact height to reach roof
           };
+          
         default:
           return {
             position: [0, baseHeight, 0],
