@@ -272,29 +272,37 @@ const DoubleSkillionWall: React.FC<DoubleSkillionWallProps> = ({
     console.log(`🏗️ Creating CLERESTORY wall geometry for ${wallPosition} with ${windowFeatures.length} window cutouts`);
 
     // Calculate roof height for clerestory roof
-    const roofHeight = (buildingWidth * 0.3) * (roofPitch / 12); // 30% of width for the rise section
+    const roofHeight = (buildingWidth * 0.15) * (roofPitch / 12); // 15% of width for the monitor rise
+    const monitorWidth = buildingWidth * 0.3; // Monitor section is 30% of total width
     
     // 🎯 CLERESTORY ROOF LOGIC:
-    // - FRONT/BACK WALLS: Follow the clerestory roof shape (lower on sides, higher in center)
+    // - FRONT/BACK WALLS: Follow the clerestory roof shape (stepped profile with monitor section)
     // - LEFT/RIGHT WALLS: Rectangular - stay at base height (no slope along length)
     
     if ((wallPosition === 'front' || wallPosition === 'back') && roofPitch > 0) {
-      // 🎯 FRONT/BACK WALLS: Follow the clerestory roof shape - MONITOR/CLERESTORY SHAPE
-      console.log(`🏗️ Creating ${wallPosition.toUpperCase()} wall with CLERESTORY shape for monitor roof`);
+      // 🎯 FRONT/BACK WALLS: Follow the clerestory roof shape - STEPPED MONITOR PROFILE
+      console.log(`🏗️ Creating ${wallPosition.toUpperCase()} wall with CLERESTORY STEPPED shape for monitor roof`);
       console.log(`  Roof height: ${roofHeight}ft, Wall width: ${width}ft (building width)`);
+      console.log(`  Monitor width: ${monitorWidth}ft, Monitor height: ${roofHeight}ft`);
       
       const wallShape = new THREE.Shape();
       
-      // 🎯 CLERESTORY SHAPE: Low at edges, high in center (monitor roof profile)
-      console.log(`  CLERESTORY wall: low edges (${height}ft) → high center (${height + roofHeight}ft)`);
+      // 🎯 CLERESTORY STEPPED SHAPE: Base height with raised monitor section in center
+      console.log(`  CLERESTORY wall: base height (${height}ft) with raised monitor section (${height + roofHeight}ft)`);
+      
+      // Start from bottom left
       wallShape.moveTo(-width/2, -height/2); // Bottom left
       wallShape.lineTo(width/2, -height/2);  // Bottom right
-      wallShape.lineTo(width/2, height/2); // Top right (low edge)
-      wallShape.lineTo(width * 0.2, height/2); // Start of rise
-      wallShape.lineTo(width * 0.2, height/2 + roofHeight); // Top of clerestory wall
-      wallShape.lineTo(-width * 0.2, height/2 + roofHeight); // Top of clerestory wall (left)
-      wallShape.lineTo(-width * 0.2, height/2); // End of rise
-      wallShape.lineTo(-width/2, height/2); // Top left (low edge)
+      wallShape.lineTo(width/2, height/2); // Top right (base height)
+      
+      // Step up to monitor section (right side)
+      wallShape.lineTo(monitorWidth/2, height/2); // Right edge of monitor
+      wallShape.lineTo(monitorWidth/2, height/2 + roofHeight); // Up to monitor height
+      wallShape.lineTo(-monitorWidth/2, height/2 + roofHeight); // Across monitor top
+      wallShape.lineTo(-monitorWidth/2, height/2); // Down to base height
+      
+      // Complete the shape (left side)
+      wallShape.lineTo(-width/2, height/2); // Top left (base height)
       wallShape.closePath();
 
       // Add window cutouts
@@ -317,8 +325,8 @@ const DoubleSkillionWall: React.FC<DoubleSkillionWallProps> = ({
         
         // Calculate the wall height at this X position due to clerestory shape
         let heightAtX: number;
-        if (Math.abs(windowX) <= width * 0.2) {
-          // In the center clerestory section
+        if (Math.abs(windowX) <= monitorWidth/2) {
+          // In the center monitor section
           heightAtX = height + roofHeight;
         } else {
           // In the lower side sections
