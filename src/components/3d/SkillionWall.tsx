@@ -88,7 +88,7 @@ const SkillionWall: React.FC<SkillionWallProps> = ({
       const deepShadowOpacity = isWhite ? 0.5 : isDark ? 0.9 : 0.65;
       const brightHighlightOpacity = isWhite ? 0.4 : isDark ? 1.0 : 0.6;
       
-      console.log(`🏗️ CREATING SKILLION WALL ${wallProfile.toUpperCase()} PROFILE: ${profileType}`);
+      console.log(`🏗️ CREATING SKILLION WALL ${wallProfile.toUpperCase()} PROFILE: ${profileType} for ${wallPosition} wall`);
       
       if (profileType === 'horizontal-curved') {
         // HORIZONTAL CUSTOMORB - Horizontal ribs
@@ -217,7 +217,7 @@ const SkillionWall: React.FC<SkillionWallProps> = ({
         ctx.globalAlpha = 1.0;
       }
       
-      console.log(`✅ SKILLION WALL ${wallProfile.toUpperCase()} PROFILE TEXTURE CREATED`);
+      console.log(`✅ SKILLION WALL ${wallProfile.toUpperCase()} PROFILE TEXTURE CREATED for ${wallPosition}`);
     }
     
     const texture = new THREE.CanvasTexture(canvas);
@@ -261,7 +261,7 @@ const SkillionWall: React.FC<SkillionWallProps> = ({
       ...materialProps,
       side: THREE.DoubleSide,
     });
-  }, [color, width, height, wallProfile]);
+  }, [color, width, height, wallProfile, wallPosition]);
 
   // Create wall geometry with CORRECT skillion roof logic
   const wallGeometry = useMemo(() => {
@@ -275,7 +275,7 @@ const SkillionWall: React.FC<SkillionWallProps> = ({
     const roofHeight = buildingWidth * (roofPitch / 12);
 
     // 🎯 CORRECT SKILLION ROOF LOGIC:
-    // - RIGHT WALL: follows the roof slope (trapezoidal shape)
+    // - RIGHT WALL: follows the roof slope (trapezoidal shape) - slopes from front (low) to back (high)
     // - FRONT WALL: stays at base height (low side) - rectangular
     // - BACK WALL: gets taller by roofHeight (high side) - rectangular
     // - LEFT WALL: stays rectangular (no slope)
@@ -283,14 +283,19 @@ const SkillionWall: React.FC<SkillionWallProps> = ({
     if (wallPosition === 'right' && roofPitch > 0) {
       // 🎯 RIGHT WALL: Follows the roof slope - TRAPEZOIDAL SHAPE
       console.log(`🏗️ Creating RIGHT wall with TRAPEZOIDAL shape for skillion roof slope`);
+      console.log(`  Roof height: ${roofHeight}ft, Wall width: ${width}ft (building length)`);
       
       const wallShape = new THREE.Shape();
-      // Create trapezoidal shape: low on left (front), high on right (back)
-      wallShape.moveTo(-width/2, -height/2); // Bottom left (front, low)
-      wallShape.lineTo(width/2, -height/2);  // Bottom right (back, low)
-      wallShape.lineTo(width/2, height/2 + roofHeight); // Top right (back, high)
-      wallShape.lineTo(-width/2, height/2); // Top left (front, normal height)
+      // Create trapezoidal shape: low on front side, high on back side
+      // For right wall, width = building length, so:
+      // -width/2 = front side (low), +width/2 = back side (high)
+      wallShape.moveTo(-width/2, -height/2); // Bottom front (low side)
+      wallShape.lineTo(width/2, -height/2);  // Bottom back (low side)
+      wallShape.lineTo(width/2, height/2 + roofHeight); // Top back (high side)
+      wallShape.lineTo(-width/2, height/2); // Top front (normal height)
       wallShape.closePath();
+
+      console.log(`  Trapezoidal shape: front height = ${height}ft, back height = ${height + roofHeight}ft`);
 
       // Add window cutouts
       windowFeatures.forEach(feature => {
@@ -311,8 +316,12 @@ const SkillionWall: React.FC<SkillionWallProps> = ({
         }
         
         // Calculate the wall height at this X position due to slope
-        const heightAtX = height + ((windowX + width/2) / width) * roofHeight;
+        // Linear interpolation: height varies from 'height' to 'height + roofHeight'
+        const heightRatio = (windowX + width/2) / width; // 0 at front, 1 at back
+        const heightAtX = height + heightRatio * roofHeight;
         const windowY = -height/2 + feature.position.yOffset + feature.height/2;
+        
+        console.log(`  Window at X=${windowX.toFixed(1)}: wall height = ${heightAtX.toFixed(1)}ft, window top = ${(windowY + feature.height/2).toFixed(1)}ft`);
         
         // Only add window if it fits within the sloped wall
         if (windowY + feature.height/2 <= heightAtX/2) {
@@ -326,7 +335,9 @@ const SkillionWall: React.FC<SkillionWallProps> = ({
           windowHole.closePath();
           
           wallShape.holes.push(windowHole);
-          console.log(`  Added window cutout at (${windowX.toFixed(1)}, ${windowY.toFixed(1)}) on sloped wall`);
+          console.log(`    ✅ Added window cutout at (${windowX.toFixed(1)}, ${windowY.toFixed(1)}) on sloped wall`);
+        } else {
+          console.log(`    ❌ Window too high for sloped wall at this position`);
         }
       });
 
@@ -356,158 +367,9 @@ const SkillionWall: React.FC<SkillionWallProps> = ({
       geometry.attributes.uv.needsUpdate = true;
       return geometry;
       
-    } else if (wallPosition === 'front' && roofPitch > 0) {
-      // 🎯 FRONT WALL: Stays at base height (low side) - RECTANGULAR
-      console.log(`🏗️ Creating FRONT wall - RECTANGULAR at base height (low side)`);
-      
-      if (windowFeatures.length === 0) {
-        return new THREE.BoxGeometry(width, height, 0.2);
-      }
-
-      const wallShape = new THREE.Shape();
-      wallShape.moveTo(-width/2, -height/2);
-      wallShape.lineTo(width/2, -height/2);
-      wallShape.lineTo(width/2, height/2);
-      wallShape.lineTo(-width/2, height/2);
-      wallShape.closePath();
-
-      windowFeatures.forEach(feature => {
-        const windowHole = new THREE.Path();
-        
-        let windowX = 0;
-        switch (feature.position.alignment) {
-          case 'left':
-            windowX = -width/2 + feature.position.xOffset + feature.width/2;
-            break;
-          case 'right':
-            windowX = width/2 - feature.position.xOffset - feature.width/2;
-            break;
-          case 'center':
-          default:
-            windowX = feature.position.xOffset;
-            break;
-        }
-        
-        const windowY = -height/2 + feature.position.yOffset + feature.height/2;
-        
-        const halfWidth = feature.width / 2;
-        const halfHeight = feature.height / 2;
-        
-        windowHole.moveTo(windowX - halfWidth, windowY - halfHeight);
-        windowHole.lineTo(windowX + halfWidth, windowY - halfHeight);
-        windowHole.lineTo(windowX + halfWidth, windowY + halfHeight);
-        windowHole.lineTo(windowX - halfWidth, windowY + halfHeight);
-        windowHole.closePath();
-        
-        wallShape.holes.push(windowHole);
-        console.log(`  Added window cutout at (${windowX.toFixed(1)}, ${windowY.toFixed(1)})`);
-      });
-
-      const extrudeSettings = {
-        steps: 1,
-        depth: 0.2,
-        bevelEnabled: false
-      };
-
-      const geometry = new THREE.ExtrudeGeometry(wallShape, extrudeSettings);
-      
-      const uvs = geometry.attributes.uv.array;
-      const positions = geometry.attributes.position.array;
-      
-      for (let i = 0; i < positions.length; i += 3) {
-        const x = positions[i];
-        const y = positions[i + 1];
-        
-        const u = (x + width/2) / width;
-        const v = (y + height/2) / height;
-        
-        const uvIndex = (i / 3) * 2;
-        uvs[uvIndex] = u;
-        uvs[uvIndex + 1] = v;
-      }
-      
-      geometry.attributes.uv.needsUpdate = true;
-      return geometry;
-      
-    } else if (wallPosition === 'back' && roofPitch > 0) {
-      // 🎯 BACK WALL: Taller due to roof slope - RECTANGULAR but taller
-      console.log(`🏗️ Creating BACK wall - RECTANGULAR but taller (high side)`);
-      
-      const wallHeight = height + roofHeight;
-      console.log(`  Back wall height: ${wallHeight}ft (base: ${height}ft + roof: ${roofHeight}ft)`);
-      
-      if (windowFeatures.length === 0) {
-        return new THREE.BoxGeometry(width, wallHeight, 0.2);
-      }
-
-      const wallShape = new THREE.Shape();
-      wallShape.moveTo(-width/2, -wallHeight/2);
-      wallShape.lineTo(width/2, -wallHeight/2);
-      wallShape.lineTo(width/2, wallHeight/2);
-      wallShape.lineTo(-width/2, wallHeight/2);
-      wallShape.closePath();
-
-      windowFeatures.forEach(feature => {
-        const windowHole = new THREE.Path();
-        
-        let windowX = 0;
-        switch (feature.position.alignment) {
-          case 'left':
-            windowX = -width/2 + feature.position.xOffset + feature.width/2;
-            break;
-          case 'right':
-            windowX = width/2 - feature.position.xOffset - feature.width/2;
-            break;
-          case 'center':
-          default:
-            windowX = feature.position.xOffset;
-            break;
-        }
-        
-        const windowY = -wallHeight/2 + feature.position.yOffset + feature.height/2;
-        
-        const halfWidth = feature.width / 2;
-        const halfHeight = feature.height / 2;
-        
-        windowHole.moveTo(windowX - halfWidth, windowY - halfHeight);
-        windowHole.lineTo(windowX + halfWidth, windowY - halfHeight);
-        windowHole.lineTo(windowX + halfWidth, windowY + halfHeight);
-        windowHole.lineTo(windowX - halfWidth, windowY + halfHeight);
-        windowHole.closePath();
-        
-        wallShape.holes.push(windowHole);
-        console.log(`  Added window cutout at (${windowX.toFixed(1)}, ${windowY.toFixed(1)})`);
-      });
-
-      const extrudeSettings = {
-        steps: 1,
-        depth: 0.2,
-        bevelEnabled: false
-      };
-
-      const geometry = new THREE.ExtrudeGeometry(wallShape, extrudeSettings);
-      
-      const uvs = geometry.attributes.uv.array;
-      const positions = geometry.attributes.position.array;
-      
-      for (let i = 0; i < positions.length; i += 3) {
-        const x = positions[i];
-        const y = positions[i + 1];
-        
-        const u = (x + width/2) / width;
-        const v = (y + wallHeight/2) / wallHeight;
-        
-        const uvIndex = (i / 3) * 2;
-        uvs[uvIndex] = u;
-        uvs[uvIndex + 1] = v;
-      }
-      
-      geometry.attributes.uv.needsUpdate = true;
-      return geometry;
-      
     } else {
-      // 🎯 LEFT WALL: Stays rectangular for skillion roofs (no slope)
-      console.log(`🏗️ Creating ${wallPosition.toUpperCase()} wall - RECTANGULAR (no slope)`);
+      // 🎯 ALL OTHER WALLS: Rectangular shapes
+      console.log(`🏗️ Creating ${wallPosition.toUpperCase()} wall - RECTANGULAR (height: ${height}ft)`);
       
       if (windowFeatures.length === 0) {
         return new THREE.BoxGeometry(width, height, 0.2);

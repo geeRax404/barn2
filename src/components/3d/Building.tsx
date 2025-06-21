@@ -32,8 +32,8 @@ const Building: React.FC = () => {
     return wallFeatures;
   };
   
-  // Calculate wall positions for skillion roof
-  const getWallPosition = (wallPos: string): [number, number, number] => {
+  // Calculate wall positions and heights for skillion roof
+  const getWallData = (wallPos: string): { position: [number, number, number], height: number } => {
     const baseHeight = dimensions.height / 2;
     
     if (roofType === 'skillion') {
@@ -41,30 +41,48 @@ const Building: React.FC = () => {
       
       switch (wallPos) {
         case 'front':
-          return [0, baseHeight, halfLength];
+          // Front wall stays at base height (low side)
+          return {
+            position: [0, baseHeight, halfLength],
+            height: dimensions.height
+          };
         case 'back':
-          // Back wall is taller for skillion roof
-          return [0, baseHeight + roofHeightTotal / 2, -halfLength];
+          // Back wall is taller (high side)
+          return {
+            position: [0, baseHeight + roofHeightTotal / 2, -halfLength],
+            height: dimensions.height + roofHeightTotal
+          };
         case 'left':
-          return [-halfWidth, baseHeight + roofHeightTotal / 4, 0];
+          // Left wall stays rectangular
+          return {
+            position: [-halfWidth, baseHeight, 0],
+            height: dimensions.height
+          };
         case 'right':
-          return [halfWidth, baseHeight + roofHeightTotal / 4, 0];
+          // Right wall follows the slope - positioned at average height
+          return {
+            position: [halfWidth, baseHeight + roofHeightTotal / 4, 0],
+            height: dimensions.height // Base height, but geometry will be sloped
+          };
         default:
-          return [0, baseHeight, 0];
+          return {
+            position: [0, baseHeight, 0],
+            height: dimensions.height
+          };
       }
     } else {
       // Gable roof - all walls same height
       switch (wallPos) {
         case 'front':
-          return [0, baseHeight, halfLength];
+          return { position: [0, baseHeight, halfLength], height: dimensions.height };
         case 'back':
-          return [0, baseHeight, -halfLength];
+          return { position: [0, baseHeight, -halfLength], height: dimensions.height };
         case 'left':
-          return [-halfWidth, baseHeight, 0];
+          return { position: [-halfWidth, baseHeight, 0], height: dimensions.height };
         case 'right':
-          return [halfWidth, baseHeight, 0];
+          return { position: [halfWidth, baseHeight, 0], height: dimensions.height };
         default:
-          return [0, baseHeight, 0];
+          return { position: [0, baseHeight, 0], height: dimensions.height };
       }
     }
   };
@@ -84,9 +102,9 @@ const Building: React.FC = () => {
       
       {/* Front wall */}
       <Wall 
-        position={getWallPosition('front')} 
+        position={getWallData('front').position} 
         width={dimensions.width}
-        height={dimensions.height}
+        height={getWallData('front').height}
         color={color}
         wallPosition="front"
         roofPitch={dimensions.roofPitch}
@@ -98,9 +116,9 @@ const Building: React.FC = () => {
       
       {/* Back wall */}
       <Wall 
-        position={getWallPosition('back')} 
+        position={getWallData('back').position} 
         width={dimensions.width}
-        height={roofType === 'skillion' ? dimensions.height + dimensions.width * (dimensions.roofPitch / 12) : dimensions.height}
+        height={getWallData('back').height}
         color={color}
         wallPosition="back"
         roofPitch={dimensions.roofPitch}
@@ -113,9 +131,9 @@ const Building: React.FC = () => {
       
       {/* Left wall */}
       <Wall 
-        position={getWallPosition('left')} 
+        position={getWallData('left').position} 
         width={dimensions.length}
-        height={dimensions.height}
+        height={getWallData('left').height}
         color={color}
         wallPosition="left"
         rotation={[0, Math.PI / 2, 0]}
@@ -128,9 +146,9 @@ const Building: React.FC = () => {
       
       {/* Right wall */}
       <Wall 
-        position={getWallPosition('right')} 
+        position={getWallData('right').position} 
         width={dimensions.length}
-        height={dimensions.height}
+        height={getWallData('right').height}
         color={color}
         wallPosition="right"
         rotation={[0, -Math.PI / 2, 0]}
