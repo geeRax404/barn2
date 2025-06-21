@@ -386,14 +386,14 @@ export const buildingTemplates: BuildingTemplate[] = [
     id: 'american-barn',
     name: 'American Barn',
     category: 'barn',
-    description: 'Traditional American-style barn with gambrel roof and classic red barn aesthetics',
+    description: 'Traditional American-style barn with clerestory roof and classic red barn aesthetics',
     defaultDimensions: {
       width: 36,
       length: 48,
       height: 16,
       roofPitch: 6
     },
-    roofType: 'gable',
+    roofType: 'american-barn', // NEW: Uses the American barn roof type
     wallProfile: 'trimdek',
     defaultColor: '#7A2E2E', // Manor Red
     defaultRoofColor: '#4A3C32', // Ironstone
@@ -484,9 +484,10 @@ export const buildingTemplates: BuildingTemplate[] = [
     characteristics: [
       'Classic American barn styling',
       'Traditional red barn color',
-      'High pitched gable roof',
+      'Clerestory roof with monitor',
       'Large central bay door',
-      'Multiple upper level windows'
+      'Multiple upper level windows',
+      'Natural lighting from clerestory'
     ],
     suitableFor: [
       'Horse stables',
@@ -617,3 +618,5 @@ export const getTemplatesByCategory = (category: TemplateCategory): BuildingTemp
 export const getTemplateById = (id: string): BuildingTemplate | undefined => {
   return buildingTemplates.find(template => template.id === id);
 };
+
+export type TemplateCategory = 'all' | 'barn' | 'garage';

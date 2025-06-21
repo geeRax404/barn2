@@ -15,8 +15,8 @@ export type WallPosition = 'front' | 'back' | 'left' | 'right';
 // Wall profile types - Lysaght profiles
 export type WallProfile = 'multiclad' | 'trimdek' | 'customorb' | 'horizontal-customorb';
 
-// Roof types - now includes double skillion
-export type RoofType = 'gable' | 'skillion' | 'double-skillion';
+// Roof types - now includes american-barn
+export type RoofType = 'gable' | 'skillion' | 'double-skillion' | 'american-barn';
 
 // Feature positioning
 export interface FeaturePosition {

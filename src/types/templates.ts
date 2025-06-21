@@ -1,4 +1,3 @@
-```typescript
 export interface BuildingTemplate {
   id: string;
   name: string;
@@ -11,7 +10,7 @@ export interface BuildingTemplate {
     height: number;
     roofPitch: number;
   };
-  roofType: 'gable' | 'skillion' | 'double-skillion' | 'hip';
+  roofType: 'gable' | 'skillion' | 'double-skillion' | 'american-barn' | 'hip';
   wallProfile: 'trimdek' | 'customorb' | 'multiclad';
   defaultColor: string;
   defaultRoofColor: string;
@@ -43,4 +42,3 @@ export interface BuildingTemplate {
 }
 
 export type TemplateCategory = 'all' | 'barn' | 'garage';
-```

@@ -2,6 +2,7 @@ import React from 'react';
 import GableRoof from './GableRoof';
 import SkillionRoof from './SkillionRoof';
 import DoubleSkillionRoof from './DoubleSkillionRoof';
+import AmericanBarnRoof from './AmericanBarnRoof';
 import type { Skylight } from '../../types';
 
 interface RoofProps {
@@ -12,7 +13,7 @@ interface RoofProps {
   color: string;
   skylights?: Skylight[];
   wallProfile?: string;
-  roofType?: 'gable' | 'skillion' | 'double-skillion';
+  roofType?: 'gable' | 'skillion' | 'double-skillion' | 'american-barn';
 }
 
 const Roof: React.FC<RoofProps> = ({ 
@@ -42,6 +43,18 @@ const Roof: React.FC<RoofProps> = ({
   } else if (roofType === 'double-skillion') {
     return (
       <DoubleSkillionRoof
+        width={width}
+        length={length}
+        height={height}
+        pitch={pitch}
+        color={color}
+        skylights={skylights}
+        wallProfile={wallProfile}
+      />
+    );
+  } else if (roofType === 'american-barn') {
+    return (
+      <AmericanBarnRoof
         width={width}
         length={length}
         height={height}
