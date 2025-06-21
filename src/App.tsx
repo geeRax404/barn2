@@ -1,10 +1,15 @@
+'use client';
+
 import React from 'react';
 import { motion } from 'framer-motion';
-import Sidebar from './components/Sidebar';
-import Toolbar from './components/Toolbar';
-import ViewControls from './components/ViewControls';
-import Canvas3D from './components/Canvas3D';
+import dynamic from 'next/dynamic';
 import { useBuildingStore } from './store/buildingStore';
+
+// Dynamically import components that use lucide-react icons with SSR disabled
+const Sidebar = dynamic(() => import('./components/Sidebar'), { ssr: false });
+const Toolbar = dynamic(() => import('./components/Toolbar'), { ssr: false });
+const ViewControls = dynamic(() => import('./components/ViewControls'), { ssr: false });
+const Canvas3D = dynamic(() => import('./components/Canvas3D'), { ssr: false });
 
 function App() {
   const currentView = useBuildingStore((state) => state.currentView);
