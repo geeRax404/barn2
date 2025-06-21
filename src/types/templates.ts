@@ -1,3 +1,4 @@
+```typescript
 export interface BuildingTemplate {
   id: string;
   name: string;
@@ -42,3 +43,4 @@ export interface BuildingTemplate {
 }
 
 export type TemplateCategory = 'all' | 'barn' | 'garage';
+```

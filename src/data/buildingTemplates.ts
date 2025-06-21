@@ -1,3 +1,4 @@
+```typescript
 import type { BuildingTemplate } from '../types/templates';
 
 export const buildingTemplates: BuildingTemplate[] = [
@@ -167,14 +168,14 @@ export const buildingTemplates: BuildingTemplate[] = [
     id: 'double-skillion-garage',
     name: 'Double Skillion Garage',
     category: 'garage',
-    description: 'Distinctive butterfly roof design with dual skillion sections for architectural interest',
+    description: 'Distinctive clerestory roof design with monitor-style architecture for enhanced natural lighting',
     defaultDimensions: {
       width: 28,
       length: 32,
       height: 12,
       roofPitch: 3
     },
-    roofType: 'gable', // This is actually a complex roof, but we'll use gable for now
+    roofType: 'double-skillion', // This is the key change!
     wallProfile: 'trimdek',
     defaultColor: '#A39080', // Dune
     defaultRoofColor: '#2E2B26', // Cove
@@ -252,10 +253,10 @@ export const buildingTemplates: BuildingTemplate[] = [
       }
     ],
     characteristics: [
-      'Distinctive butterfly roof design',
-      'Dual skillion sections',
-      'Multiple vehicle access points',
+      'Distinctive clerestory roof design',
+      'Monitor-style architecture',
       'Enhanced natural lighting',
+      'Multiple vehicle access points',
       'Architectural feature roof'
     ],
     suitableFor: [
@@ -617,3 +618,4 @@ export const getTemplatesByCategory = (category: TemplateCategory): BuildingTemp
 export const getTemplateById = (id: string): BuildingTemplate | undefined => {
   return buildingTemplates.find(template => template.id === id);
 };
+```
