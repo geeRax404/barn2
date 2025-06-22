@@ -299,7 +299,10 @@ const SkillionWall: React.FC<SkillionWallProps> = ({
         // 🎯 BACK WALL: MIRRORED slope (high on left, low on right)
         // This compensates for the 180° rotation applied to the back wall
         console.log(`  BACK wall: high left (${height + roofHeight}ft) → low right (${height}ft) [MIRRORED for rotation]`);
-        
+        wallShape.moveTo(-width/2, -height/2); // Bottom left (low side)
+        wallShape.lineTo(width/2, -height/2);  // Bottom right (low side)
+        wallShape.lineTo(width/2, height/2); // Top right (normal height)
+        wallShape.lineTo(-width/2, height/2 + roofHeight); // Top left (high side)
         wallShape.closePath();
       }
 
