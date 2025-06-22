@@ -89,7 +89,7 @@ export const buildingTemplates: BuildingTemplate[] = [
     defaultDimensions: {
       width: 20,
       length: 30,
-      height: 10,
+      height:20,
       roofPitch: 2.5
     },
     roofType: 'skillion',
