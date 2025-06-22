@@ -104,7 +104,7 @@ export const buildingTemplates: BuildingTemplate[] = [
         position: {
           wallPosition: 'front',
           xOffset: -4,
-          yOffset: 0,
+          yOffset: 0.01, // Ground alignment offset: +10mm
           alignment: 'center'
         }
       },
@@ -115,7 +115,7 @@ export const buildingTemplates: BuildingTemplate[] = [
         position: {
           wallPosition: 'front',
           xOffset: 4,
-          yOffset: 0,
+          yOffset: 0.01, // Ground alignment offset: +10mm
           alignment: 'center'
         }
       },
@@ -126,7 +126,7 @@ export const buildingTemplates: BuildingTemplate[] = [
         position: {
           wallPosition: 'right',
           xOffset: 8,
-          yOffset: 0,
+          yOffset: 0.01, // Ground alignment offset: +10mm
           alignment: 'left'
         }
       },
@@ -137,7 +137,7 @@ export const buildingTemplates: BuildingTemplate[] = [
         position: {
           wallPosition: 'back',
           xOffset: 0,
-          yOffset: 5,
+          yOffset: 5.01, // Elevated position with ground alignment offset
           alignment: 'center'
         }
       }
@@ -147,7 +147,8 @@ export const buildingTemplates: BuildingTemplate[] = [
       'Dual roller door configuration',
       'Modern CustomOrb profile',
       'Efficient single-slope drainage',
-      'Suitable for 2-car garage'
+      'Suitable for 2-car garage',
+      'Ground-aligned foundation (+10mm offset)'
     ],
     suitableFor: [
       'Modern homes',
@@ -174,7 +175,7 @@ export const buildingTemplates: BuildingTemplate[] = [
       height: 12,
       roofPitch: 3
     },
-    roofType: 'double-skillion', // This is the key change!
+    roofType: 'double-skillion',
     wallProfile: 'trimdek',
     defaultColor: '#A39080', // Dune
     defaultRoofColor: '#2E2B26', // Cove
@@ -186,7 +187,7 @@ export const buildingTemplates: BuildingTemplate[] = [
         position: {
           wallPosition: 'front',
           xOffset: -6,
-          yOffset: 0,
+          yOffset: 0.01, // Ground alignment offset: +10mm
           alignment: 'center'
         }
       },
@@ -197,7 +198,7 @@ export const buildingTemplates: BuildingTemplate[] = [
         position: {
           wallPosition: 'front',
           xOffset: 8,
-          yOffset: 0,
+          yOffset: 0.01, // Ground alignment offset: +10mm
           alignment: 'center'
         }
       },
@@ -208,7 +209,7 @@ export const buildingTemplates: BuildingTemplate[] = [
         position: {
           wallPosition: 'left',
           xOffset: 6,
-          yOffset: 0,
+          yOffset: 0.01, // Ground alignment offset: +10mm
           alignment: 'left'
         }
       },
@@ -219,7 +220,7 @@ export const buildingTemplates: BuildingTemplate[] = [
         position: {
           wallPosition: 'left',
           xOffset: 12,
-          yOffset: 6,
+          yOffset: 6.01, // Elevated position with ground alignment offset
           alignment: 'left'
         }
       },
@@ -230,7 +231,7 @@ export const buildingTemplates: BuildingTemplate[] = [
         position: {
           wallPosition: 'back',
           xOffset: 0,
-          yOffset: 6,
+          yOffset: 6.01, // Elevated position with ground alignment offset
           alignment: 'center'
         }
       }
@@ -256,7 +257,8 @@ export const buildingTemplates: BuildingTemplate[] = [
       'Monitor-style architecture',
       'Enhanced natural lighting',
       'Multiple vehicle access points',
-      'Architectural feature roof'
+      'Architectural feature roof',
+      'Ground-aligned foundation (+10mm offset)'
     ],
     suitableFor: [
       'Large residential properties',
@@ -526,7 +528,7 @@ export const buildingTemplates: BuildingTemplate[] = [
         position: {
           wallPosition: 'front',
           xOffset: -12,
-          yOffset: 0,
+          yOffset: 0.01, // Ground alignment offset: +10mm
           alignment: 'center'
         }
       },
@@ -537,7 +539,7 @@ export const buildingTemplates: BuildingTemplate[] = [
         position: {
           wallPosition: 'front',
           xOffset: 12,
-          yOffset: 0,
+          yOffset: 0.01, // Ground alignment offset: +10mm
           alignment: 'center'
         }
       },
@@ -548,7 +550,7 @@ export const buildingTemplates: BuildingTemplate[] = [
         position: {
           wallPosition: 'left',
           xOffset: 10,
-          yOffset: 0,
+          yOffset: 0.01, // Ground alignment offset: +10mm
           alignment: 'left'
         }
       },
@@ -559,7 +561,7 @@ export const buildingTemplates: BuildingTemplate[] = [
         position: {
           wallPosition: 'left',
           xOffset: 20,
-          yOffset: 8,
+          yOffset: 8.01, // Elevated position with ground alignment offset
           alignment: 'left'
         }
       },
@@ -570,7 +572,7 @@ export const buildingTemplates: BuildingTemplate[] = [
         position: {
           wallPosition: 'left',
           xOffset: 35,
-          yOffset: 8,
+          yOffset: 8.01, // Elevated position with ground alignment offset
           alignment: 'left'
         }
       },
@@ -581,7 +583,7 @@ export const buildingTemplates: BuildingTemplate[] = [
         position: {
           wallPosition: 'back',
           xOffset: 0,
-          yOffset: 9,
+          yOffset: 9.01, // Elevated position with ground alignment offset
           alignment: 'center'
         }
       }
@@ -591,7 +593,8 @@ export const buildingTemplates: BuildingTemplate[] = [
       'Premium CustomOrb profile',
       'Large equipment access doors',
       'Efficient water drainage',
-      'Contemporary agricultural styling'
+      'Contemporary agricultural styling',
+      'Ground-aligned foundation (+10mm offset)'
     ],
     suitableFor: [
       'Modern farms',
