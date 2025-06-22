@@ -22,14 +22,14 @@ const DoubleSkillionRoof: React.FC<DoubleSkillionRoofProps> = ({
   wallProfile = 'trimdek'
 }) => {
   const roofHeight = useMemo(() => {
-    // For double skillion (butterfly) roof, calculate the rise following construction plan
-    return (width / 4) * (pitch / 12); // Quarter width for each slope as per construction plan
+    // For clerestory roof, calculate the rise of the monitor section
+    return (width * 0.15) * (pitch / 12); // 15% of width for the monitor rise
   }, [width, pitch]);
 
-  // Create roof materials and geometries for double skillion (butterfly) roof following construction plan
-  const { leftRoofGeometry, rightRoofGeometry, valleyBeamGeometry, roofMaterial } = useMemo(() => {
-    // Create enhanced roof profile texture following construction specifications
-    const createDoubleSkillionRoofTexture = () => {
+  // Create roof materials and geometries for clerestory/monitor roof
+  const { leftRoofGeometry, rightRoofGeometry, monitorRoofLeftGeometry, monitorRoofRightGeometry, roofMaterial } = useMemo(() => {
+    // Create enhanced roof profile texture
+    const createClerestoryRoofTexture = () => {
       const textureWidth = 1024;
       const textureHeight = 1024;
       const canvas = document.createElement('canvas');
@@ -42,21 +42,19 @@ const DoubleSkillionRoof: React.FC<DoubleSkillionRoofProps> = ({
         ctx.fillStyle = color;
         ctx.fillRect(0, 0, textureWidth, textureHeight);
         
-        // Profile-specific patterns following construction plan specifications
+        // Profile-specific patterns
         let ribWidth: number;
         let ribSpacing: number;
         let profileType: string;
         
         switch (wallProfile) {
           case 'trimdek':
-            // Trimdek profile as specified in construction plan
             ribWidth = textureWidth / 3;
             ribSpacing = ribWidth * 1.05;
             profileType = 'trapezoidal';
             break;
             
           case 'customorb':
-            // Custom Orb profile as alternative in construction plan
             ribWidth = textureWidth / 6;
             ribSpacing = ribWidth * 1.1;
             profileType = 'curved';
@@ -68,7 +66,7 @@ const DoubleSkillionRoof: React.FC<DoubleSkillionRoofProps> = ({
             profileType = 'trapezoidal';
         }
         
-        // Enhanced contrast for better roof visibility following construction standards
+        // Enhanced contrast for better roof visibility
         const isWhite = color === '#FFFFFF';
         const isDark = ['#1F2937', '#374151', '#4B5563'].includes(color);
         
@@ -77,9 +75,9 @@ const DoubleSkillionRoof: React.FC<DoubleSkillionRoofProps> = ({
         const deepShadowOpacity = isWhite ? 0.7 : isDark ? 1.0 : 0.85;
         const brightHighlightOpacity = isWhite ? 0.6 : isDark ? 1.0 : 0.8;
         
-        console.log(`🏗️ CREATING DOUBLE SKILLION ROOF ${wallProfile.toUpperCase()} PROFILE: ${profileType} (Construction Plan Applied)`);
+        console.log(`🏗️ CREATING CLERESTORY ROOF ${wallProfile.toUpperCase()} PROFILE: ${profileType}`);
         
-        // Create profile-specific patterns for butterfly roof
+        // Create profile-specific patterns
         for (let x = 0; x < textureWidth; x += ribSpacing) {
           if (profileType === 'curved') {
             // CUSTOMORB - curved profile
@@ -96,7 +94,7 @@ const DoubleSkillionRoof: React.FC<DoubleSkillionRoofProps> = ({
             ctx.fillRect(x, 0, ribWidth, textureHeight);
             
           } else if (profileType === 'trapezoidal') {
-            // TRIMDEK - trapezoidal profile as per construction specifications
+            // TRIMDEK - trapezoidal profile
             ctx.fillStyle = `rgba(0,0,0,${deepShadowOpacity})`;
             ctx.fillRect(x, 0, ribWidth * 0.15, textureHeight);
             
@@ -121,7 +119,7 @@ const DoubleSkillionRoof: React.FC<DoubleSkillionRoofProps> = ({
             ctx.fillRect(x + ribWidth * 0.85, 0, ribWidth * 0.15, textureHeight);
           }
           
-          // Add definition lines for construction detail accuracy
+          // Add definition lines
           ctx.fillStyle = `rgba(255,255,255,${brightHighlightOpacity * 1.8})`;
           ctx.fillRect(x + ribWidth * 0.48, 0, 6, textureHeight);
           
@@ -130,7 +128,7 @@ const DoubleSkillionRoof: React.FC<DoubleSkillionRoofProps> = ({
           ctx.fillRect(x + ribWidth * 0.98, 0, 4, textureHeight);
         }
         
-        // Add horizontal panel lines representing construction joints
+        // Add horizontal panel lines
         const panelHeight = textureHeight / 4;
         ctx.strokeStyle = `rgba(0,0,0,${shadowOpacity * 1.5})`;
         ctx.lineWidth = 5;
@@ -150,7 +148,7 @@ const DoubleSkillionRoof: React.FC<DoubleSkillionRoofProps> = ({
           ctx.lineWidth = 5;
         }
         
-        // Enhanced weathering for construction realism
+        // Enhanced weathering for non-white colors
         if (!isWhite) {
           ctx.globalAlpha = 0.12;
           for (let i = 0; i < 75; i++) {
@@ -163,14 +161,14 @@ const DoubleSkillionRoof: React.FC<DoubleSkillionRoofProps> = ({
           ctx.globalAlpha = 1.0;
         }
         
-        console.log(`✅ DOUBLE SKILLION ROOF ${wallProfile.toUpperCase()} PROFILE TEXTURE CREATED (Construction Standards Applied)`);
+        console.log(`✅ CLERESTORY ROOF ${wallProfile.toUpperCase()} PROFILE TEXTURE CREATED`);
       }
       
       const texture = new THREE.CanvasTexture(canvas);
       texture.wrapS = THREE.RepeatWrapping;
       texture.wrapT = THREE.RepeatWrapping;
       
-      // Texture scaling for double skillion roof based on construction dimensions
+      // Texture scaling for clerestory roof
       let scaleX = width / 4;
       let scaleY = length / 3;
       
@@ -184,13 +182,12 @@ const DoubleSkillionRoof: React.FC<DoubleSkillionRoofProps> = ({
       return texture;
     };
 
-    const roofTexture = createDoubleSkillionRoofTexture();
+    const roofTexture = createClerestoryRoofTexture();
     
-    // Material properties for matte finish following construction specifications
+    // Material properties for matte finish
     const isWhite = color === '#FFFFFF';
     const isDark = ['#1F2937', '#374151', '#4B5563'].includes(color);
     
-    // Construction plan material properties (0.48mm BMT Colorbond steel equivalent)
     const materialProps = isWhite ? {
       metalness: 0.1,
       roughness: 0.8,
@@ -211,29 +208,32 @@ const DoubleSkillionRoof: React.FC<DoubleSkillionRoofProps> = ({
       side: THREE.DoubleSide,
     });
 
-    // Create double skillion roof geometries following construction plan specifications
-    console.log(`🏗️ Creating DOUBLE SKILLION ROOF: ${width}ft × ${length}ft, ${pitch}:12 pitch (Construction Plan Applied)`);
-    console.log(`📐 Roof specifications: 3:12 pitch (14.0°) each slope, butterfly valley design`);
+    // Create clerestory roof geometries - main roof and monitor section
+    console.log(`🏗️ Creating CLERESTORY ROOF: ${width}ft × ${length}ft, ${pitch}:12 pitch`);
     
-    // Calculate dimensions following construction plan
-    const valleyWidth = width * 0.3; // Valley section width
-    const slopeWidth = (width - valleyWidth) / 2; // Each slope width
-    const pitchAngle = Math.atan2(roofHeight, slopeWidth);
-    const roofPanelLength = Math.sqrt(Math.pow(slopeWidth, 2) + Math.pow(roofHeight, 2));
+    // Calculate dimensions
+    const monitorWidth = width * 0.3; // Monitor section is 30% of total width
+    const mainRoofWidth = (width - monitorWidth) / 2; // Each main roof section
+    const pitchAngle = Math.atan2(roofHeight, mainRoofWidth);
+    const roofPanelLength = Math.sqrt(Math.pow(mainRoofWidth, 2) + Math.pow(roofHeight, 2));
     
-    // Left slope - slopes DOWN from perimeter to valley
+    // Left main roof - slopes UP from left edge to monitor
     const leftGeometry = new THREE.BoxGeometry(roofPanelLength, 0.2, length);
     
-    // Right slope - slopes DOWN from perimeter to valley
+    // Right main roof - slopes UP from right edge to monitor  
     const rightGeometry = new THREE.BoxGeometry(roofPanelLength, 0.2, length);
     
-    // Valley beam geometry (600mm x 90mm LVL equivalent)
-    const valleyBeam = new THREE.BoxGeometry(2.0, 0.3, length);
+    // Monitor roof left - slopes DOWN from monitor peak to left
+    const monitorLeftGeometry = new THREE.BoxGeometry(monitorWidth/2, 0.2, length);
+    
+    // Monitor roof right - slopes DOWN from monitor peak to right
+    const monitorRightGeometry = new THREE.BoxGeometry(monitorWidth/2, 0.2, length);
     
     return { 
       leftRoofGeometry: leftGeometry,
       rightRoofGeometry: rightGeometry,
-      valleyBeamGeometry: valleyBeam,
+      monitorRoofLeftGeometry: monitorLeftGeometry,
+      monitorRoofRightGeometry: monitorRightGeometry,
       roofMaterial: material 
     };
   }, [color, length, width, roofHeight, wallProfile, pitch]);
@@ -251,7 +251,7 @@ const DoubleSkillionRoof: React.FC<DoubleSkillionRoofProps> = ({
   });
 
   const createSkylight = (skylight: Skylight, index: number) => {
-    // Calculate position on the appropriate sloping plane following construction guidelines
+    // Calculate position on the appropriate sloping plane
     const skylightX = skylight.xOffset;
     const skylightZ = skylight.yOffset;
     
@@ -260,7 +260,7 @@ const DoubleSkillionRoof: React.FC<DoubleSkillionRoofProps> = ({
     
     return (
       <mesh
-        key={`double-skillion-skylight-${index}`}
+        key={`clerestory-skylight-${index}`}
         position={[skylightX, skylightY, skylightZ]}
         rotation={[0, 0, 0]}
         castShadow
@@ -272,18 +272,18 @@ const DoubleSkillionRoof: React.FC<DoubleSkillionRoofProps> = ({
     );
   };
 
-  // Calculate positions and angles following construction plan
-  const valleyWidth = width * 0.3;
-  const slopeWidth = (width - valleyWidth) / 2;
-  const pitchAngle = Math.atan2(roofHeight, slopeWidth);
-  const roofPanelLength = Math.sqrt(Math.pow(slopeWidth, 2) + Math.pow(roofHeight, 2));
+  // Calculate positions and angles
+  const monitorWidth = width * 0.3;
+  const mainRoofWidth = (width - monitorWidth) / 2;
+  const pitchAngle = Math.atan2(roofHeight, mainRoofWidth);
+  const roofPanelLength = Math.sqrt(Math.pow(mainRoofWidth, 2) + Math.pow(roofHeight, 2));
   
   return (
     <group position={[0, height, 0]}>
-      {/* Left slope - slopes DOWN from perimeter to valley (Construction Plan Applied) */}
+      {/* Left main roof - slopes UP from left edge to monitor */}
       <group 
-        position={[-width/2 + slopeWidth/2, roofHeight/2, 0]}
-        rotation={[0, 0, -pitchAngle]}
+        position={[-width/2 + mainRoofWidth/2, roofHeight/2, 0]}
+        rotation={[0, 0, pitchAngle]}
       >
         <mesh castShadow receiveShadow>
           <primitive object={leftRoofGeometry} />
@@ -291,10 +291,10 @@ const DoubleSkillionRoof: React.FC<DoubleSkillionRoofProps> = ({
         </mesh>
       </group>
       
-      {/* Right slope - slopes DOWN from perimeter to valley (Construction Plan Applied) */}
+      {/* Right main roof - slopes UP from right edge to monitor */}
       <group 
-        position={[width/2 - slopeWidth/2, roofHeight/2, 0]}
-        rotation={[0, 0, pitchAngle]}
+        position={[width/2 - mainRoofWidth/2, roofHeight/2, 0]}
+        rotation={[0, 0, -pitchAngle]}
       >
         <mesh castShadow receiveShadow>
           <primitive object={rightRoofGeometry} />
@@ -302,98 +302,127 @@ const DoubleSkillionRoof: React.FC<DoubleSkillionRoofProps> = ({
         </mesh>
       </group>
       
-      {/* Valley beam (600mm x 90mm LVL as per construction plan) */}
+      {/* Monitor section roof - left side slopes DOWN */}
+      <group 
+        position={[-monitorWidth/4, roofHeight + roofHeight/4, 0]}
+        rotation={[0, 0, -pitchAngle/2]}
+      >
+        <mesh castShadow receiveShadow>
+          <primitive object={monitorRoofLeftGeometry} />
+          <primitive object={roofMaterial} attach="material" />
+        </mesh>
+      </group>
+      
+      {/* Monitor section roof - right side slopes DOWN */}
+      <group 
+        position={[monitorWidth/4, roofHeight + roofHeight/4, 0]}
+        rotation={[0, 0, pitchAngle/2]}
+      >
+        <mesh castShadow receiveShadow>
+          <primitive object={monitorRoofRightGeometry} />
+          <primitive object={roofMaterial} attach="material" />
+        </mesh>
+      </group>
+      
+      {/* Vertical clerestory/monitor walls with windows */}
       <mesh 
-        position={[0, -roofHeight, 0]} 
+        position={[-monitorWidth/2, roofHeight + roofHeight/2, 0]} 
         castShadow 
         receiveShadow
       >
-        <primitive object={valleyBeamGeometry} />
+        <boxGeometry args={[0.2, roofHeight, length]} />
         <meshStandardMaterial 
-          color="#8B7355" 
-          metalness={0.1}
-          roughness={0.9}
-          envMapIntensity={0.2}
-        />
-      </mesh>
-      
-      {/* Valley drainage system (200mm wide custom fabricated as per plan) */}
-      <mesh 
-        position={[0, -roofHeight - 0.2, 0]} 
-        castShadow 
-        receiveShadow
-      >
-        <boxGeometry args={[0.7, 0.3, length]} />
-        <meshStandardMaterial 
-          color="#B8B8B8" 
-          metalness={0.8}
-          roughness={0.3}
-          envMapIntensity={1.0}
-        />
-      </mesh>
-      
-      {/* Support posts (200mm x 200mm F17 Hardwood as per construction plan) */}
-      {Array.from({ length: Math.ceil(length / 16) }).map((_, i) => {
-        const postZ = -length/2 + (i + 1) * 16;
-        if (postZ >= length/2) return null;
-        
-        return (
-          <mesh 
-            key={`valley-support-post-${i}`}
-            position={[0, -roofHeight/2, postZ]} 
-            castShadow 
-            receiveShadow
-          >
-            <boxGeometry args={[0.7, roofHeight, 0.7]} />
-            <meshStandardMaterial 
-              color="#8B7355" 
-              metalness={0.1}
-              roughness={0.9}
-              envMapIntensity={0.2}
-            />
-          </mesh>
-        );
-      })}
-      
-      {/* Perimeter gutters (125mm PVC standard profile as per plan) */}
-      <mesh 
-        position={[-width/2 - 0.25, roofHeight - 0.1, 0]} 
-        castShadow 
-        receiveShadow
-      >
-        <boxGeometry args={[0.4, 0.3, length]} />
-        <meshStandardMaterial 
-          color="#B8B8B8" 
-          metalness={0.8}
-          roughness={0.3}
-          envMapIntensity={1.0}
+          color={color} 
+          metalness={0.15}
+          roughness={0.75}
+          envMapIntensity={0.35}
         />
       </mesh>
       
       <mesh 
-        position={[width/2 + 0.25, roofHeight - 0.1, 0]} 
+        position={[monitorWidth/2, roofHeight + roofHeight/2, 0]} 
         castShadow 
         receiveShadow
       >
-        <boxGeometry args={[0.4, 0.3, length]} />
+        <boxGeometry args={[0.2, roofHeight, length]} />
         <meshStandardMaterial 
-          color="#B8B8B8" 
-          metalness={0.8}
-          roughness={0.3}
-          envMapIntensity={1.0}
+          color={color} 
+          metalness={0.15}
+          roughness={0.75}
+          envMapIntensity={0.35}
         />
       </mesh>
       
-      {/* Skylights for double skillion roof */}
+      {/* Clerestory windows for natural lighting */}
+      <mesh 
+        position={[-monitorWidth/2 - 0.1, roofHeight + roofHeight/2, 0]} 
+        castShadow 
+        receiveShadow
+      >
+        <boxGeometry args={[0.05, roofHeight * 0.8, length * 0.8]} />
+        <meshStandardMaterial 
+          color="#87CEEB" 
+          transparent 
+          opacity={0.4} 
+          metalness={0.2}
+          roughness={0}
+        />
+      </mesh>
+      
+      <mesh 
+        position={[monitorWidth/2 + 0.1, roofHeight + roofHeight/2, 0]} 
+        castShadow 
+        receiveShadow
+      >
+        <boxGeometry args={[0.05, roofHeight * 0.8, length * 0.8]} />
+        <meshStandardMaterial 
+          color="#87CEEB" 
+          transparent 
+          opacity={0.4} 
+          metalness={0.2}
+          roughness={0}
+        />
+      </mesh>
+      
+      {/* Skylights for clerestory roof */}
       {skylights.map((skylight, index) => createSkylight(skylight, index))}
       
-      {/* Valley flashing (400mm wide with 150mm upstands as per construction plan) */}
+      {/* Ridge caps and trim */}
       <mesh 
-        position={[0, -roofHeight + 0.05, 0]} 
+        position={[0, roofHeight + roofHeight/2, 0]} 
         castShadow 
         receiveShadow
       >
-        <boxGeometry args={[1.3, 0.05, length]} />
+        <boxGeometry args={[0.4, 0.3, length]} />
+        <meshStandardMaterial 
+          color={color} 
+          metalness={0.15}
+          roughness={0.75}
+          envMapIntensity={0.35}
+        />
+      </mesh>
+      
+      {/* Edge trim for main roof sections */}
+      <mesh 
+        position={[-width/2, 0, 0]} 
+        castShadow 
+        receiveShadow
+      >
+        <boxGeometry args={[0.2, 0.3, length]} />
+        <meshStandardMaterial 
+          color={color} 
+          metalness={0.15}
+          roughness={0.75}
+          envMapIntensity={0.35}
+        />
+      </mesh>
+      
+      <mesh 
+        position={[width/2, 0, 0]} 
+        castShadow 
+        receiveShadow
+      >
+        <boxGeometry args={[0.2, 0.3, length]} />
         <meshStandardMaterial 
           color={color} 
           metalness={0.15}
