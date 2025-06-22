@@ -5,9 +5,6 @@ import Wall from './Wall';
 import Roof from './Roof';
 import WallFeature from './WallFeature';
 
-// Ground alignment offset to ensure walls sit flush with ground
-const GROUND_ALIGNMENT_OFFSET = 0.01;
-
 const Building: React.FC = () => {
   const { dimensions, features, color, roofColor, skylights, wallProfile, roofType } = useBuildingStore((state) => ({
     dimensions: state.currentProject.building.dimensions,
@@ -37,33 +34,33 @@ const Building: React.FC = () => {
     return wallFeatures;
   };
   
-  // 🎯 PERFECT FLUSH ALIGNMENT: Calculate exact wall positions and heights for different roof types
+  // 🎯 PERFECT GROUND CONTACT: Calculate exact wall positions for different roof types
   const getWallData = (wallPos: string): { position: [number, number, number], height: number } => {
     const baseHeight = dimensions.height / 2;
     
     if (roofType === 'skillion') {
       const roofHeightTotal = dimensions.width * (dimensions.roofPitch / 12);
       
-      console.log(`🎯 PERFECT FLUSH: Calculating ${wallPos} wall for skillion roof`);
+      console.log(`🎯 PERFECT GROUND CONTACT: Calculating ${wallPos} wall for skillion roof`);
       console.log(`  Roof height total: ${roofHeightTotal}ft`);
       console.log(`  Base wall height: ${dimensions.height}ft`);
       
       switch (wallPos) {
         case 'front':
           // Front wall: TRAPEZOIDAL - follows roof slope (low left, high right)
-          const frontAvgHeight = dimensions.height + roofHeightTotal / 2;
-          console.log(`  FRONT wall: avg height = ${frontAvgHeight}ft, positioned at y = ${frontAvgHeight / 2}`);
+          // Position at base height so bottom edge is at ground level
+          console.log(`  FRONT wall: positioned at base height for ground contact`);
           return {
-            position: [0, frontAvgHeight / 2, halfLength],
+            position: [0, baseHeight, halfLength],
             height: dimensions.height // Base height, geometry will be sloped
           };
           
         case 'back':
           // Back wall: TRAPEZOIDAL - follows roof slope (low left, high right)
-          const backAvgHeight = dimensions.height + roofHeightTotal / 2;
-          console.log(`  BACK wall: avg height = ${backAvgHeight}ft, positioned at y = ${backAvgHeight / 2}`);
+          // Position at base height so bottom edge is at ground level
+          console.log(`  BACK wall: positioned at base height for ground contact`);
           return {
-            position: [0, backAvgHeight / 2, -halfLength],
+            position: [0, baseHeight, -halfLength],
             height: dimensions.height // Base height, geometry will be sloped
           };
           
@@ -94,7 +91,7 @@ const Building: React.FC = () => {
     } else if (roofType === 'double-skillion') {
       const roofHeightTotal = (dimensions.width / 4) * (dimensions.roofPitch / 12); // Quarter width for each slope
       
-      console.log(`🎯 PERFECT FLUSH: Calculating ${wallPos} wall for double skillion (butterfly) roof`);
+      console.log(`🎯 PERFECT GROUND CONTACT: Calculating ${wallPos} wall for double skillion (butterfly) roof`);
       console.log(`  Roof height total: ${roofHeightTotal}ft`);
       console.log(`  Base wall height: ${dimensions.height}ft`);
       
@@ -102,10 +99,9 @@ const Building: React.FC = () => {
         case 'front':
         case 'back':
           // Front/Back walls: BUTTERFLY SHAPE - high at edges, low at center
-          const butterflyAvgHeight = dimensions.height + roofHeightTotal / 2;
-          console.log(`  ${wallPos.toUpperCase()} wall: butterfly avg height = ${butterflyAvgHeight}ft, positioned at y = ${butterflyAvgHeight / 2}`);
+          console.log(`  ${wallPos.toUpperCase()} wall: positioned at base height for ground contact`);
           return {
-            position: [0, butterflyAvgHeight / 2, wallPos === 'front' ? halfLength : -halfLength],
+            position: [0, baseHeight, wallPos === 'front' ? halfLength : -halfLength],
             height: dimensions.height // Base height, geometry will be butterfly-shaped
           };
           
