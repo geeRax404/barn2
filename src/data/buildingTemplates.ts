@@ -96,7 +96,7 @@ export const buildingTemplates: BuildingTemplate[] = [
     wallProfile: 'customorb',
     defaultColor: '#F2F0E6', // Classic Cream
     defaultRoofColor: '#4A3C32', // Ironstone
-    features: [
+ /*   features: [
       {
         type: 'rollupDoor',
         width: 12,
@@ -141,7 +141,7 @@ export const buildingTemplates: BuildingTemplate[] = [
           alignment: 'center'
         }
       }
-    ],
+    ],*/
     characteristics: [
       'Contemporary skillion roof design',
       'Dual roller door configuration',
