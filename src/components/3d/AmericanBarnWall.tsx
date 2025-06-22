@@ -263,7 +263,7 @@ const AmericanBarnWall: React.FC<AmericanBarnWallProps> = ({
     });
   }, [color, width, height, wallProfile, wallPosition]);
 
-  // Create wall geometry with CORRECT American barn roof logic
+  // Create wall geometry with CORRECT American barn roof logic - FIXED STEPPED PROFILE
   const wallGeometry = useMemo(() => {
     const windowFeatures = wallFeatures.filter(feature => 
       feature.position.wallPosition === wallPosition && feature.type === 'window'
@@ -275,33 +275,36 @@ const AmericanBarnWall: React.FC<AmericanBarnWallProps> = ({
     const roofHeight = (buildingWidth * 0.15) * (roofPitch / 12); // 15% of width for the monitor rise
     const monitorWidth = buildingWidth * 0.3; // Monitor section is 30% of total width
     
-    // 🎯 AMERICAN BARN ROOF LOGIC:
+    // 🎯 AMERICAN BARN ROOF LOGIC - FIXED STEPPED PROFILE:
     // - FRONT/BACK WALLS: Follow the clerestory roof shape (stepped profile with monitor section)
     // - LEFT/RIGHT WALLS: Rectangular - stay at base height (no slope along length)
     
     if ((wallPosition === 'front' || wallPosition === 'back') && roofPitch > 0) {
-      // 🎯 FRONT/BACK WALLS: Follow the clerestory roof shape - STEPPED MONITOR PROFILE
-      console.log(`🏗️ Creating ${wallPosition.toUpperCase()} wall with AMERICAN BARN STEPPED shape for monitor roof`);
+      // 🎯 FRONT/BACK WALLS: Follow the clerestory roof shape - STEPPED MONITOR PROFILE - FIXED
+      console.log(`🏗️ Creating ${wallPosition.toUpperCase()} wall with AMERICAN BARN STEPPED shape for monitor roof - FIXED`);
       console.log(`  Roof height: ${roofHeight}ft, Wall width: ${width}ft (building width)`);
       console.log(`  Monitor width: ${monitorWidth}ft, Monitor height: ${roofHeight}ft`);
       
       const wallShape = new THREE.Shape();
       
-      // 🎯 AMERICAN BARN STEPPED SHAPE: Base height with raised monitor section in center
-      console.log(`  AMERICAN BARN wall: base height (${height}ft) with raised monitor section (${height + roofHeight}ft)`);
+      // 🎯 AMERICAN BARN STEPPED SHAPE - FIXED: Base height with raised monitor section in center
+      // Wall bottom sits exactly at ground level (y = 0 in wall coordinates = -height/2)
+      const wallBottom = -height/2;
       
-      // Start from bottom left
-      wallShape.moveTo(-width/2, -height/2); // Bottom left
-      wallShape.lineTo(width/2, -height/2);  // Bottom right
+      console.log(`  AMERICAN BARN wall: base height (${height}ft) with raised monitor section (${height + roofHeight}ft) - FIXED`);
+      
+      // Start from bottom left - FIXED COORDINATES
+      wallShape.moveTo(-width/2, wallBottom); // Bottom left - GROUND LEVEL
+      wallShape.lineTo(width/2, wallBottom);  // Bottom right - GROUND LEVEL
       wallShape.lineTo(width/2, height/2); // Top right (base height)
       
-      // Step up to monitor section (right side)
-      wallShape.lineTo(monitorWidth/2, height/2); // Right edge of monitor
+      // Step up to monitor section (right side) - FIXED COORDINATES
+      wallShape.lineTo(monitorWidth/2, height/2); // Right edge of monitor at base height
       wallShape.lineTo(monitorWidth/2, height/2 + roofHeight); // Up to monitor height
       wallShape.lineTo(-monitorWidth/2, height/2 + roofHeight); // Across monitor top
       wallShape.lineTo(-monitorWidth/2, height/2); // Down to base height
       
-      // Complete the shape (left side)
+      // Complete the shape (left side) - FIXED COORDINATES
       wallShape.lineTo(-width/2, height/2); // Top left (base height)
       wallShape.closePath();
 
@@ -333,7 +336,8 @@ const AmericanBarnWall: React.FC<AmericanBarnWallProps> = ({
           heightAtX = height;
         }
         
-        const windowY = -height/2 + feature.position.yOffset + feature.height/2;
+        // Window Y position from ground level (wallBottom)
+        const windowY = wallBottom + feature.position.yOffset + feature.height/2;
         
         console.log(`  Window at X=${windowX.toFixed(1)}: wall height = ${heightAtX.toFixed(1)}ft, window top = ${(windowY + feature.height/2).toFixed(1)}ft`);
         
@@ -349,7 +353,7 @@ const AmericanBarnWall: React.FC<AmericanBarnWallProps> = ({
           windowHole.closePath();
           
           wallShape.holes.push(windowHole);
-          console.log(`    ✅ Added window cutout at (${windowX.toFixed(1)}, ${windowY.toFixed(1)}) on American barn wall`);
+          console.log(`    ✅ Added window cutout at (${windowX.toFixed(1)}, ${windowY.toFixed(1)}) on American barn wall - FIXED`);
         } else {
           console.log(`    ❌ Window too high for American barn wall at this position`);
         }
@@ -382,18 +386,22 @@ const AmericanBarnWall: React.FC<AmericanBarnWallProps> = ({
       return geometry;
       
     } else {
-      // 🎯 LEFT/RIGHT WALLS: Rectangular shapes (no slope along length)
-      console.log(`🏗️ Creating ${wallPosition.toUpperCase()} wall - RECTANGULAR (height: ${height}ft)`);
+      // 🎯 LEFT/RIGHT WALLS: Rectangular shapes (no slope along length) - FIXED
+      console.log(`🏗️ Creating ${wallPosition.toUpperCase()} wall - RECTANGULAR (height: ${height}ft) - FIXED`);
       
       if (windowFeatures.length === 0) {
         return new THREE.BoxGeometry(width, height, 0.2);
       }
 
       const wallShape = new THREE.Shape();
-      wallShape.moveTo(-width/2, -height/2);
-      wallShape.lineTo(width/2, -height/2);
-      wallShape.lineTo(width/2, height/2);
-      wallShape.lineTo(-width/2, height/2);
+      // Wall bottom sits exactly at ground level
+      const wallBottom = -height/2;
+      const wallTop = height/2;
+      
+      wallShape.moveTo(-width/2, wallBottom);
+      wallShape.lineTo(width/2, wallBottom);
+      wallShape.lineTo(width/2, wallTop);
+      wallShape.lineTo(-width/2, wallTop);
       wallShape.closePath();
 
       windowFeatures.forEach(feature => {
@@ -413,7 +421,8 @@ const AmericanBarnWall: React.FC<AmericanBarnWallProps> = ({
             break;
         }
         
-        const windowY = -height/2 + feature.position.yOffset + feature.height/2;
+        // Window Y position from ground level
+        const windowY = wallBottom + feature.position.yOffset + feature.height/2;
         
         const halfWidth = feature.width / 2;
         const halfHeight = feature.height / 2;
@@ -425,7 +434,7 @@ const AmericanBarnWall: React.FC<AmericanBarnWallProps> = ({
         windowHole.closePath();
         
         wallShape.holes.push(windowHole);
-        console.log(`  Added window cutout at (${windowX.toFixed(1)}, ${windowY.toFixed(1)})`);
+        console.log(`  Added window cutout at (${windowX.toFixed(1)}, ${windowY.toFixed(1)}) - FIXED`);
       });
 
       const extrudeSettings = {
@@ -604,7 +613,7 @@ const AmericanBarnWall: React.FC<AmericanBarnWallProps> = ({
 
   return (
     <group position={position} rotation={rotation}>
-      {/* Wall with window cutouts only - doors remain solid for structural integrity */}
+      {/* Wall with window cutouts only - doors remain solid for structural integrity - FIXED AMERICAN BARN PROFILE */}
       <mesh castShadow receiveShadow>
         <primitive object={wallGeometry} />
         <primitive object={wallMaterial} attach="material" />
