@@ -16,9 +16,6 @@ interface SkillionWallProps {
   buildingWidth: number; // Need this to calculate roof slope
 }
 
-// Ground alignment offset to ensure walls sit flush with ground
-const GROUND_ALIGNMENT_OFFSET = 0.01;
-
 const SkillionWall: React.FC<SkillionWallProps> = ({ 
   position, 
   width, 
@@ -266,7 +263,7 @@ const SkillionWall: React.FC<SkillionWallProps> = ({
     });
   }, [color, width, height, wallProfile, wallPosition]);
 
-  // Create wall geometry with CORRECT skillion roof logic and ground alignment
+  // Create wall geometry with CORRECT skillion roof logic and PERFECT ground alignment
   const wallGeometry = useMemo(() => {
     const windowFeatures = wallFeatures.filter(feature => 
       feature.position.wallPosition === wallPosition && feature.type === 'window'
@@ -277,29 +274,29 @@ const SkillionWall: React.FC<SkillionWallProps> = ({
     // Calculate roof height for skillion roof
     const roofHeight = buildingWidth * (roofPitch / 12);
 
-    // 🎯 CORRECT SKILLION ROOF LOGIC WITH GROUND ALIGNMENT:
+    // 🎯 CORRECT SKILLION ROOF LOGIC WITH PERFECT GROUND ALIGNMENT:
     // - RIGHT WALL: RECTANGULAR - goes all the way up to the high side (height + roofHeight)
     // - LEFT WALL: RECTANGULAR - stays at base height
     // - FRONT WALL: TRAPEZOIDAL - follows the roof slope (low on left, high on right)
     // - BACK WALL: TRAPEZOIDAL - follows the roof slope BUT MIRRORED (high on left, low on right)
     
     if ((wallPosition === 'front' || wallPosition === 'back') && roofPitch > 0) {
-      // 🎯 FRONT/BACK WALLS: Follow the roof slope - TRAPEZOIDAL SHAPE WITH GROUND ALIGNMENT
+      // 🎯 FRONT/BACK WALLS: Follow the roof slope - TRAPEZOIDAL SHAPE WITH PERFECT GROUND ALIGNMENT
       console.log(`🏗️ Creating ${wallPosition.toUpperCase()} wall with TRAPEZOIDAL shape for skillion roof slope`);
       console.log(`  Roof height: ${roofHeight}ft, Wall width: ${width}ft (building width)`);
       
       const wallShape = new THREE.Shape();
       
-      // Adjust wall bottom to sit flush with ground (accounting for the ground alignment offset)
-      const wallBottom = -height/2 + GROUND_ALIGNMENT_OFFSET;
+      // 🎯 PERFECT GROUND ALIGNMENT: Wall bottom sits exactly at ground level (y = 0)
+      const wallBottom = -height/2;
       
       if (wallPosition === 'front') {
         // 🎯 FRONT WALL: Normal slope (low on left, high on right) - GROUND ALIGNED
         console.log(`  FRONT wall: low left (${height}ft) → high right (${height + roofHeight}ft) - GROUND ALIGNED`);
         wallShape.moveTo(-width/2, wallBottom); // Bottom left (low side) - GROUND ALIGNED
         wallShape.lineTo(width/2, wallBottom);  // Bottom right (low side) - GROUND ALIGNED
-        wallShape.lineTo(width/2, height/2 + roofHeight + GROUND_ALIGNMENT_OFFSET); // Top right (high side) - GROUND ALIGNED
-        wallShape.lineTo(-width/2, height/2 + GROUND_ALIGNMENT_OFFSET); // Top left (normal height) - GROUND ALIGNED
+        wallShape.lineTo(width/2, height/2 + roofHeight); // Top right (high side) - GROUND ALIGNED
+        wallShape.lineTo(-width/2, height/2); // Top left (normal height) - GROUND ALIGNED
         wallShape.closePath();
       } else {
         // 🎯 BACK WALL: MIRRORED slope (high on left, low on right) - GROUND ALIGNED
@@ -307,8 +304,8 @@ const SkillionWall: React.FC<SkillionWallProps> = ({
         console.log(`  BACK wall: high left (${height + roofHeight}ft) → low right (${height}ft) [MIRRORED for rotation] - GROUND ALIGNED`);
         wallShape.moveTo(-width/2, wallBottom); // Bottom left (low side) - GROUND ALIGNED
         wallShape.lineTo(width/2, wallBottom);  // Bottom right (low side) - GROUND ALIGNED
-        wallShape.lineTo(width/2, height/2 + GROUND_ALIGNMENT_OFFSET); // Top right (normal height) - GROUND ALIGNED
-        wallShape.lineTo(-width/2, height/2 + roofHeight + GROUND_ALIGNMENT_OFFSET); // Top left (high side) - MIRRORED! - GROUND ALIGNED
+        wallShape.lineTo(width/2, height/2); // Top right (normal height) - GROUND ALIGNED
+        wallShape.lineTo(-width/2, height/2 + roofHeight); // Top left (high side) - MIRRORED! - GROUND ALIGNED
         wallShape.closePath();
       }
 
@@ -342,13 +339,13 @@ const SkillionWall: React.FC<SkillionWallProps> = ({
           heightAtX = height + (1 - heightRatio) * roofHeight; // Inverted ratio for mirrored slope
         }
         
-        // Adjust window Y position for ground alignment
+        // Window Y position from ground level (no offset needed)
         const windowY = wallBottom + feature.position.yOffset + feature.height/2;
         
         console.log(`  Window at X=${windowX.toFixed(1)}: wall height = ${heightAtX.toFixed(1)}ft, window top = ${(windowY + feature.height/2).toFixed(1)}ft`);
         
-        // Only add window if it fits within the sloped wall (accounting for ground alignment)
-        if (windowY + feature.height/2 <= (heightAtX/2 + GROUND_ALIGNMENT_OFFSET)) {
+        // Only add window if it fits within the sloped wall
+        if (windowY + feature.height/2 <= heightAtX/2) {
           const halfWidth = feature.width / 2;
           const halfHeight = feature.height / 2;
           
@@ -381,7 +378,7 @@ const SkillionWall: React.FC<SkillionWallProps> = ({
         const y = positions[i + 1];
         
         const u = (x + width/2) / width;
-        const v = (y + height/2 + GROUND_ALIGNMENT_OFFSET) / (height + roofHeight + GROUND_ALIGNMENT_OFFSET);
+        const v = (y + height/2) / (height + roofHeight);
         
         const uvIndex = (i / 3) * 2;
         uvs[uvIndex] = u;
@@ -392,7 +389,7 @@ const SkillionWall: React.FC<SkillionWallProps> = ({
       return geometry;
       
     } else {
-      // 🎯 LEFT/RIGHT WALLS: Rectangular shapes WITH GROUND ALIGNMENT
+      // 🎯 LEFT/RIGHT WALLS: Rectangular shapes WITH PERFECT GROUND ALIGNMENT
       // RIGHT WALL gets the full height (height + roofHeight) to reach the high side
       // LEFT WALL stays at base height
       let actualHeight = height;
@@ -408,9 +405,9 @@ const SkillionWall: React.FC<SkillionWallProps> = ({
       }
 
       const wallShape = new THREE.Shape();
-      // Adjust wall bottom to sit flush with ground
-      const wallBottom = -actualHeight/2 + GROUND_ALIGNMENT_OFFSET;
-      const wallTop = actualHeight/2 + GROUND_ALIGNMENT_OFFSET;
+      // Wall bottom sits exactly at ground level
+      const wallBottom = -actualHeight/2;
+      const wallTop = actualHeight/2;
       
       wallShape.moveTo(-width/2, wallBottom);
       wallShape.lineTo(width/2, wallBottom);
@@ -435,7 +432,7 @@ const SkillionWall: React.FC<SkillionWallProps> = ({
             break;
         }
         
-        // Adjust window Y position for ground alignment
+        // Window Y position from ground level (no offset needed)
         const windowY = wallBottom + feature.position.yOffset + feature.height/2;
         
         const halfWidth = feature.width / 2;
@@ -467,7 +464,7 @@ const SkillionWall: React.FC<SkillionWallProps> = ({
         const y = positions[i + 1];
         
         const u = (x + width/2) / width;
-        const v = (y + actualHeight/2 + GROUND_ALIGNMENT_OFFSET) / (actualHeight + GROUND_ALIGNMENT_OFFSET);
+        const v = (y + actualHeight/2) / actualHeight;
         
         const uvIndex = (i / 3) * 2;
         uvs[uvIndex] = u;
@@ -514,7 +511,7 @@ const SkillionWall: React.FC<SkillionWallProps> = ({
     );
   }, [width, height, wallFeatures, wallPosition]);
 
-  // Interior beam positioning (same as gable wall) with ground alignment
+  // Interior beam positioning (same as gable wall) with perfect ground alignment
   const getInteriorZOffset = (wallPos: WallPosition): number => {
     const deepInteriorOffset = -0.4;
     
@@ -536,8 +533,8 @@ const SkillionWall: React.FC<SkillionWallProps> = ({
     const beamWidth = segment.width;
     const beamDepth = 0.2;
     const beamHeight = segment.topY - segment.bottomY;
-    // Adjust beam center Y position for ground alignment
-    const beamCenterY = (segment.topY + segment.bottomY) / 2 + GROUND_ALIGNMENT_OFFSET;
+    // Beam center Y position - no ground alignment offset needed here
+    const beamCenterY = (segment.topY + segment.bottomY) / 2;
     
     const zOffset = getInteriorZOffset(wallPosition);
     
@@ -585,8 +582,8 @@ const SkillionWall: React.FC<SkillionWallProps> = ({
     const beamWidth = segment.width;
     const beamHeight = segment.topY - segment.bottomY;
     const beamDepth = 0.2;
-    // Adjust beam center Y position for ground alignment
-    const beamCenterY = (segment.topY + segment.bottomY) / 2 + GROUND_ALIGNMENT_OFFSET;
+    // Beam center Y position - no ground alignment offset needed here
+    const beamCenterY = (segment.topY + segment.bottomY) / 2;
     
     const zOffset = getInteriorZOffset(wallPosition);
     
@@ -629,7 +626,7 @@ const SkillionWall: React.FC<SkillionWallProps> = ({
 
   return (
     <group position={position} rotation={rotation}>
-      {/* Wall with window cutouts only - doors remain solid for structural integrity - GROUND ALIGNED */}
+      {/* Wall with window cutouts only - doors remain solid for structural integrity - PERFECT GROUND ALIGNED */}
       <mesh castShadow receiveShadow>
         <primitive object={wallGeometry} />
         <primitive object={wallMaterial} attach="material" />

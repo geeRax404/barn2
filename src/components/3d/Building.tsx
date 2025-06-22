@@ -54,7 +54,7 @@ const Building: React.FC = () => {
           const frontAvgHeight = dimensions.height + roofHeightTotal / 2;
           console.log(`  FRONT wall: avg height = ${frontAvgHeight}ft, positioned at y = ${frontAvgHeight / 2}`);
           return {
-            position: [0, frontAvgHeight / 2 - GROUND_ALIGNMENT_OFFSET, halfLength],
+            position: [0, frontAvgHeight / 2, halfLength],
             height: dimensions.height // Base height, geometry will be sloped
           };
           
@@ -63,7 +63,7 @@ const Building: React.FC = () => {
           const backAvgHeight = dimensions.height + roofHeightTotal / 2;
           console.log(`  BACK wall: avg height = ${backAvgHeight}ft, positioned at y = ${backAvgHeight / 2}`);
           return {
-            position: [0, backAvgHeight / 2 - GROUND_ALIGNMENT_OFFSET, -halfLength],
+            position: [0, backAvgHeight / 2, -halfLength],
             height: dimensions.height // Base height, geometry will be sloped
           };
           
@@ -71,7 +71,7 @@ const Building: React.FC = () => {
           // Left wall: RECTANGULAR - stays at base height (low side)
           console.log(`  LEFT wall: base height = ${dimensions.height}ft, positioned at y = ${baseHeight}`);
           return {
-            position: [-halfWidth, baseHeight - GROUND_ALIGNMENT_OFFSET, 0],
+            position: [-halfWidth, baseHeight, 0],
             height: dimensions.height // Exact base height
           };
           
@@ -81,13 +81,13 @@ const Building: React.FC = () => {
           const rightWallCenter = rightWallHeight / 2;
           console.log(`  RIGHT wall: full height = ${rightWallHeight}ft, positioned at y = ${rightWallCenter}`);
           return {
-            position: [halfWidth, rightWallCenter - GROUND_ALIGNMENT_OFFSET, 0],
+            position: [halfWidth, rightWallCenter, 0],
             height: rightWallHeight // Exact height to reach roof
           };
           
         default:
           return {
-            position: [0, baseHeight - GROUND_ALIGNMENT_OFFSET, 0],
+            position: [0, baseHeight, 0],
             height: dimensions.height
           };
       }
@@ -105,7 +105,7 @@ const Building: React.FC = () => {
           const butterflyAvgHeight = dimensions.height + roofHeightTotal / 2;
           console.log(`  ${wallPos.toUpperCase()} wall: butterfly avg height = ${butterflyAvgHeight}ft, positioned at y = ${butterflyAvgHeight / 2}`);
           return {
-            position: [0, butterflyAvgHeight / 2 - GROUND_ALIGNMENT_OFFSET, wallPos === 'front' ? halfLength : -halfLength],
+            position: [0, butterflyAvgHeight / 2, wallPos === 'front' ? halfLength : -halfLength],
             height: dimensions.height // Base height, geometry will be butterfly-shaped
           };
           
@@ -114,13 +114,13 @@ const Building: React.FC = () => {
           // Left/Right walls: RECTANGULAR - stay at base height (no slope along length)
           console.log(`  ${wallPos.toUpperCase()} wall: base height = ${dimensions.height}ft, positioned at y = ${baseHeight}`);
           return {
-            position: [wallPos === 'left' ? -halfWidth : halfWidth, baseHeight - GROUND_ALIGNMENT_OFFSET, 0],
+            position: [wallPos === 'left' ? -halfWidth : halfWidth, baseHeight, 0],
             height: dimensions.height // Exact base height
           };
           
         default:
           return {
-            position: [0, baseHeight - GROUND_ALIGNMENT_OFFSET, 0],
+            position: [0, baseHeight, 0],
             height: dimensions.height
           };
       }
@@ -128,23 +128,23 @@ const Building: React.FC = () => {
       // Gable roof - all walls same height
       switch (wallPos) {
         case 'front':
-          return { position: [0, baseHeight - GROUND_ALIGNMENT_OFFSET, halfLength], height: dimensions.height };
+          return { position: [0, baseHeight, halfLength], height: dimensions.height };
         case 'back':
-          return { position: [0, baseHeight - GROUND_ALIGNMENT_OFFSET, -halfLength], height: dimensions.height };
+          return { position: [0, baseHeight, -halfLength], height: dimensions.height };
         case 'left':
-          return { position: [-halfWidth, baseHeight - GROUND_ALIGNMENT_OFFSET, 0], height: dimensions.height };
+          return { position: [-halfWidth, baseHeight, 0], height: dimensions.height };
         case 'right':
-          return { position: [halfWidth, baseHeight - GROUND_ALIGNMENT_OFFSET, 0], height: dimensions.height };
+          return { position: [halfWidth, baseHeight, 0], height: dimensions.height };
         default:
-          return { position: [0, baseHeight - GROUND_ALIGNMENT_OFFSET, 0], height: dimensions.height };
+          return { position: [0, baseHeight, 0], height: dimensions.height };
       }
     }
   };
   
   return (
     <group>
-      {/* Enhanced Foundation with better materials */}
-      <mesh position={[0, 0.1 - GROUND_ALIGNMENT_OFFSET, 0]} receiveShadow castShadow>
+      {/* Enhanced Foundation with better materials - POSITIONED AT GROUND LEVEL */}
+      <mesh position={[0, 0.1, 0]} receiveShadow castShadow>
         <boxGeometry args={[dimensions.width, 0.2, dimensions.length]} />
         <meshStandardMaterial 
           color="#8B7355" 
