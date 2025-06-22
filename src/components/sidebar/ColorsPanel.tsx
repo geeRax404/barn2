@@ -1,6 +1,7 @@
 import React from 'react';
 import { motion } from 'framer-motion';
 import { useBuildingStore } from '../../store/buildingStore';
+import { WallProfile } from '@/types';
 
 // 🇳🇿🇦🇺 NEW ZEALAND & AUSTRALIA POPULAR COLORBOND® COLORS
 const colorOptions = [
@@ -131,7 +132,7 @@ const ColorsPanel: React.FC = () => {
                     ? 'border-blue-500 bg-blue-50 ring-2 ring-blue-200' 
                     : 'border-gray-300 hover:border-gray-400 bg-white'
                 }`}
-                onClick={() => setWallProfile(profile.value)}
+                onClick={() => setWallProfile(profile.value as WallProfile)}
               >
                 <div className="flex items-center justify-between">
                   <div className="flex-1">

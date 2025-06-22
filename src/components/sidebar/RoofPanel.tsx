@@ -615,7 +615,7 @@ const RoofPanel: React.FC = () => {
             <div className="space-y-2">
               {skylights.map((skylight, index) => {
                 const validation = skylightValidation?.skylightValidations?.[index];
-                const isValid = roofType === 'skillion' || roofType === 'double-skillion' || validation?.valid ?? true;
+                const isValid = (roofType === 'skillion' || roofType === 'double-skillion') || (validation?.valid ?? true);
                 
                 return (
                   <div 
